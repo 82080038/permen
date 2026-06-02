@@ -1,0 +1,11 @@
+{
+  "name": "SKD CAT-BKN Try Out & Bimbel",
+  "short_name": "SKD CAT-BKN",
+  "description": "Aplikasi latihan Seleksi Kompetensi Dasar (SKD) dengan format CAT untuk persiapan Sekolah Kedinasan.",
+  "start_url": "/permen/index.php",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#1a5276",
+  "orientation": "portrait",
+  "icons": []
+}

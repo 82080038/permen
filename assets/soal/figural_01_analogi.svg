@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="220" viewBox="0 0 320 220">
+  <defs>
+    <style>
+      .frame { fill:none; stroke:#333; stroke-width:2 }
+      .shape { fill:none; stroke:#000; stroke-width:2.5 }
+      .label { font-family:Arial,sans-serif; font-size:13px; fill:#333 }
+      .arrow { fill:none; stroke:#666; stroke-width:2 }
+    </style>
+  </defs>
+
+  <!-- Grid lines -->
+  <line x1="160" y1="20" x2="160" y2="200" stroke="#ddd" stroke-width="1"/>
+  <line x1="20" y1="110" x2="300" y2="110" stroke="#ddd" stroke-width="1"/>
+
+  <!-- Frame A (top-left): Large square with small circle inside -->
+  <rect x="30" y="30" width="100" height="60" class="frame"/>
+  <rect x="45" y="42" width="70" height="36" class="shape"/>
+  <circle cx="80" cy="60" r="12" class="shape"/>
+  <text x="80" y="22" text-anchor="middle" class="label">A</text>
+
+  <!-- Arrow A→B -->
+  <line x1="135" y1="60" x2="145" y2="60" class="arrow"/>
+  <polygon points="145,57 152,60 145,63" fill="#666"/>
+
+  <!-- Frame B (top-right): Small square with large circle inside -->
+  <rect x="170" y="35" width="90" height="50" class="frame"/>
+  <rect x="185" y="47" width="60" height="26" class="shape"/>
+  <circle cx="215" cy="60" r="18" class="shape"/>
+  <text x="215" y="22" text-anchor="middle" class="label">B</text>
+
+  <!-- Arrow C→D (vertical) -->
+  <line x1="215" y1="90" x2="215" y2="100" class="arrow"/>
+  <polygon points="212,100 215,107 218,100" fill="#666"/>
+
+  <!-- Frame C (bottom-left): Large triangle with small square inside -->
+  <rect x="30" y="120" width="100" height="60" class="frame"/>
+  <polygon points="80,132 125,168 35,168" class="shape"/>
+  <rect x="68" y="148" width="24" height="18" class="shape"/>
+  <text x="80" y="208" text-anchor="middle" class="label">C</text>
+
+  <!-- Arrow C→? -->
+  <line x1="135" y1="150" x2="145" y2="150" class="arrow"/>
+  <polygon points="145,147 152,150 145,153" fill="#666"/>
+
+  <!-- Frame D (bottom-right): Answer box with question mark -->
+  <rect x="170" y="120" width="90" height="60" class="frame"/>
+  <text x="215" y="158" text-anchor="middle" font-size="28" fill="#999" font-family="Arial">?</text>
+  <text x="215" y="208" text-anchor="middle" class="label">D</text>
+</svg>

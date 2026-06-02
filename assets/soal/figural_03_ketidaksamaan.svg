@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="110" viewBox="0 0 520 110">
+  <defs>
+    <style>
+      .frame { fill:none; stroke:#333; stroke-width:1.5 }
+      .shape { fill:none; stroke:#000; stroke-width:2 }
+      .label { font-family:Arial,sans-serif; font-size:12px; fill:#333 }
+    </style>
+  </defs>
+
+  <!-- 5 boxes with figures, 4 identical, 1 different -->
+
+  <!-- A: Circle with dot, line top-left to bottom-right -->
+  <rect x="10" y="10" width="90" height="80" class="frame"/>
+  <circle cx="55" cy="50" r="22" class="shape"/>
+  <circle cx="55" cy="50" r="4" fill="#000"/>
+  <line x1="33" y1="28" x2="77" y2="72" class="shape"/>
+  <text x="55" y="105" text-anchor="middle" class="label">A</text>
+
+  <!-- B: Circle with dot, line top-left to bottom-right -->
+  <rect x="110" y="10" width="90" height="80" class="frame"/>
+  <circle cx="155" cy="50" r="22" class="shape"/>
+  <circle cx="155" cy="50" r="4" fill="#000"/>
+  <line x1="133" y1="28" x2="177" y2="72" class="shape"/>
+  <text x="155" y="105" text-anchor="middle" class="label">B</text>
+
+  <!-- C: Circle with dot, line top-left to bottom-right -->
+  <rect x="210" y="10" width="90" height="80" class="frame"/>
+  <circle cx="255" cy="50" r="22" class="shape"/>
+  <circle cx="255" cy="50" r="4" fill="#000"/>
+  <line x1="233" y1="28" x2="277" y2="72" class="shape"/>
+  <text x="255" y="105" text-anchor="middle" class="label">C</text>
+
+  <!-- D: Circle with dot, line TOP-RIGHT to BOTTOM-LEFT (DIFFERENT!) -->
+  <rect x="310" y="10" width="90" height="80" class="frame"/>
+  <circle cx="355" cy="50" r="22" class="shape"/>
+  <circle cx="355" cy="50" r="4" fill="#000"/>
+  <line x1="377" y1="28" x2="333" y2="72" class="shape"/>
+  <text x="355" y="105" text-anchor="middle" class="label">D</text>
+
+  <!-- E: Circle with dot, line top-left to bottom-right -->
+  <rect x="410" y="10" width="90" height="80" class="frame"/>
+  <circle cx="455" cy="50" r="22" class="shape"/>
+  <circle cx="455" cy="50" r="4" fill="#000"/>
+  <line x1="433" y1="28" x2="477" y2="72" class="shape"/>
+  <text x="455" y="105" text-anchor="middle" class="label">E</text>
+</svg>

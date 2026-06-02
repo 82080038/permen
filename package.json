@@ -1,0 +1,21 @@
+{
+  "name": "permen",
+  "version": "1.0.0",
+  "description": "Aplikasi latihan Seleksi Kompetensi Dasar (SKD) dengan format Computer Assisted Test (CAT) untuk persiapan masuk Sekolah Kedinasan.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:ui": "npx playwright test --ui",
+    "test:debug": "npx playwright test --debug"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  }
+}

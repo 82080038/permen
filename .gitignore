@@ -1,0 +1,32 @@
+# Environment
+.env
+*.env.local
+
+# Dependencies
+node_modules/
+vendor/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+error_log
+access_log
+
+# Temp
+*.tmp
+*.temp
+cache/

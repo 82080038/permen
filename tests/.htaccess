@@ -1,0 +1,3 @@
+# Deny all access to test files via web
+Order allow,deny
+Deny from all
