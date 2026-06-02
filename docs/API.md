@@ -272,3 +272,101 @@ Menghasilkan soal baru menggunakan Gemini 2.0 Flash API. Memerlukan API key di f
 **Response**: Sama seperti Smart Generator, dengan `generator: "gemini"`.
 
 **Catatan**: Jika API key belum diatur, akan mengembalikan error instruksi pengaturan.
+
+---
+
+## 7. Generate Soal User (Latihan Pribadi)
+
+### GET `/api/generate_user_soal.php?subtes=X&topik=Y&jumlah=N`
+Peserta generate soal latihan pribadi. **Tidak disimpan ke DB**, hanya dikembalikan ke frontend untuk praktik langsung.
+
+**Parameter**:
+| Nama | Tipe | Wajib | Deskripsi |
+|------|------|-------|-----------|
+| subtes | string | Ya | `TKP`, `TIU`, `TWK` |
+| topik | string | Ya | Contoh: `Nasionalisme`, `Berhitung` |
+| jumlah | int | Tidak | Default: 5, Max: 20 |
+
+**Keamanan**: Perlu login. Max 20 soal per request.
+
+---
+
+## 8. Review Hasil Try Out
+
+### GET `/api/get_review.php?session_id={id}`
+Mengambil detail jawaban user per soal untuk halaman hasil/review.
+
+**Response**: Array soal dengan `jawaban_user`, `jawaban_benar`, `pembahasan`, `tips_trick`, `related_links`, `materi_id`, `materi_judul`, `materi_url`.
+
+**Keamanan**: Hanya pemilik session.
+
+---
+
+## 9. Transisi Subtes
+
+### POST `/api/next_subtes.php`
+Mencatat waktu user pindah ke subtes berikutnya.
+
+**Body**:
+```json
+{ "session_id": 1, "current_subtes": "TWK", "next_subtes": "TIU" }
+```
+
+---
+
+## 10. Soal Revision (Peserta)
+
+### POST `/api/mark_revision.php`
+Peserta menandai soal perlu direvisi (via tombol M / ragu-ragu).
+
+**Body**:
+```json
+{ "question_id": 123, "needs_revision": 1 }
+```
+
+---
+
+## 11. Admin — Update Revision Status
+
+### POST `/api/update_revision.php`
+Admin menandai soal sudah direvisi atau toggle visibility.
+
+**Body**:
+```json
+{ "question_id": 123, "action": "mark_revised" }  // atau "toggle_active"
+```
+
+---
+
+## 12. Admin — List Soal
+
+### GET `/api/list_soal.php?q=keyword&subtes=TIU&needs_revision=1&is_active=1`
+Mengambil daftar soal untuk admin dashboard dengan filter.
+
+---
+
+## 13. Admin — Get Soal Detail
+
+### GET `/api/get_soal_detail.php?id={question_id}`
+Detail lengkap soal untuk modal edit.
+
+---
+
+## 14. Admin — Update Soal
+
+### POST `/api/update_soal.php`
+Update pertanyaan, pilihan, jawaban, pembahasan, atau gambar soal.
+
+**Content-Type**: `multipart/form-data` (support upload gambar baru).
+
+---
+
+## 15. Admin — Upload Gambar
+
+### POST `/api/upload_image.php`
+Upload gambar soal ke `assets/soal/`.
+
+**Response**:
+```json
+{ "success": true, "url": "../assets/soal/img_1234567890.jpg" }
+```
