@@ -4,6 +4,55 @@ Format ini mengikuti [Keep a Changelog](https://keepachangelog.com/) dan [Semant
 
 ---
 
+## [1.1.0] — 2026-06-03
+
+### Added (25 Fitur Baru)
+- **Auto-Advance Tryout** — Pilih jawaban → langsung soal berikutnya (tanpa klik "Berikutnya").
+- **Swipe Navigation (Mobile)** — Geser kiri/kanan untuk navigasi soal di layar sentuh.
+- **Dark Mode** — Toggle 🌙/☀️ dengan CSS variables, persist localStorage.
+- **Font Size Adjustment** — Ukuran font S/M/L, persist localStorage.
+- **Tap-to-Zoom Gambar** — Ketuk gambar soal untuk zoom fullscreen overlay.
+- **Riwayat Soal** (`pages/riwayat_soal.php`) — Histori jawaban user dengan filter subtes/topik/status (benar/salah/kosong) + pagination.
+- **Analisis Akurasi per Topik** — Progress bar akurasi per topik di user dashboard (minimal 3 soal dikerjakan).
+- **Trend Chart** — Grafik nilai tryout over time (canvas bar chart, toggle Total/TWK/TIU/TKP).
+- **Leaderboard** (`pages/leaderboard.php`) — Top 20 nilai total + Top 10 per subtes, filter waktu (7/30 hari / semua).
+- **Uji Pemahaman** — Peserta generate soal latihan dari materi yang dipelajari (max 20 soal).
+- **User Generator** (`api/generate_user_soal.php`) — Generate soal latihan pribadi tanpa DB storage.
+- **Generator Massal Admin** — Tab baru di admin dashboard untuk generate puluhan soal sekaligus.
+- **Soal Revision Workflow** — Peserta tandai "M" (ragu-ragu) → admin review → tandai "Sudah Direvisi".
+- **Toggle Soal Visibility** — Admin bisa sembunyikan/tampilkan soal per item (`is_active`).
+- **Upload Gambar Soal** — Drag & drop upload ke `assets/soal/` dengan validasi MIME type.
+- **Edit Soal Inline** — Modal edit pertanyaan, pilihan, jawaban, pembahasan, gambar di admin dashboard.
+- **Pembahasan Enrichment** — 100% soal (2.771+) punya `tips_trick`, `related_links`, `materi_id`.
+- **Materi URL** — Link eksternal di setiap materi untuk belajar lebih lanjut.
+- **Rekomendasi Materi** — Rekomendasi belajar otomatis berdasarkan subtes terlemah user.
+- **Instansi Passing Grade** — Database instansi dengan passing grade per instansi + prediksi lulus.
+- **Timer Per Subtes** — Waktu mulai per subtes tersimpan di `session_subtes`, transisi otomatis saat habis.
+- **Navigation Grid Status** — Sidebar menampilkan count: X dijawab, Y belum, Z ragu-ragu.
+- **Scroll to Content** — Auto-scroll ke konten soal (bukan nav grid) saat pindah soal.
+- **Service Worker PWA** (`sw.js`) — Caching static assets, fallback offline ke homepage.
+
+### Database Schema Changes
+- `questions`: Kolom baru `tips_trick`, `related_links`, `materi_id`, `image_url`, `passage_id`, `passage_order`, `needs_revision`, `revision_status`, `is_active`.
+- `materi`: Kolom baru `url` (link belajar eksternal).
+- `session_subtes`: Tabel normalisasi untuk timer per subtes.
+- `instansi`: Tabel daftar instansi + passing grade.
+- `rekomendasi_materi`: Tabel rekomendasi belajar.
+
+### Fixed
+- Pembahasan <120 chars pada 5 soal TIU — diperpanjang ke 316-448 chars.
+- Duplikat pilihan soal (6 soal) — diperbaiki dan ditambahkan UNIQUE constraint.
+- Soal TWK Nasionalisme invalid (56 soal tanpa topik) — diperbaiki via migrasi.
+- MySQL `ORDER BY` aggregate alias error — diubah ke `ORDER BY benar ASC, total DESC`.
+
+### Security
+- Rate limiting login: max 5 percobaan per IP per 15 menit.
+- File upload whitelist: jpg, jpeg, png, gif, webp only.
+- `.htaccess` proteksi: `sql/`, `.env`, `config.php`, `tests/` tidak bisa diakses via web.
+- Security headers: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, CSP.
+
+---
+
 ## [1.0.0] — 2026-06-02
 
 ### Added (Baru)

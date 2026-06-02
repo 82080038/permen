@@ -215,11 +215,12 @@ let totalSeconds = <?= $remainingSeconds ?>; // sisa waktu total dari server
 let timerInterval;
 const LS_KEY = 'cat_answers_' + sessionId;
 
-// Per-subtes timer data from server
+// Per-subtes timer data from server (PHP renders this as JSON)
+// Format: { TWK: {durasi:30, start:timestamp, remaining:seconds}, ... }
 const subtesTimers = <?= json_encode($subtesTimers) ?>;
 let currentSubtes = '<?= $currentSubtes ?>';
-let subtesOrder = Object.keys(subtesTimers); // ['TWK','TIU','TKP'] etc
-let subtesRemaining = {}; // remaining seconds per subtes
+let subtesOrder = Object.keys(subtesTimers); // e.g. ['TWK','TIU','TKP']
+let subtesRemaining = {}; // remaining seconds per subtes (client-side countdown)
 let activeSubtesIdx = subtesOrder.indexOf(currentSubtes);
 
 // Initialize per-subtes remaining time
@@ -227,6 +228,11 @@ subtesOrder.forEach(sub => {
     subtesRemaining[sub] = subtesTimers[sub]?.remaining || subtesTimers[sub]?.durasi * 60 || 1800;
 });
 
+/**
+ * Load questions for this session from server.
+ * If questions haven't been generated yet, API auto-generates them.
+ * Then restore any saved answers from localStorage (survive page refresh).
+ */
 async function loadSoal(){
     const res = await fetch('../api/get_soal.php?session_id='+sessionId);
     const data = await res.json();
@@ -240,6 +246,11 @@ async function loadSoal(){
     startTimer();
 }
 
+/**
+ * Start countdown timer for the entire tryout.
+ * Runs every second. Decrements both total time and per-subtes time.
+ * Auto-finishes when time runs out or auto-advances subtes.
+ */
 function startTimer(){
     timerInterval = setInterval(()=>{
         // Update per-subtes timer
@@ -269,6 +280,11 @@ function startTimer(){
     },1000);
 }
 
+/**
+ * Render the sidebar navigation grid showing all question numbers.
+ * Each button shows status: active (blue), answered (green), marked (yellow), or unanswered.
+ * Also updates the status text showing answered/unanswered/marked counts.
+ */
 function renderNumberGrid(){
     const grid = document.getElementById('numberGrid');
     grid.innerHTML = '';
@@ -295,6 +311,11 @@ function renderNumberGrid(){
     if(activeBtn) activeBtn.scrollIntoView({behavior:'smooth', block:'nearest', inline:'nearest'});
 }
 
+/**
+ * Auto-advance to the next subtes when time runs out.
+ * Called by startTimer() when current subtes time hits 0.
+ * Records transition via API and jumps to first question of next subtes.
+ */
 function advanceToNextSubtes(){
     const nextIdx = activeSubtesIdx + 1;
     if (nextIdx >= subtesOrder.length) {
@@ -321,11 +342,16 @@ function advanceToNextSubtes(){
     }
 }
 
+/**
+ * Render a single question (and its options) into the main content area.
+ * Also handles passage display, image rendering, and subtes change detection.
+ * @param {number} idx - Index in the soal array
+ */
 function renderSoal(idx){
     currentIdx = idx;
     const s = soal[idx];
 
-    // Detect subtes change
+    // Detect subtes change: confirm before allowing forward navigation
     if (s.subtes !== currentSubtes) {
         const prevSubIdx = subtesOrder.indexOf(currentSubtes);
         const newSubIdx = subtesOrder.indexOf(s.subtes);
@@ -377,7 +403,7 @@ function renderSoal(idx){
         passageBacaan.innerHTML = '';
     }
 
-    // Scrollable area for long narratives (>300 chars)
+    // Build question HTML: add scrollable class if question text is very long
     const qText = escapeHtml(s.pertanyaan);
     const scrollClass = (s.pertanyaan.length > 300) ? 'question-scrollable' : '';
     let html = '<div class="question ' + scrollClass + '"><strong>' + (idx+1) + '.</strong> ' + qText + '</div>';
@@ -400,6 +426,11 @@ function renderSoal(idx){
     document.getElementById('soalContainer').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
+/**
+ * Handle user selecting an answer (A-E).
+ * Saves to server + localStorage, updates UI, then auto-advances to next question.
+ * If last question, shows completion alert and redirects to results.
+ */
 function pilihJawaban(answerId, opt, el){
     answers[answerId] = opt;
     // visual select
@@ -453,7 +484,9 @@ function pilihJawaban(answerId, opt, el){
     }, 400); // 400ms delay so user sees their selection
 }
 
+/** Navigate to previous question */
 function prevSoal(){if(currentIdx>0)renderSoal(currentIdx-1);}
+/** Navigate to next question (with subtes change confirmation if applicable) */
 function nextSoal(){
     if(currentIdx>=soal.length-1) return;
     const nextIdx = currentIdx + 1;
@@ -480,7 +513,11 @@ function nextSoal(){
     renderSoal(nextIdx);
 }
 
-// --- LOCALSTORAGE AUTO-SAVE ---
+/** ================================
+ * LOCALSTORAGE PERSISTENCE
+ * Survives page refresh / browser crash
+ * Key format: cat_answers_<sessionId>
+ * ================================ */
 function saveLocalAnswers(){
     localStorage.setItem(LS_KEY, JSON.stringify({answers: answers, marked: marked, savedAt: Date.now()}));
 }
@@ -540,7 +577,13 @@ window.addEventListener('popstate', ()=>{
     alert('Navigasi back tidak diizinkan selama tryout.');
 });
 
-// --- SWIPE NAVIGATION (Mobile) ---
+/**
+ * ================================
+ * SWIPE NAVIGATION (Touch devices)
+ * Swipe left  = next question
+ * Swipe right = previous question
+ * Threshold: 50px horizontal
+ * ================================ */
 let touchStartX = 0;
 let touchStartY = 0;
 const SWIPE_THRESHOLD = 50;
@@ -561,7 +604,15 @@ document.addEventListener('touchend', e=>{
     }
 }, {passive:true});
 
-// --- KEYBOARD SHORTCUTS ---
+/**
+ * ================================
+ * KEYBOARD SHORTCUTS
+ * A-E     : Select answer
+ * ←/↑     : Previous question
+ * →/↓     : Next question
+ * M       : Mark as uncertain
+ * F5/Ctrl+R : Blocked (anti-cheating)
+ * ================================ */
 document.addEventListener('keydown', e=>{
     if(!soal.length) return;
     const key = e.key.toUpperCase();
@@ -605,6 +656,11 @@ function finishTryout(){
 
 <script src="../assets/app.js"></script>
 <script>
+/**
+ * ================================
+ * ACCESSIBILITY: DARK MODE & FONT SIZE
+ * Persist user preference to localStorage
+ * ================================ */
 // --- THEME / DARK MODE ---
 const savedTheme = localStorage.getItem('cat_theme') || 'light';
 if(savedTheme==='dark') document.documentElement.setAttribute('data-theme','dark');
@@ -628,7 +684,10 @@ function cycleFontSize(){
     localStorage.setItem('cat_font', size);
 }
 
-// --- IMAGE ZOOM ---
+/**
+ * Open image in fullscreen zoom overlay modal.
+ * Tap anywhere or click "Tutup" to close.
+ */
 function openZoom(src){
     const modal = document.getElementById('imgZoomModal');
     const img = document.getElementById('zoomImg');
