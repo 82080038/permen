@@ -9,36 +9,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!validateCsrf($_POST['csrf_token'] ?? '')) {
         $error = 'Sesi tidak valid. Silakan muat ulang halaman.';
     } else {
-        $email = sanitizeInput($_POST['email'] ?? '');
+        $noHp = sanitizeInput($_POST['no_hp'] ?? '');
         
-        if (!$email) {
-            $error = 'Email wajib diisi.';
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $error = 'Format email tidak valid.';
+        if (!$noHp) {
+            $error = 'Nomor HP wajib diisi.';
+        } elseif (!isValidPhoneNumber($noHp)) {
+            $error = 'Format nomor HP tidak valid. Gunakan format 08xx atau 628xx.';
         } else {
-            // Check if email exists
-            $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-            $stmt->execute([$email]);
+            // Check if no_hp exists (fallback to email for backward compatibility)
+            $stmt = $pdo->prepare("SELECT id, nama, no_hp, email FROM users WHERE no_hp = ? OR email = ?");
+            $stmt->execute([$noHp, $noHp]);
             $user = $stmt->fetch();
             
             if ($user) {
-                // Generate reset token
-                $token = generateVerificationToken();
-                $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
+                // Create password reset request for admin
+                $identifier = $user['no_hp'] ?? $user['email'];
+                $stmt = $pdo->prepare("INSERT INTO password_reset_requests (user_id, no_hp, created_at) VALUES (?, ?, NOW())");
+                $stmt->execute([$user['id'], $identifier]);
                 
-                // Save to database
-                $stmt = $pdo->prepare("INSERT INTO password_resets (user_id, token, created_at, expires_at) VALUES (?, ?, NOW(), ?)");
-                $stmt->execute([$user['id'], $token, $expiresAt]);
+                // Notify admin via feedback system
+                $adminStmt = $pdo->prepare("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
+                $adminStmt->execute();
+                $admin = $adminStmt->fetch();
                 
-                // Send email
-                if (sendPasswordResetEmail($email, $token)) {
-                    $success = 'Link reset password telah dikirim ke email Anda. Silakan cek inbox (termasuk folder spam).';
-                } else {
-                    $error = 'Gagal mengirim email. Silakan coba lagi nanti.';
+                if ($admin) {
+                    require '../api/create_notification.php';
+                    createNotification(
+                        $admin['id'],
+                        'warning',
+                        'Request Reset Password',
+                        "User {$user['nama']} ($identifier) meminta reset password. Silakan reset password di admin dashboard.",
+                        'admin_dashboard.php'
+                    );
                 }
+                
+                $success = 'Request reset password telah dikirim ke admin. Admin akan menghubungi Anda untuk password baru.';
             } else {
-                // Don't reveal if email exists or not for security
-                $success = 'Jika email terdaftar, link reset password akan dikirim ke email Anda.';
+                // Don't reveal if no_hp exists or not for security
+                $success = 'Jika nomor HP terdaftar, request reset password akan dikirim ke admin.';
             }
         }
     }
@@ -50,24 +58,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
-<title>Lupa Password — SKD CAT-BKN</title>
+<title>Request Reset Password — SKD CAT-BKN</title>
 <link rel="stylesheet" href="../assets/form.css">
 </head>
 <body>
-<div class="header"><h1>Lupa Password — SKD CAT-BKN</h1></div>
-<div class="container">
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
+<div class="header"><h1>Request Reset Password — SKD CAT-BKN</h1></div>
+<div class="container" id="main-content">
 <div class="card">
-<h2>Reset Password</h2>
+<h2>Request Reset Password</h2>
+<p style="font-size:.9rem;color:#666;margin-bottom:1rem">Lupa password? Masukkan nomor HP Anda untuk request reset password ke admin. Admin akan memberikan password baru.</p>
 <?php if ($error): ?><div class="alert error"><?= e($error) ?></div><?php endif; ?>
 <?php if ($success): ?><div class="alert success"><?= e($success) ?></div><?php endif; ?>
 <form method="POST" action="">
 <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
 <div class="form-group">
-<label for="email">Email</label>
-<input type="email" id="email" name="email" placeholder="email@contoh.com" required aria-required="true" aria-describedby="email-help">
-<small id="email-help" style="color:#777;font-size:.8rem">Masukkan email yang terdaftar</small>
+<label for="no_hp">Nomor HP</label>
+<input type="tel" id="no_hp" name="no_hp" placeholder="08xxxxxxxxxx" required minlength="10" maxlength="14" aria-required="true" aria-describedby="nohp-help" aria-label="Nomor HP" pattern="[0-9]*" inputmode="numeric">
+<small id="nohp-help" style="color:#777;font-size:.8rem">Masukkan nomor HP yang terdaftar (format: 08xx atau 628xx)</small>
 </div>
-<button type="submit" class="btn">Kirim Link Reset</button>
+<button type="submit" class="btn" aria-label="Kirim request reset password ke admin">Kirim Request ke Admin</button>
 </form>
 <div class="footer">
 <a href="login.php" class="link">Kembali ke Login</a>

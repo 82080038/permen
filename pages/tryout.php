@@ -69,6 +69,19 @@ foreach ($stmt as $row) {
 $firstSubtes = array_key_first($subtesTimers) ?: 'TWK';
 if (!$currentSubtes) $currentSubtes = $firstSubtes;
 
+// Ensure subtesTimers is never empty (fallback to defaults)
+if (empty($subtesTimers)) {
+    $subtesTimers = [
+        'TWK' => ['durasi' => 30, 'start' => 0, 'remaining' => 1800],
+        'TIU' => ['durasi' => 35, 'start' => 0, 'remaining' => 2100],
+        'TKP' => ['durasi' => 45, 'start' => 0, 'remaining' => 2700]
+    ];
+    $currentSubtes = 'TWK';
+}
+
+// Debug: log variables before rendering (commented out to prevent any output)
+// error_log("tryout.php: sessionId=$sessionId, currentSubtes=$currentSubtes, subtesTimers=" . json_encode($subtesTimers));
+
 // Hitung total remaining untuk display utama (sum semua subtes yang belum/belum selesai)
 $remainingSeconds = 0;
 foreach ($subtesTimers as $sub => $t) {
@@ -151,6 +164,7 @@ $timerS = str_pad($remainingSeconds % 60, 2, '0', STR_PAD_LEFT);
 </style>
 </head>
 <body>
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
 <div class="topbar">
 <a href="../index.php">Beranda</a>
 <a href="latihan.php">Latihan</a>
@@ -166,17 +180,17 @@ $timerS = str_pad($remainingSeconds % 60, 2, '0', STR_PAD_LEFT);
 <div class="header">
 <h1>Try Out SKD CAT-BKN</h1>
 <div style="display:flex;align-items:center;gap:.3rem">
-    <button class="theme-toggle" onclick="toggleTheme()" title="Dark/Light Mode">🌙</button>
-    <button class="font-toggle" onclick="cycleFontSize()" title="Ukuran Font">Aa</button>
-    <div class="timer" id="timer"><?= $timerM ?>:<?= $timerS ?></div>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Dark/Light Mode" aria-label="Toggle dark/light mode">🌙</button>
+    <button class="font-toggle" onclick="cycleFontSize()" title="Ukuran Font" aria-label="Ubah ukuran font">Aa</button>
+    <div class="timer" id="timer" aria-live="polite" aria-atomic="true"><?= htmlspecialchars($timerM) ?>:<?= htmlspecialchars($timerS) ?></div>
 </div>
 </div>
 <div class="nav">
 <span id="subtes-info">Memuat soal...</span>
 </div>
-<div class="main">
+<div class="main" id="main-content">
 <div class="sidebar" id="sidebar">
-<button id="sidebarToggle" onclick="document.getElementById('sidebar').classList.toggle('collapsed')">Sembunyikan/Tampilkan Navigasi</button>
+<button id="sidebarToggle" onclick="document.getElementById('sidebar').classList.toggle('collapsed')" aria-label="Toggle sidebar navigation">Sembunyikan/Tampilkan Navigasi</button>
 <h3>Navigasi Soal</h3>
 <div id="navStatus" style="font-size:.8rem;color:var(--text-muted);margin-bottom:.4rem"></div>
 <div class="number-grid" id="numberGrid"></div>
@@ -188,6 +202,10 @@ $timerS = str_pad($remainingSeconds % 60, 2, '0', STR_PAD_LEFT);
 </div>
 </div>
 <div class="content">
+<div id="loadingIndicator" style="text-align:center;padding:3rem;color:#777">
+<div style="font-size:2rem;margin-bottom:1rem">⏳</div>
+<div>Memuat soal...</div>
+</div>
 <div class="passage-box" id="passageBox" style="display:none">
     <div class="passage-judul" id="passageJudul"></div>
     <div class="passage-bacaan" id="passageBacaan"></div>
@@ -196,29 +214,32 @@ $timerS = str_pad($remainingSeconds % 60, 2, '0', STR_PAD_LEFT);
 <p style="color:var(--text-muted)">Memuat soal, mohon tunggu...</p>
 </div>
 <div class="btn-group">
-<button class="btn" id="btnPrev" onclick="prevSoal()">Sebelumnya</button>
-<button class="btn" id="btnNext" onclick="nextSoal()">Selanjutnya</button>
-<button class="btn" style="background:#f1c40f;color:#333" id="btnMark" onclick="toggleMark()">Ragu (M)</button>
-<button class="btn finish" onclick="finishTryout()">Selesai</button>
+<button class="btn" id="btnPrev" onclick="prevSoal()" aria-label="Soal sebelumnya">Sebelumnya</button>
+<button class="btn" id="btnNext" onclick="nextSoal()" aria-label="Soal selanjutnya">Selanjutnya</button>
+<button class="btn" style="background:#f1c40f;color:#333" id="btnMark" onclick="toggleMark()" aria-label="Tandai ragu-ragu">Ragu (M)</button>
+<button class="btn" style="background:#9b59b6;color:#fff" id="btnBookmark" onclick="toggleBookmark()" aria-label="Simpan ke favorit">⭐ Favorit</button>
+<button class="btn finish" onclick="finishTryout()" aria-label="Selesaikan tryout">Selesai</button>
 </div>
 <div class="pembahasan" id="pembahasanBox"></div>
 </div>
 </div>
 <script>
-const sessionId = <?= $sessionId ?>;
+const sessionId = <?= json_encode($sessionId) ?>;
+const csrfToken = <?= json_encode(getCsrfTokenForApi()) ?>;
 let soal = [];
 let passages = {}; // passage_id => {judul, bacaan}
 let currentIdx = 0;
 let answers = {}; // answer_id => jawaban
 let marked = {};  // answer_id => boolean (ragu-ragu)
-let totalSeconds = <?= $remainingSeconds ?>; // sisa waktu total dari server
+let bookmarked = {}; // question_id => boolean (favorit)
+let totalSeconds = <?= json_encode($remainingSeconds) ?>; // sisa waktu total dari server
 let timerInterval;
 const LS_KEY = 'cat_answers_' + sessionId;
 
 // Per-subtes timer data from server (PHP renders this as JSON)
 // Format: { TWK: {durasi:30, start:timestamp, remaining:seconds}, ... }
 const subtesTimers = <?= json_encode($subtesTimers) ?>;
-let currentSubtes = '<?= $currentSubtes ?>';
+let currentSubtes = <?= json_encode($currentSubtes) ?>;
 let subtesOrder = Object.keys(subtesTimers); // e.g. ['TWK','TIU','TKP']
 let subtesRemaining = {}; // remaining seconds per subtes (client-side countdown)
 let activeSubtesIdx = subtesOrder.indexOf(currentSubtes);
@@ -235,8 +256,26 @@ subtesOrder.forEach(sub => {
  */
 async function loadSoal(){
     try {
-        const res = await fetch('../api/get_soal.php?session_id='+sessionId);
-        const data = await res.json();
+        const res = await fetch('../api/get_soal.php?session_id='+sessionId, {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        
+        const text = await res.text();
+        
+        // Check if response is HTML (error page) instead of JSON
+        if (text.trim().startsWith('<') || text.trim().startsWith('<!DOCTYPE')) {
+            throw new Error('Server returned error page instead of JSON');
+        }
+        
+        const data = JSON.parse(text);
         if(data.error){
             if(data.error.includes('Session sudah selesai') || data.error.includes('tidak aktif')){
                 alert('Sesi tryout Anda telah berakhir atau tidak aktif. Anda akan diarahkan ke halaman hasil.');
@@ -246,16 +285,19 @@ async function loadSoal(){
             alert(data.error);
             return;
         }
-        soal = data.soal;
-        passages = data.passages || {};
+        // Handle new standardized format: {success: true, data: {session, soal, passages}}
+        // Legacy format: {session, soal, passages}
+        const responseData = data.data || data;
+        soal = responseData.soal;
+        passages = responseData.passages || {};
         // Restore answers from localStorage if available
         restoreLocalAnswers();
+        document.getElementById('loadingIndicator').style.display = 'none';
         renderNumberGrid();
         renderSoal(0);
         startTimer();
     } catch (e) {
-        console.error('Error loading questions:', e);
-        alert('Gagal memuat soal. Silakan refresh halaman atau periksa koneksi internet Anda.');
+        alert('Gagal memuat soal: ' + e.message + '. Silakan refresh halaman atau periksa koneksi internet Anda.');
     }
 }
 
@@ -351,7 +393,10 @@ function advanceToNextSubtes(){
     // Call API to record subtes transition
     fetch('../api/next_subtes.php',{
         method:'POST',
-        headers:{'Content-Type':'application/json'},
+        headers:{
+            'Content-Type':'application/json',
+            'X-CSRF-Token': csrfToken
+        },
         body:JSON.stringify({session_id:sessionId, current_subtes:currentSub, next_subtes:nextSub})
     });
 
@@ -396,7 +441,10 @@ function renderSoal(idx){
             // Call API to record transition
             fetch('../api/next_subtes.php',{
                 method:'POST',
-                headers:{'Content-Type':'application/json'},
+                headers:{
+                    'Content-Type':'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
                 body:JSON.stringify({session_id:sessionId, current_subtes:currentSubtes, next_subtes:s.subtes})
             });
             currentSubtes = s.subtes;
@@ -465,7 +513,10 @@ function pilihJawaban(answerId, opt, el){
     // submit ke server
     fetch('../api/submit_jawaban.php',{
         method:'POST',
-        headers:{'Content-Type':'application/json'},
+        headers:{
+            'Content-Type':'application/json',
+            'X-CSRF-Token': csrfToken
+        },
         body:JSON.stringify({answer_id:answerId,jawaban:opt})
     });
     // Auto-advance to next question
@@ -497,7 +548,10 @@ function pilihJawaban(answerId, opt, el){
             if (!confirm(msg)) return;
             fetch('../api/next_subtes.php',{
                 method:'POST',
-                headers:{'Content-Type':'application/json'},
+                headers:{
+                    'Content-Type':'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
                 body:JSON.stringify({session_id:sessionId, current_subtes:currentSub, next_subtes:nextSub})
             });
             currentSubtes = nextSub;
@@ -527,7 +581,10 @@ function nextSoal(){
         // Record transition via API
         fetch('../api/next_subtes.php',{
             method:'POST',
-            headers:{'Content-Type':'application/json'},
+            headers:{
+                'Content-Type':'application/json',
+                'X-CSRF-Token': csrfToken
+            },
             body:JSON.stringify({session_id:sessionId, current_subtes:currentSub, next_subtes:nextSub})
         });
         currentSubtes = nextSub;
@@ -602,9 +659,48 @@ function toggleMark(){
     // Send revision flag to server
     fetch('../api/mark_revision.php',{
         method:'POST',
-        headers:{'Content-Type':'application/json'},
+        headers:{
+            'Content-Type':'application/json',
+            'X-CSRF-Token': csrfToken
+        },
         body:JSON.stringify({question_id:s.question_id, needs_revision:marked[s.answer_id]?1:0})
     });
+}
+
+// --- BOOKMARK/FAVORIT ---
+async function toggleBookmark(){
+    const s = soal[currentIdx];
+    const isBookmarked = bookmarked[s.question_id];
+    const action = isBookmarked ? 'remove' : 'add';
+    
+    const formData = new FormData();
+    formData.append('question_id', s.question_id);
+    formData.append('action', action);
+    
+    try {
+        const res = await fetch('../api/bookmark_question.php', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-Token': csrfToken
+            },
+            body: formData
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            bookmarked[s.question_id] = !isBookmarked;
+            const btn = document.getElementById('btnBookmark');
+            if (btn) {
+                btn.style.background = bookmarked[s.question_id] ? '#f39c12' : '#9b59b6';
+                btn.textContent = bookmarked[s.question_id] ? '⭐ Tersimpan' : '⭐ Favorit';
+            }
+            showToast(bookmarked[s.question_id] ? 'Soal disimpan ke favorit' : 'Soal dihapus dari favorit', 'success');
+        } else {
+            showToast(data.error || 'Gagal menyimpan favorit', 'error');
+        }
+    } catch (e) {
+        showToast('Gagal menyimpan favorit', 'error');
+    }
 }
 
 // --- ANTI-CHEATING ---
@@ -697,13 +793,18 @@ function finishTryout(){
     clearLocalAnswers();
     fetch('../api/finish_tryout.php',{
         method:'POST',
-        headers:{'Content-Type':'application/json'},
+        headers:{
+            'Content-Type':'application/json',
+            'X-CSRF-Token': csrfToken
+        },
         body:JSON.stringify({session_id:sessionId})
     }).then(r=>r.json()).then(data=>{
         if(data.success) window.location.href = 'hasil.php?session_id='+sessionId;
         else alert(data.error);
     });
 }
+
+</script>
 
 <!-- Image Zoom Modal -->
 <div id="imgZoomModal" onclick="closeZoom()">

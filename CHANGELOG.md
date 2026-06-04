@@ -4,6 +4,29 @@ Format ini mengikuti [Keep a Changelog](https://keepachangelog.com/) dan [Semant
 
 ---
 
+## [UNRELEASED] — Development
+
+### Changed
+- **Login System** — Mengganti email dengan nomor HP sebagai identifier login
+- **User Registration** — Menambahkan field sekolah_asal dan tahun_tamat
+- **Database Migration v1.2** — Kolom baru: no_hp, sekolah_asal, tahun_tamat; email menjadi nullable
+
+### Added
+- **Quick Login (Development Only)** — Tombol quick login di halaman login untuk testing (HAPUS SAAT PRODUCTION)
+
+### Data Reset
+- Semua data user, tryout, dan related tables dihapus untuk implementasi sistem baru
+- Data user baru dibuat:
+  - Admin: 081234567890 (password: password)
+  - User: 081987654321 (password: password)
+
+### TODO (Production Checklist)
+- [ ] Hapus quick login di `pages/login.php` (baris 111-129)
+- [ ] Set `APP_ENV=production` di `.env`
+- [ ] Hapus atau comment fungsi backward compatibility email di login/helpers
+
+---
+
 ## [1.1.0] — 2026-06-03
 
 ### Added (25 Fitur Baru)

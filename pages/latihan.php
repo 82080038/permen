@@ -7,6 +7,9 @@ if (empty($_SESSION['user_id'])) {
 }
 $userId = $_SESSION['user_id'];
 
+// Ambil daftar instansi dengan passing grade untuk ditampilkan ke user
+$instansiList = $pdo->query("SELECT kode, nama, passing_twk, passing_tiu, passing_tkp, passing_total FROM instansi WHERE aktif = 1 ORDER BY passing_total DESC, urutan")->fetchAll();
+
 // Jika subtes dipilih, buat session latihan dan redirect ke tryout
 $subtes = $_GET['subtes'] ?? '';
 if ($subtes && in_array($subtes, ['TWK','TIU','TKP'])) {
@@ -65,9 +68,11 @@ if ($subtes && in_array($subtes, ['TWK','TIU','TKP'])) {
 .grid{grid-template-columns:1fr}
 .card{padding:1rem}
 }
+.skip-link:focus{top:0}
 </style>
 </head>
 <body>
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
 <div class="header">
 <h1>Latihan per Subtes — SKD CAT-BKN</h1>
 <div>
@@ -84,7 +89,7 @@ if ($subtes && in_array($subtes, ['TWK','TIU','TKP'])) {
 </nav>
 </div>
 </div>
-<div class="container">
+<div class="container" id="main-content">
 <div class="intro">
 <h2>Pilih Subtes Latihan</h2>
 <p>Latihan fokus pada satu subtes untuk memperkuat pemahaman Anda. Soal diambil dari bank soal aplikasi dan bisa digenerate otomatis.</p>
@@ -108,6 +113,41 @@ if ($subtes && in_array($subtes, ['TWK','TIU','TKP'])) {
 <div class="meta">45 soal &middot; 45 menit</div>
 <a href="?subtes=TKP">Mulai Latihan TKP</a>
 </div>
+</div>
+
+<!-- Passing Grade Instansi -->
+<div style="margin-top:1.5rem;background:#fff;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.08);padding:1.2rem">
+    <h3 style="color:#1a5276;margin-bottom:.8rem;font-size:1.1rem;text-align:center">📊 Passing Grade Instansi Sekolah Kedinasan</h3>
+    <p style="color:#555;font-size:.85rem;text-align:center;margin-bottom:1rem">Berikut ranking passing grade SKD untuk berbagai instansi. Hasil tryout Anda akan dibandingkan dengan standar ini.</p>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+    <thead>
+    <tr style="background:#1a5276;color:#fff">
+    <th style="padding:.6rem;text-align:left;border:1px solid #1a5276">Rank</th>
+    <th style="padding:.6rem;text-align:left;border:1px solid #1a5276">Instansi</th>
+    <th style="padding:.6rem;text-align:center;border:1px solid #1a5276">TWK</th>
+    <th style="padding:.6rem;text-align:center;border:1px solid #1a5276">TIU</th>
+    <th style="padding:.6rem;text-align:center;border:1px solid #1a5276">TKP</th>
+    <th style="padding:.6rem;text-align:center;border:1px solid #1a5276">Total</th>
+    </tr>
+    </thead>
+    <tbody>
+    <?php foreach ($instansiList as $idx => $ins): ?>
+    <tr style="<?= $idx % 2 === 0 ? 'background:#f8f9fa' : 'background:#fff' ?>">
+    <td style="padding:.6rem;border:1px solid #ddd;font-weight:bold"><?= $idx + 1 ?></td>
+    <td style="padding:.6rem;border:1px solid #ddd">
+    <div style="font-weight:bold;color:#1a5276"><?= e($ins['kode']) ?></div>
+    <div style="font-size:.75rem;color:#555"><?= e($ins['nama']) ?></div>
+    </td>
+    <td style="padding:.6rem;border:1px solid #ddd;text-align:center"><?= $ins['passing_twk'] ?></td>
+    <td style="padding:.6rem;border:1px solid #ddd;text-align:center"><?= $ins['passing_tiu'] ?></td>
+    <td style="padding:.6rem;border:1px solid #ddd;text-align:center"><?= $ins['passing_tkp'] ?></td>
+    <td style="padding:.6rem;border:1px solid #ddd;text-align:center;font-weight:bold;color:#2980b9"><?= $ins['passing_total'] ?></td>
+    </tr>
+    <?php endforeach; ?>
+    </tbody>
+    </table>
+    </div>
 </div>
 
 <!-- Latihan Personal -->

@@ -10,7 +10,7 @@ module.exports = defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: 'list',
   timeout: 60000,
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost/permen',

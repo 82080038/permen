@@ -69,9 +69,8 @@ foreach ($soal as $s) {
     }
 }
 
-echo json_encode([
-    'success' => true,
+echo json_encode(['success' => true, 'data' => [
     'soal' => $soal,
     'passages' => $passages,
     'stats' => $stats
-]);
+]]);

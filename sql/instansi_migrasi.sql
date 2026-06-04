@@ -19,21 +19,21 @@ CREATE TABLE instansi (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Seed data instansi sekolah kedinasan populer
--- Passing grade SKD adalah standar nasional, bedanya di seleksi kompetensi bidang
--- Data di bawah adalah ambang batas SKD umum + target nilai kompetitif
+-- Passing grade SKD 2024 (Permen PANRB No. 20 Tahun 2021 & KepmenPANRB No. 208/2025)
+-- Standar nasional: TWK 65, TIU 80, TKP 156, Total 301
 INSERT INTO instansi (kode, nama, passing_twk, passing_tiu, passing_tkp, passing_total, deskripsi, urutan) VALUES
-('STAN', 'Sekolah Tinggi Akuntansi Negara', 65, 80, 126, 271, 'Dibawah naungan Kementerian Keuangan. Lulusan menjadi CPNS di DJP, DJPK, BPK, dll.', 1),
-('STIS', 'Sekolah Tinggi Ilmu Statistik', 65, 80, 126, 271, 'Dibawah naungan BPS. Fokus statistik, data science, dan big data.', 2),
-('IPDN', 'Institut Pemerintahan Dalam Negeri', 65, 80, 126, 271, 'Dibawah naungan Kemendagri. Menyediakan aparatur sipil negara daerah.', 3),
-('STMKG', 'Sekolah Tinggi Meteorologi Klimatologi dan Geofisika', 65, 80, 126, 271, 'Dibawah naungan BMKG. Fokus cuaca, iklim, dan mitigasi bencana.', 4),
-('POLTEK_SSN', 'Politeknik Siber dan Sandi Negara', 65, 80, 126, 271, 'Dibawah naungan BSSN. Fokus keamanan siber dan kriptografi.', 5),
-('PTIK', 'Politeknik Ilmu Pemasyarakatan', 65, 80, 126, 271, 'Dibawah naungan Kemenkumham. Fokus pemasyarakatan dan pengawasan.', 6),
-('POLTEK_IMIGRASI', 'Politeknik Imigrasi', 65, 80, 126, 271, 'Dibawah naungan Kemenkumham. Fokus keimigrasian dan pengawasan perbatasan.', 7),
-('STIN', 'Sekolah Tinggi Intelijen Negara', 65, 80, 126, 271, 'Dibawah naungan BIN. Fokus intelijen dan analisis ancaman.', 8),
-('AKPOL', 'Akademi Kepolisian', 65, 80, 126, 271, 'Dibawah naungan Polri. Fokus penegakan hukum dan keamanan.', 9),
-('AKMIL', 'Akademi Militer', 65, 80, 126, 271, 'Dibawah naungan TNI AD. Fokus pertahanan dan kepemimpinan militer.', 10),
-('AAU', 'Akademi Angkatan Udara', 65, 80, 126, 271, 'Dibawah naungan TNI AU. Fokus penerbangan dan pertahanan udara.', 11),
-('AAL', 'Akademi Angkatan Laut', 65, 80, 126, 271, 'Dibawah naungan TNI AL. Fokus kelautan dan pertahanan laut.', 12);
+('STAN', 'Sekolah Tinggi Akuntansi Negara', 65, 80, 156, 301, 'Dibawah naungan Kementerian Keuangan. Lulusan menjadi CPNS di DJP, DJPK, BPK, dll.', 1),
+('STIS', 'Sekolah Tinggi Ilmu Statistik', 65, 80, 156, 301, 'Dibawah naungan BPS. Fokus statistik, data science, dan big data.', 2),
+('IPDN', 'Institut Pemerintahan Dalam Negeri', 65, 80, 156, 301, 'Dibawah naungan Kemendagri. Menyediakan aparatur sipil negara daerah.', 3),
+('STMKG', 'Sekolah Tinggi Meteorologi Klimatologi dan Geofisika', 65, 80, 156, 301, 'Dibawah naungan BMKG. Fokus cuaca, iklim, dan mitigasi bencana.', 4),
+('POLTEK_SSN', 'Politeknik Siber dan Sandi Negara', 65, 80, 156, 301, 'Dibawah naungan BSSN. Fokus keamanan siber dan kriptografi.', 5),
+('PTIK', 'Politeknik Ilmu Pemasyarakatan', 65, 80, 156, 301, 'Dibawah naungan Kemenkumham. Fokus pemasyarakatan dan pengawasan.', 6),
+('POLTEK_IMIGRASI', 'Politeknik Imigrasi', 65, 80, 156, 301, 'Dibawah naungan Kemenkumham. Fokus keimigrasian dan pengawasan perbatasan.', 7),
+('STIN', 'Sekolah Tinggi Intelijen Negara', 65, 80, 156, 301, 'Dibawah naungan BIN. Fokus intelijen dan analisis ancaman.', 8),
+('AKPOL', 'Akademi Kepolisian', 65, 80, 156, 301, 'Dibawah naungan Polri. Fokus penegakan hukum dan keamanan.', 9),
+('AKMIL', 'Akademi Militer', 65, 80, 156, 301, 'Dibawah naungan TNI AD. Fokus pertahanan dan kepemimpinan militer.', 10),
+('AAU', 'Akademi Angkatan Udara', 65, 80, 156, 301, 'Dibawah naungan TNI AU. Fokus penerbangan dan pertahanan udara.', 11),
+('AAL', 'Akademi Angkatan Laut', 65, 80, 156, 301, 'Dibawah naungan TNI AL. Fokus kelautan dan pertahanan laut.', 12);
 
 -- Update users yang punya instansi_pilihan → pindahkan ke instansi_id
 -- Pertama tambah kolom instansi_id ke users jika belum ada

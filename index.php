@@ -12,6 +12,10 @@
 .header{background:#1a5276;color:#fff;padding:.8rem 1rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:.5rem}
 .header h1{font-size:1.1rem;white-space:nowrap}.header nav{display:flex;flex-wrap:wrap;gap:.4rem .8rem}
 .header nav a{color:#fff;text-decoration:none;font-size:.85rem;white-space:nowrap;padding:.25rem 0}
+.hamburger{display:none;background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;padding:.5rem;min-width:44px;min-height:44px}
+.mobile-menu{display:none;position:absolute;top:100%;left:0;right:0;background:#1a5276;flex-direction:column;padding:1rem;gap:.5rem}
+.mobile-menu.active{display:flex}
+.skip-link:focus{top:0}
 .hero{background:#2980b9;color:#fff;text-align:center;padding:2.5rem 1rem}
 .hero h2{font-size:1.7rem;margin-bottom:.5rem}.hero p{font-size:1rem;opacity:.9}
 .cta{margin-top:1.2rem}.cta a{display:inline-block;background:#e74c3c;color:#fff;padding:.75rem 1.2rem;border-radius:5px;text-decoration:none;font-weight:bold;margin:.3rem;font-size:.95rem;min-width:44px;min-height:44px}
@@ -26,12 +30,18 @@
 .header h1{font-size:1rem}
 .cta a{display:block;width:100%;margin:.3rem 0}
 .features{grid-template-columns:1fr}
+.hamburger{display:block}
+.header nav{display:none}
+.mobile-menu{display:none}
+.mobile-menu.active{display:flex}
 }
 </style>
 </head>
 <body>
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
 <div class="header">
 <h1>SKD CAT-BKN</h1>
+<button class="hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
 <nav role="navigation" aria-label="Main navigation">
 <a href="pages/materi.php?subtes=TWK">Materi</a>
 <a href="pages/latihan.php">Latihan</a>
@@ -44,8 +54,20 @@
 <a href="pages/register.php">Daftar</a>
 <?php endif; ?>
 </nav>
+<div class="mobile-menu" role="navigation" aria-label="Mobile navigation">
+<a href="pages/materi.php?subtes=TWK">Materi</a>
+<a href="pages/latihan.php">Latihan</a>
+<a href="pages/tryout.php">Try Out</a>
+<?php if (!empty($_SESSION['user_id'])): ?>
+<a href="pages/user_dashboard.php">Dashboard</a>
+<a href="api/logout.php">Logout</a>
+<?php else: ?>
+<a href="pages/login.php">Login</a>
+<a href="pages/register.php">Daftar</a>
+<?php endif; ?>
 </div>
-<div class="hero">
+</div>
+<div class="hero" id="main-content">
 <h2>Siapkan Diri untuk SKD Sekolah Kedinasan</h2>
 <p>Aplikasi Try Out & Bimbel berdasarkan Permen PANRB No. 20/2021 & KepmenPANRB No. 208/2025</p>
 <div class="cta">
@@ -81,11 +103,24 @@ Dibangun berdasarkan Peraturan Menteri PANRB No. 20 Tahun 2021.<br>
 Disclaimer: Aplikasi ini merupakan sarana latihan mandiri. Kelulusan ditentukan oleh BKN dan instansi terkait.
 </div>
 <script>
+// Mobile menu toggle
+const hamburger = document.querySelector('.hamburger');
+const mobileMenu = document.querySelector('.mobile-menu');
+if (hamburger && mobileMenu) {
+  hamburger.addEventListener('click', () => {
+    const isExpanded = hamburger.getAttribute('aria-expanded') === 'true';
+    hamburger.setAttribute('aria-expanded', !isExpanded);
+    mobileMenu.classList.toggle('active');
+  });
+}
+
+// Unregister existing service worker (cleanup)
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').then(() => {
-    console.log('Service Worker registered');
-  }).catch(err => {
-    console.log('SW registration failed:', err);
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    registrations.forEach(registration => {
+      registration.unregister();
+      console.log('Service Worker unregistered');
+    });
   });
 }
 </script>

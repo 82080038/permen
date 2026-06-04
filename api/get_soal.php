@@ -18,13 +18,65 @@
  * - 403: Session not found, not owned by user, or not active
  * - 200: Success
  */
-require '../config.php';
+// Disable ALL error output for API endpoints
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+error_reporting(0);
+
+// Start output buffer to catch any accidental HTML output
+ob_start();
+
+// Load environment variables without config.php error handlers
+require '../env_loader.php';
+
+$host    = $_ENV['DB_HOST']    ?? 'localhost';
+$db      = $_ENV['DB_NAME']    ?? 'skd_cat_bkn';
+$user    = $_ENV['DB_USER']    ?? 'root';
+$pass    = $_ENV['DB_PASS']    ?? '';
+$charset = $_ENV['DB_CHARSET']  ?? 'utf8mb4';
+
+$dsn = "mysql:host=$host;dbname=$db;charset=$charset;unix_socket=/opt/lampp/var/mysql/mysql.sock";
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES   => false,
+];
+
+try {
+    $pdo = new PDO($dsn, $user, $pass, $options);
+} catch (PDOException $e) {
+    ob_end_clean();
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['error' => 'Database connection failed']);
+    exit;
+}
+
+// Session configuration
+ini_set('session.gc_maxlifetime', 3600);
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_samesite', 'Lax');
+ini_set('session.use_strict_mode', 1);
+session_set_cookie_params([
+    'lifetime' => 3600,
+    'path' => '/',
+    'domain' => '',
+    'secure' => false,
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
+session_start();
+
+// Load helpers (but skip config.php to avoid HTML error handlers)
 require '../helpers.php';
+
 header('Content-Type: application/json; charset=utf-8');
 
 try {
     $sessionId = (int)($_GET['session_id'] ?? 0);
     $userId = (int)($_SESSION['user_id'] ?? 0);
+    
+    // Debug: Log session info
+    error_log("get_soal.php: session_id=$sessionId, user_id=$userId, session_user=" . ($_SESSION['user_id'] ?? 'none') . ", session_id=" . session_id());
     
     // API rate limiting
     $identifier = $userId > 0 ? "user_$userId" : $_SERVER['REMOTE_ADDR'];
@@ -97,14 +149,18 @@ try {
         
         // Collect all question IDs in a single query
         $allQuestionIds = [];
-        foreach (['TWK','TIU','TKP'] as $sub) {
+        foreach (array_keys($subtesConfig) as $sub) {
             $jumlah = isset($subtesConfig[$sub]) ? (int)$subtesConfig[$sub]['jumlah_soal'] : 30;
             if ($jumlah > 0) {
                 $stmt = $pdo->prepare("SELECT id FROM questions WHERE subtes = ? AND is_active = 1");
                 $stmt->execute([$sub]);
                 $soalIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                if (empty($soalIds)) {
+                    // Jika tidak ada soal untuk subtes ini, skip
+                    continue;
+                }
                 shuffle($soalIds);
-                $pilih = array_slice($soalIds, 0, $jumlah);
+                $pilih = array_slice($soalIds, 0, min($jumlah, count($soalIds)));
                 $allQuestionIds = array_merge($allQuestionIds, $pilih);
             }
         }
@@ -135,9 +191,17 @@ try {
         }
     }
 
-    echo json_encode(['session'=>$session, 'soal'=>$soal, 'passages'=>$passages]);
-} catch (Exception $e) {
+    // Clear any buffered HTML output before sending JSON
+    ob_end_clean();
+    echo json_encode(['success' => true, 'data' => ['session' => $session, 'soal' => $soal, 'passages' => $passages]]);
+} catch (PDOException $e) {
+    ob_end_clean();
     http_response_code(500);
-    echo json_encode(['error' => 'Terjadi kesalahan server']);
+    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    exit;
+} catch (Exception $e) {
+    ob_end_clean();
+    http_response_code(500);
+    echo json_encode(['error' => 'Terjadi kesalahan server: ' . $e->getMessage()]);
     exit;
 }

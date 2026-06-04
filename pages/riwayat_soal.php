@@ -111,9 +111,11 @@ $sum = $summary->fetch();
 .empty{color:#777;font-style:italic;text-align:center;padding:2rem}
 .footer{text-align:center;padding:1.2rem;color:#777;font-size:.85rem;margin-top:1.5rem}
 @media(max-width:600px){.filter-bar{flex-direction:column;align-items:stretch}.filter-bar>*{width:100%}}
+.skip-link:focus{top:0}
 </style>
 </head>
 <body>
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
 <div class="header">
 <h1>Riwayat Soal — SKD CAT-BKN</h1>
 <div>
@@ -124,7 +126,7 @@ $sum = $summary->fetch();
 </div>
 </div>
 
-<div class="container">
+<div class="container" id="main-content">
 <!-- Summary -->
 <div class="summary">
     <div class="sum-card benar"><div class="num"><?= $sum['benar'] ?? 0 ?></div><div class="label">Benar</div></div>
@@ -154,7 +156,7 @@ $sum = $summary->fetch();
             <option value="salah" <?= $filterStatus === 'salah' ? 'selected' : '' ?>>Salah</option>
             <option value="kosong" <?= $filterStatus === 'kosong' ? 'selected' : '' ?>>Kosong</option>
         </select>
-        <button type="submit">Filter</button>
+        <button type="submit" aria-label="Filter riwayat soal">Filter</button>
         <a href="riwayat_soal.php" style="color:#666;font-size:.9rem;text-decoration:none;margin-left:.3rem">Reset</a>
     </form>
 </div>
@@ -195,7 +197,7 @@ $sum = $summary->fetch();
     <?php endforeach; ?>
 
     <div style="margin-top:.4rem">
-        <button class="toggle-btn" onclick="togglePembahasan(<?= $r['answer_id'] ?>)">Lihat Pembahasan & Tips</button>
+        <button class="toggle-btn" onclick="togglePembahasan(<?= $r['answer_id'] ?>)" aria-label="Lihat pembahasan dan tips untuk soal ini">Lihat Pembahasan & Tips</button>
         <a href="materi.php?subtes=<?= $r['subtes'] ?>" style="font-size:.85rem;color:#2980b9;text-decoration:none;margin-left:.5rem">Latih Topik Ini &rarr;</a>
     </div>
 

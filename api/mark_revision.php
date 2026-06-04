@@ -1,11 +1,19 @@
 <?php
 require '../config.php';
+require '../helpers.php';
 header('Content-Type: application/json; charset=utf-8');
 
 // Guard: logged-in user
 if (empty($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['error' => 'Login diperlukan']);
+    exit;
+}
+
+// CSRF validation
+if (!validateCsrfApi()) {
+    http_response_code(403);
+    echo json_encode(['error' => 'CSRF token tidak valid']);
     exit;
 }
 

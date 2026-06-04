@@ -24,22 +24,56 @@ function validateCsrf(string $token): bool
 }
 
 /**
+ * Validate CSRF token for API endpoints (double submit cookie pattern)
+ * @return bool True if valid, false otherwise
+ */
+function validateCsrfApi(): bool
+{
+    $headers = getallheaders();
+    $token = $headers['X-CSRF-Token'] ?? $headers['X-CSRF-Token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    
+    if (empty($token)) {
+        return false;
+    }
+    
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+/**
+ * Get CSRF token for API clients
+ * @return string CSRF token
+ */
+function getCsrfTokenForApi(): string
+{
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/**
  * Rate limiting: cek apakah IP masih diizinkan login (max 5 per 15 menit)
  * Uses database for storage instead of file system for better security
  */
 function checkRateLimit(string $ip, PDO $pdo): bool
 {
     global $pdo;
-    $stmt = $pdo->prepare("SELECT count, created_at FROM rate_limits WHERE ip = ? ORDER BY created_at DESC LIMIT 1");
-    $stmt->execute([$ip]);
-    $data = $stmt->fetch();
-    
-    if (!$data || time() - strtotime($data['created_at']) > 900) {
-        // Reset if expired or doesn't exist
+    try {
+        $stmt = $pdo->prepare("SELECT count, created_at FROM rate_limits WHERE ip = ? ORDER BY created_at DESC LIMIT 1");
+        $stmt->execute([$ip]);
+        $data = $stmt->fetch();
+        
+        if (!$data || time() - strtotime($data['created_at']) > 900) {
+            // Reset if expired or doesn't exist
+            return true;
+        }
+        
+        return $data['count'] < 5;
+    } catch (PDOException $e) {
+        // If table doesn't exist, allow the request (fail open for development)
+        error_log("Rate limit table error: " . $e->getMessage());
         return true;
     }
-    
-    return $data['count'] < 5;
 }
 
 /**
@@ -49,19 +83,107 @@ function checkRateLimit(string $ip, PDO $pdo): bool
 function incrementRateLimit(string $ip, PDO $pdo): void
 {
     global $pdo;
-    $stmt = $pdo->prepare("SELECT count, created_at FROM rate_limits WHERE ip = ? ORDER BY created_at DESC LIMIT 1");
-    $stmt->execute([$ip]);
-    $data = $stmt->fetch();
-    
-    if (!$data || time() - strtotime($data['created_at']) > 900) {
-        // Reset if expired or doesn't exist
-        $stmt = $pdo->prepare("INSERT INTO rate_limits (ip, count, created_at) VALUES (?, 1, NOW())");
+    try {
+        $stmt = $pdo->prepare("SELECT count, created_at FROM rate_limits WHERE ip = ? ORDER BY created_at DESC LIMIT 1");
         $stmt->execute([$ip]);
-    } else {
-        // Increment
-        $stmt = $pdo->prepare("UPDATE rate_limits SET count = count + 1 WHERE ip = ? AND created_at = ?");
-        $stmt->execute([$ip, $data['created_at']]);
+        $data = $stmt->fetch();
+        
+        if (!$data || time() - strtotime($data['created_at']) > 900) {
+            // Reset if expired or doesn't exist
+            $stmt = $pdo->prepare("INSERT INTO rate_limits (ip, count, created_at) VALUES (?, 1, NOW())");
+            $stmt->execute([$ip]);
+        } else {
+            // Increment
+            $stmt = $pdo->prepare("UPDATE rate_limits SET count = count + 1 WHERE ip = ? AND created_at = ?");
+            $stmt->execute([$ip, $data['created_at']]);
+        }
+    } catch (PDOException $e) {
+        // If table doesn't exist, silently fail (fail open for development)
+        error_log("Rate limit increment error: " . $e->getMessage());
     }
+}
+
+/**
+ * Check if account is locked due to too many failed attempts
+ * @param string $identifier User no_hp (or email for backward compatibility)
+ * @param PDO $pdo Database connection
+ * @return array ['locked' => bool, 'remaining_time' => int]
+ */
+function checkAccountLockout(string $identifier, PDO $pdo): array
+{
+    global $pdo;
+    
+    // Try no_hp first, fallback to email for backward compatibility
+    $stmt = $pdo->prepare("SELECT failed_attempts, lockout_until FROM users WHERE no_hp = ? OR email = ?");
+    $stmt->execute([$identifier, $identifier]);
+    $user = $stmt->fetch();
+    
+    if (!$user) {
+        return ['locked' => false, 'remaining_time' => 0];
+    }
+    
+    // Check if account is currently locked
+    if ($user['lockout_until'] && strtotime($user['lockout_until']) > time()) {
+        $remainingTime = strtotime($user['lockout_until']) - time();
+        return ['locked' => true, 'remaining_time' => $remainingTime];
+    }
+    
+    // Reset lockout if expired
+    if ($user['lockout_until'] && strtotime($user['lockout_until']) <= time()) {
+        $stmt = $pdo->prepare("UPDATE users SET failed_attempts = 0, lockout_until = NULL WHERE no_hp = ? OR email = ?");
+        $stmt->execute([$identifier, $identifier]);
+    }
+    
+    return ['locked' => false, 'remaining_time' => 0];
+}
+
+/**
+ * Increment failed login attempts and lock account if threshold reached
+ * @param string $identifier User no_hp (or email for backward compatibility)
+ * @param PDO $pdo Database connection
+ * @return void
+ */
+function incrementFailedAttempts(string $identifier, PDO $pdo): void
+{
+    global $pdo;
+    
+    $maxAttempts = 5;
+    $lockoutDuration = 15; // minutes
+    
+    $stmt = $pdo->prepare("SELECT failed_attempts FROM users WHERE no_hp = ? OR email = ?");
+    $stmt->execute([$identifier, $identifier]);
+    $user = $stmt->fetch();
+    
+    if (!$user) {
+        return;
+    }
+    
+    $newAttempts = ($user['failed_attempts'] ?? 0) + 1;
+    
+    if ($newAttempts >= $maxAttempts) {
+        // Lock account
+        $lockoutUntil = date('Y-m-d H:i:s', time() + ($lockoutDuration * 60));
+        $stmt = $pdo->prepare("UPDATE users SET failed_attempts = ?, lockout_until = ? WHERE no_hp = ? OR email = ?");
+        $stmt->execute([$newAttempts, $lockoutUntil, $identifier, $identifier]);
+    } else {
+        // Just increment attempts
+        $stmt = $pdo->prepare("UPDATE users SET failed_attempts = ? WHERE no_hp = ? OR email = ?");
+        $stmt->execute([$newAttempts, $identifier, $identifier]);
+    }
+}
+
+/**
+ * Reset failed login attempts after successful login
+ * @param string $identifier User no_hp (or email for backward compatibility)
+ * @param PDO $pdo Database connection
+ * @return void
+ */
+function resetFailedAttempts(string $identifier, PDO $pdo): void
+{
+    global $pdo;
+    
+    $stmt = $pdo->prepare("UPDATE users SET failed_attempts = 0, lockout_until = NULL WHERE no_hp = ? OR email = ?");
+    $stmt->execute([$identifier, $identifier]);
 }
 
 /**
@@ -107,7 +229,29 @@ function appLog(string $message, string $level = 'info'): void
 }
 
 /**
- * Validasi format email sederhana
+ * Validasi format nomor HP Indonesia
+ * Format: 08xx atau 628xx, minimal 10 digit, maksimal 14 digit
+ */
+function isValidPhoneNumber(string $phone): bool
+{
+    // Hapus karakter non-digit
+    $phone = preg_replace('/[^0-9]/', '', $phone);
+    
+    // Cek panjang (10-14 digit)
+    if (strlen($phone) < 10 || strlen($phone) > 14) {
+        return false;
+    }
+    
+    // Cek format: harus dimulai dengan 08 atau 628
+    if (!preg_match('/^08[0-9]+$/', $phone) && !preg_match('/^628[0-9]+$/', $phone)) {
+        return false;
+    }
+    
+    return true;
+}
+
+/**
+ * Validasi format email sederhana (deprecated, gunakan isValidPhoneNumber)
  */
 function isValidEmail(string $email): bool
 {
@@ -136,6 +280,10 @@ function validatePasswordStrength(string $password): array
     
     if (!preg_match('/[0-9]/', $password)) {
         return ['valid' => false, 'error' => 'Password harus mengandung minimal 1 angka'];
+    }
+    
+    if (!preg_match('/[!@#$%^&*(),.?":{}|<>]/', $password)) {
+        return ['valid' => false, 'error' => 'Password harus mengandung minimal 1 karakter spesial (!@#$%^&*(),.?":{}|<>)'];
     }
     
     return ['valid' => true, 'error' => ''];
@@ -190,89 +338,6 @@ function generateVerificationToken(): string
 }
 
 /**
- * Send verification email
- * @param string $email User email
- * @param string $token Verification token
- * @return bool Success status
- */
-function sendVerificationEmail(string $email, string $token): bool
-{
-    // Generate verification link
-    $baseUrl = getBaseUrl();
-    $verificationLink = $baseUrl . '/pages/verify_email.php?token=' . $token;
-    
-    $subject = 'Verifikasi Email - SKD CAT-BKN';
-    $message = "
-    <html>
-    <head>
-    <title>Verifikasi Email</title>
-    </head>
-    <body>
-    <h2>Selamat Datang di SKD CAT-BKN</h2>
-    <p>Terima kasih telah mendaftar. Silakan verifikasi email Anda dengan mengklik link di bawah ini:</p>
-    <p><a href='$verificationLink' style='background:#2980b9;color:#fff;padding:10px 20px;text-decoration:none;border-radius:5px;display:inline-block'>Verifikasi Email</a></p>
-    <p>Atau copy dan paste link ini ke browser:</p>
-    <p style='word-break:break-all'>$verificationLink</p>
-    <p>Link ini akan kadaluarsa dalam 24 jam.</p>
-    <p>Jika Anda tidak mendaftar di SKD CAT-BKN, abaikan email ini.</p>
-    </body>
-    </html>
-    ";
-    
-    $headers = [
-        'MIME-Version: 1.0',
-        'Content-type: text/html; charset=UTF-8',
-        'From: SKD CAT-BKN <noreply@skdcatbkn.com>',
-        'Reply-To: noreply@skdcatbkn.com'
-    ];
-    
-    // Note: This requires proper SMTP configuration in php.ini
-    // For production, use PHPMailer or similar library
-    return mail($email, $subject, $message, implode("\r\n", $headers));
-}
-
-/**
- * Send password reset email
- * @param string $email User email
- * @param string $token Reset token
- * @return bool Success status
- */
-function sendPasswordResetEmail(string $email, string $token): bool
-{
-    // Generate reset link
-    $baseUrl = getBaseUrl();
-    $resetLink = $baseUrl . '/pages/reset_password.php?token=' . $token;
-    
-    $subject = 'Reset Password - SKD CAT-BKN';
-    $message = "
-    <html>
-    <head>
-    <title>Reset Password</title>
-    </head>
-    <body>
-    <h2>Reset Password Anda</h2>
-    <p>Anda telah meminta reset password untuk akun SKD CAT-BKN Anda.</p>
-    <p>Silakan klik link di bawah ini untuk reset password:</p>
-    <p><a href='$resetLink' style='background:#e74c3c;color:#fff;padding:10px 20px;text-decoration:none;border-radius:5px;display:inline-block'>Reset Password</a></p>
-    <p>Atau copy dan paste link ini ke browser:</p>
-    <p style='word-break:break-all'>$resetLink</p>
-    <p>Link ini akan kadaluarsa dalam 1 jam.</p>
-    <p>Jika Anda tidak meminta reset password, abaikan email ini dan password Anda tidak akan diubah.</p>
-    </body>
-    </html>
-    ";
-    
-    $headers = [
-        'MIME-Version: 1.0',
-        'Content-type: text/html; charset=UTF-8',
-        'From: SKD CAT-BKN <noreply@skdcatbkn.com>',
-        'Reply-To: noreply@skdcatbkn.com'
-    ];
-    
-    return mail($email, $subject, $message, implode("\r\n", $headers));
-}
-
-/**
  * Log admin action to audit log
  * @param int $userId User ID
  * @param string $action Action performed
@@ -295,6 +360,31 @@ function logAdminAction(int $userId, string $action, ?string $entityType = null,
     } catch (Exception $e) {
         // Log error but don't fail the operation
         error_log("Failed to log admin action: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Log user action to audit trail
+ * @param int $userId User ID performing the action
+ * @param string $action Action description (e.g., 'login', 'logout', 'start_tryout', 'submit_answer')
+ * @param string|null $details Additional details
+ * @return bool Success status
+ */
+function logUserAction(int $userId, string $action, ?string $details = null): bool
+{
+    global $pdo;
+    
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+    
+    try {
+        $stmt = $pdo->prepare("INSERT INTO user_audit_logs (user_id, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$userId, $action, $details, $ip, $userAgent]);
+        return true;
+    } catch (Exception $e) {
+        // Log error but don't fail the operation
+        error_log("Failed to log user action: " . $e->getMessage());
         return false;
     }
 }

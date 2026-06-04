@@ -4,6 +4,119 @@
  */
 
 /**
+ * Global error handler for JavaScript errors
+ */
+window.addEventListener('error', function (event) {
+    console.error('JavaScript Error:', event.error);
+
+    // Log error to server if available
+    if (typeof logErrorToServer === 'function') {
+        logErrorToServer({
+            message: event.error.message,
+            filename: event.filename,
+            lineno: event.lineno,
+            colno: event.colno,
+            stack: event.error.stack
+        });
+    }
+
+    // Show user-friendly error message
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = 'background:#f8d7da;color:#721c24;padding:1rem;border-radius:5px;margin:1rem;position:fixed;top:10px;right:10px;z-index:9999;max-width:300px;';
+    errorDiv.innerHTML = '<strong>Terjadi kesalahan.</strong> Silakan refresh halaman.';
+    document.body.appendChild(errorDiv);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => errorDiv.remove(), 5000);
+});
+
+/**
+ * Global unhandled promise rejection handler
+ */
+window.addEventListener('unhandledrejection', function (event) {
+    console.error('Unhandled Promise Rejection:', event.reason);
+
+    // Log error to server if available
+    if (typeof logErrorToServer === 'function') {
+        logErrorToServer({
+            message: 'Unhandled Promise Rejection',
+            reason: event.reason?.toString() || 'Unknown reason',
+            stack: event.reason?.stack || ''
+        });
+    }
+});
+
+/**
+ * Show toast notification
+ * @param {string} message - Message to display
+ * @param {string} type - Type: 'success', 'error', 'info', 'warning'
+ * @param {number} duration - Duration in milliseconds (default: 3000)
+ */
+function showToast(message, type = 'info', duration = 3000) {
+    // Remove existing toast
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) existingToast.remove();
+
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+
+    // Set colors based on type
+    const colors = {
+        success: { bg: '#d4edda', color: '#155724', icon: '✓' },
+        error: { bg: '#f8d7da', color: '#721c24', icon: '✕' },
+        warning: { bg: '#fff3cd', color: '#856404', icon: '⚠' },
+        info: { bg: '#d1ecf1', color: '#0c5460', icon: 'ℹ' }
+    };
+    const style = colors[type] || colors.info;
+
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${style.bg};
+        color: ${style.color};
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        max-width: 350px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        animation: slideIn 0.3s ease-out;
+        font-size: 0.9rem;
+    `;
+
+    toast.innerHTML = `<span style="font-size: 1.2rem; font-weight: bold;">${style.icon}</span><span>${escapeHtml(message)}</span>`;
+
+    // Add animation keyframes if not exists
+    if (!document.querySelector('#toast-animations')) {
+        const styleSheet = document.createElement('style');
+        styleSheet.id = 'toast-animations';
+        styleSheet.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+    }
+
+    document.body.appendChild(toast);
+
+    // Auto-remove after duration
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+/**
  * Escape HTML untuk mencegah XSS saat render konten dinamis
  */
 function escapeHtml(text) {
@@ -68,18 +181,38 @@ function showFieldError(field, message) {
     // Remove existing error
     const existingError = field.parentElement.querySelector('.field-error');
     if (existingError) existingError.remove();
-    
+
     // Add error styling
     field.style.borderColor = '#e74c3c';
-    
+    field.style.backgroundColor = '#fef5f5';
+
     // Add error message
     const errorDiv = document.createElement('div');
     errorDiv.className = 'field-error';
-    errorDiv.style.color = '#e74c3c';
-    errorDiv.style.fontSize = '0.8rem';
-    errorDiv.style.marginTop = '0.3rem';
-    errorDiv.textContent = message;
+    errorDiv.style.cssText = `
+        color: #e74c3c;
+        font-size: 0.8rem;
+        margin-top: 0.3rem;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        animation: fadeIn 0.2s ease-out;
+    `;
+    errorDiv.innerHTML = `<span style="font-weight: bold;">⚠</span><span>${escapeHtml(message)}</span>`;
     field.parentElement.appendChild(errorDiv);
+
+    // Add animation keyframes if not exists
+    if (!document.querySelector('#field-error-animations')) {
+        const styleSheet = document.createElement('style');
+        styleSheet.id = 'field-error-animations';
+        styleSheet.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-5px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+    }
 }
 
 /**
@@ -90,6 +223,121 @@ function clearFieldError(field) {
     const existingError = field.parentElement.querySelector('.field-error');
     if (existingError) existingError.remove();
     field.style.borderColor = '#ddd';
+    field.style.backgroundColor = '#fff';
+}
+
+/**
+ * Show confirmation dialog
+ * @param {string} message - Confirmation message
+ * @param {string} title - Dialog title (default: 'Konfirmasi')
+ * @returns {Promise<boolean>} - User's choice (true = confirm, false = cancel)
+ */
+function confirmDialog(message, title = 'Konfirmasi') {
+    return new Promise((resolve) => {
+        // Remove existing dialog
+        const existingDialog = document.querySelector('.confirm-dialog-overlay');
+        if (existingDialog) existingDialog.remove();
+
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'confirm-dialog-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            animation: fadeIn 0.2s ease-out;
+        `;
+
+        // Create dialog
+        const dialog = document.createElement('div');
+        dialog.className = 'confirm-dialog';
+        dialog.style.cssText = `
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            animation: slideUp 0.2s ease-out;
+        `;
+
+        dialog.innerHTML = `
+            <h3 style="margin: 0 0 1rem 0; color: #1a5276; font-size: 1.1rem;">${escapeHtml(title)}</h3>
+            <p style="margin: 0 0 1.5rem 0; color: #555; line-height: 1.5;">${escapeHtml(message)}</p>
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <button class="confirm-cancel" style="
+                    padding: 0.6rem 1.2rem;
+                    border: 1px solid #ddd;
+                    background: #fff;
+                    color: #555;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 0.9rem;
+                ">Batal</button>
+                <button class="confirm-ok" style="
+                    padding: 0.6rem 1.2rem;
+                    border: none;
+                    background: #e74c3c;
+                    color: #fff;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 0.9rem;
+                ">Ya, Lanjutkan</button>
+            </div>
+        `;
+
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        // Add animation keyframes if not exists
+        if (!document.querySelector('#confirm-dialog-animations')) {
+            const styleSheet = document.createElement('style');
+            styleSheet.id = 'confirm-dialog-animations';
+            styleSheet.textContent = `
+                @keyframes slideUp {
+                    from { transform: translateY(20px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(styleSheet);
+        }
+
+        // Handle button clicks
+        dialog.querySelector('.confirm-cancel').addEventListener('click', () => {
+            overlay.remove();
+            resolve(false);
+        });
+
+        dialog.querySelector('.confirm-ok').addEventListener('click', () => {
+            overlay.remove();
+            resolve(true);
+        });
+
+        // Close on overlay click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.remove();
+                resolve(false);
+            }
+        });
+
+        // Close on Escape key
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                overlay.remove();
+                resolve(false);
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+    });
 }
 
 /**
@@ -102,6 +350,107 @@ function toggleDarkMode() {
 }
 
 /**
+ * Show skeleton loading for a container
+ * @param {HTMLElement} container - Container to show skeleton in
+ * @param {number} count - Number of skeleton items to show
+ */
+function showSkeletonLoading(container, count = 3) {
+    const skeletonHTML = Array(count).fill(0).map(() => `
+        <div class="skeleton-card" style="
+            background: #f0f0f0;
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            animation: skeleton-pulse 1.5s ease-in-out infinite;
+        ">
+            <div class="skeleton-title" style="
+                height: 20px;
+                background: #e0e0e0;
+                border-radius: 4px;
+                margin-bottom: 0.8rem;
+                width: 60%;
+            "></div>
+            <div class="skeleton-line" style="
+                height: 14px;
+                background: #e0e0e0;
+                border-radius: 4px;
+                margin-bottom: 0.5rem;
+                width: 100%;
+            "></div>
+            <div class="skeleton-line" style="
+                height: 14px;
+                background: #e0e0e0;
+                border-radius: 4px;
+                margin-bottom: 0.5rem;
+                width: 80%;
+            "></div>
+            <div class="skeleton-line" style="
+                height: 14px;
+                background: #e0e0e0;
+                border-radius: 4px;
+                width: 40%;
+            "></div>
+        </div>
+    `).join('');
+
+    container.innerHTML = skeletonHTML;
+
+    // Add animation keyframes if not exists
+    if (!document.querySelector('#skeleton-animations')) {
+        const styleSheet = document.createElement('style');
+        styleSheet.id = 'skeleton-animations';
+        styleSheet.textContent = `
+            @keyframes skeleton-pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+    }
+}
+
+/**
+ * Hide skeleton loading and show content
+ * @param {HTMLElement} container - Container to update
+ * @param {string} content - HTML content to show
+ */
+function hideSkeletonLoading(container, content) {
+    container.innerHTML = content;
+}
+
+/**
+ * Initialize mobile menu
+ */
+function initMobileMenu() {
+    const hamburger = document.querySelector('.hamburger');
+    const mobileMenu = document.querySelector('.mobile-menu');
+
+    if (hamburger && mobileMenu) {
+        hamburger.addEventListener('click', () => {
+            mobileMenu.classList.toggle('active');
+            hamburger.setAttribute('aria-expanded', mobileMenu.classList.contains('active'));
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!hamburger.contains(e.target) && !mobileMenu.contains(e.target)) {
+                mobileMenu.classList.remove('active');
+                hamburger.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        // Close menu on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && mobileMenu.classList.contains('active')) {
+                mobileMenu.classList.remove('active');
+                hamburger.setAttribute('aria-expanded', 'false');
+                hamburger.focus();
+            }
+        });
+    }
+}
+
+/**
  * Initialize dark mode based on preference
  */
 function initDarkMode() {
@@ -110,7 +459,7 @@ function initDarkMode() {
     if (savedMode === 'enabled') {
         document.body.classList.add('dark-mode');
     }
-    
+
     // Check system preference
     if (!savedMode && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         document.body.classList.add('dark-mode');
@@ -124,9 +473,9 @@ function initFormValidation() {
     // Register form
     const registerForm = document.querySelector('form[action="register.php"]');
     if (registerForm) {
-        registerForm.addEventListener('submit', function(e) {
+        registerForm.addEventListener('submit', function (e) {
             let isValid = true;
-            
+
             // Validate email
             const email = document.getElementById('email');
             if (email && !validateEmail(email.value)) {
@@ -135,11 +484,11 @@ function initFormValidation() {
             } else if (email) {
                 clearFieldError(email);
             }
-            
+
             // Validate password
             const password = document.getElementById('password');
             const password2 = document.getElementById('password2');
-            
+
             if (password) {
                 const pwdResult = validatePasswordStrength(password.value);
                 if (!pwdResult.valid) {
@@ -149,7 +498,7 @@ function initFormValidation() {
                     clearFieldError(password);
                 }
             }
-            
+
             // Validate password confirmation
             if (password && password2 && password.value !== password2.value) {
                 showFieldError(password2, 'Password dan konfirmasi tidak cocok');
@@ -157,19 +506,19 @@ function initFormValidation() {
             } else if (password2) {
                 clearFieldError(password2);
             }
-            
+
             if (!isValid) {
                 e.preventDefault();
             }
         });
     }
-    
+
     // Login form
     const loginForm = document.querySelector('form[action=""]');
     if (loginForm && !registerForm) {
-        loginForm.addEventListener('submit', function(e) {
+        loginForm.addEventListener('submit', function (e) {
             let isValid = true;
-            
+
             const email = document.getElementById('email');
             if (email && !validateEmail(email.value)) {
                 showFieldError(email, 'Format email tidak valid');
@@ -177,19 +526,19 @@ function initFormValidation() {
             } else if (email) {
                 clearFieldError(email);
             }
-            
+
             if (!isValid) {
                 e.preventDefault();
             }
         });
     }
-    
+
     // Forgot password form
     const forgotForm = document.querySelector('form[action="forgot_password.php"]');
     if (forgotForm) {
-        forgotForm.addEventListener('submit', function(e) {
+        forgotForm.addEventListener('submit', function (e) {
             let isValid = true;
-            
+
             const email = document.getElementById('email');
             if (email && !validateEmail(email.value)) {
                 showFieldError(email, 'Format email tidak valid');
@@ -197,22 +546,22 @@ function initFormValidation() {
             } else if (email) {
                 clearFieldError(email);
             }
-            
+
             if (!isValid) {
                 e.preventDefault();
             }
         });
     }
-    
+
     // Reset password form
     const resetForm = document.querySelector('form[action="reset_password.php"]');
     if (resetForm) {
-        resetForm.addEventListener('submit', function(e) {
+        resetForm.addEventListener('submit', function (e) {
             let isValid = true;
-            
+
             const password = document.getElementById('password');
             const password2 = document.getElementById('password2');
-            
+
             if (password) {
                 const pwdResult = validatePasswordStrength(password.value);
                 if (!pwdResult.valid) {
@@ -222,14 +571,14 @@ function initFormValidation() {
                     clearFieldError(password);
                 }
             }
-            
+
             if (password && password2 && password.value !== password2.value) {
                 showFieldError(password2, 'Password dan konfirmasi tidak cocok');
                 isValid = false;
             } else if (password2) {
                 clearFieldError(password2);
             }
-            
+
             if (!isValid) {
                 e.preventDefault();
             }
@@ -237,13 +586,202 @@ function initFormValidation() {
     }
 }
 
+/**
+ * Show progress indicator
+ * @param {string} message - Progress message
+ * @param {number} progress - Progress percentage (0-100)
+ */
+function showProgress(message, progress = 0) {
+    // Remove existing progress
+    const existingProgress = document.querySelector('.progress-indicator');
+    if (existingProgress) existingProgress.remove();
+
+    // Create progress indicator
+    const progressDiv = document.createElement('div');
+    progressDiv.className = 'progress-indicator';
+    progressDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #fff;
+        padding: 1.5rem 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        z-index: 10002;
+        min-width: 300px;
+        text-align: center;
+    `;
+
+    progressDiv.innerHTML = `
+        <div style="margin-bottom: 1rem; color: #555; font-size: 0.9rem;">${escapeHtml(message)}</div>
+        <div style="
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        ">
+            <div style="
+                background: #2980b9;
+                height: 100%;
+                width: ${progress}%;
+                transition: width 0.3s ease;
+            "></div>
+        </div>
+        <div style="color: #777; font-size: 0.8rem;">${progress}%</div>
+    `;
+
+    document.body.appendChild(progressDiv);
+
+    return {
+        update: (newProgress, newMessage) => {
+            const bar = progressDiv.querySelector('div > div > div');
+            const text = progressDiv.querySelector('div > div:last-child');
+            const msg = progressDiv.querySelector('div > div:first-child');
+            if (bar) bar.style.width = newProgress + '%';
+            if (text) text.textContent = newProgress + '%';
+            if (msg && newMessage) msg.textContent = newMessage;
+        },
+        close: () => {
+            progressDiv.remove();
+        }
+    };
+}
+
+/**
+ * Retry function for transient errors
+ * @param {Function} fn - Function to retry
+ * @param {number} maxRetries - Maximum number of retries (default: 3)
+ * @param {number} delay - Delay between retries in ms (default: 1000)
+ * @returns {Promise} - Promise that resolves when successful or rejects after max retries
+ */
+async function retry(fn, maxRetries = 3, delay = 1000) {
+    let lastError;
+
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            return await fn();
+        } catch (error) {
+            lastError = error;
+
+            // Don't retry on non-transient errors (4xx, 5xx except 429, 503, 504)
+            if (error.response) {
+                const status = error.response.status;
+                if (status >= 400 && status < 500 && status !== 429) {
+                    throw error;
+                }
+            }
+
+            // Wait before retrying (exponential backoff)
+            if (i < maxRetries - 1) {
+                await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+            }
+        }
+    }
+
+    throw lastError;
+}
+
+/**
+ * Fetch with retry for network requests
+ * @param {string} url - URL to fetch
+ * @param {object} options - Fetch options
+ * @param {number} maxRetries - Maximum retries
+ * @returns {Promise} - Fetch response
+ */
+async function fetchWithRetry(url, options = {}, maxRetries = 3) {
+    return retry(async () => {
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            const error = new Error(`HTTP error! status: ${response.status}`);
+            error.response = response;
+            throw error;
+        }
+
+        return response;
+    }, maxRetries);
+}
+
+/**
+ * Initialize keyboard shortcuts
+ */
+function initKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        // Don't trigger shortcuts when typing in input fields
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+            return;
+        }
+
+        // Alt + H: Go to homepage
+        if (e.altKey && e.key === 'h') {
+            e.preventDefault();
+            window.location.href = '/permen/index.php';
+        }
+
+        // Alt + L: Go to login
+        if (e.altKey && e.key === 'l') {
+            e.preventDefault();
+            window.location.href = '/permen/pages/login.php';
+        }
+
+        // Alt + D: Go to dashboard (if logged in)
+        if (e.altKey && e.key === 'd') {
+            e.preventDefault();
+            window.location.href = '/permen/pages/user_dashboard.php';
+        }
+
+        // Alt + T: Go to tryout
+        if (e.altKey && e.key === 't') {
+            e.preventDefault();
+            window.location.href = '/permen/pages/tryout.php';
+        }
+
+        // Alt + M: Go to materi
+        if (e.altKey && e.key === 'm') {
+            e.preventDefault();
+            window.location.href = '/permen/pages/materi.php?subtes=TWK';
+        }
+
+        // Alt + L: Go to latihan
+        if (e.altKey && e.key === 'L') {
+            e.preventDefault();
+            window.location.href = '/permen/pages/latihan.php';
+        }
+
+        // Escape: Close modals/menus
+        if (e.key === 'Escape') {
+            // Close mobile menu
+            const mobileMenu = document.querySelector('.mobile-menu');
+            if (mobileMenu && mobileMenu.classList.contains('active')) {
+                mobileMenu.classList.remove('active');
+                const hamburger = document.querySelector('.hamburger');
+                if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
+            }
+
+            // Close confirmation dialog
+            const dialog = document.querySelector('.confirm-dialog-overlay');
+            if (dialog) dialog.remove();
+
+            // Close toast
+            const toast = document.querySelector('.toast-notification');
+            if (toast) toast.remove();
+        }
+    });
+}
+
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         initFormValidation();
         initDarkMode();
+        initMobileMenu();
+        initKeyboardShortcuts();
     });
 } else {
     initFormValidation();
     initDarkMode();
+    initMobileMenu();
+    initKeyboardShortcuts();
 }

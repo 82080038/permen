@@ -13,7 +13,7 @@ $userName = e($_SESSION['user_nama'] ?? 'Peserta');
 $userRole = $_SESSION['user_role'] ?? 'user';
 
 // Fetch user info with instansi
-$stmt = $pdo->prepare("SELECT u.nama, u.email, u.instansi, u.instansi_id, i.kode as instansi_kode, i.nama as instansi_nama, i.deskripsi as instansi_desk 
+$stmt = $pdo->prepare("SELECT u.nama, u.no_hp, u.email, u.sekolah_asal, u.tahun_tamat, u.instansi, u.instansi_id, i.kode as instansi_kode, i.nama as instansi_nama, i.deskripsi as instansi_desk 
     FROM users u LEFT JOIN instansi i ON u.instansi_id = i.id WHERE u.id = ?");
 $stmt->execute([$userId]);
 $userInfo = $stmt->fetch();
@@ -131,6 +131,7 @@ tr:hover{background:#f8f9fa}
 @media(max-width:380px){
 .stats{grid-template-columns:1fr}
 }
+.skip-link:focus{top:0}
 .topic-bar{margin-bottom:.8rem}
 .topic-bar-header{display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.2rem}
 .topic-bar-track{background:#e9ecef;border-radius:10px;height:20px;overflow:hidden}
@@ -140,13 +141,26 @@ tr:hover{background:#f8f9fa}
 </style>
 </head>
 <body>
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
 <div class="header">
 <h1>Dashboard Peserta — SKD CAT-BKN</h1>
-<div>
+<div style="display:flex;align-items:center;gap:.4rem .8rem;flex-wrap:wrap">
+<div style="position:relative">
+<button onclick="toggleNotifications()" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;padding:.4rem;min-width:44px;min-height:44px" aria-label="Notifikasi">
+🔔
+<span id="notifBadge" style="position:absolute;top:0;right:0;background:#e74c3c;color:#fff;font-size:.7rem;padding:.1rem .4rem;border-radius:10px;display:none">0</span>
+</button>
+<div id="notifDropdown" style="display:none;position:absolute;top:100%;right:0;background:#fff;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15);min-width:300px;max-height:400px;overflow-y:auto;z-index:1000">
+<div id="notifList" style="padding:1rem">
+<p style="color:#666;font-size:.85rem">Memuat notifikasi...</p>
+</div>
+</div>
+</div>
 <a href="../index.php">Beranda</a>
 <a href="latihan.php">Latihan</a>
 <a href="tryout.php">Try Out</a>
 <a href="leaderboard.php">Leaderboard</a>
+<a href="feedback.php">Feedback</a>
 <?php if ($userRole === 'admin'): ?>
 <a href="admin_dashboard.php">Admin</a>
 <?php endif; ?>
@@ -154,10 +168,14 @@ tr:hover{background:#f8f9fa}
 </div>
 </div>
 
-<div class="container">
+<div class="container" id="main-content">
 <div class="welcome">
 <h2>Selamat datang, <?= $userName ?>!</h2>
 <p>
+<strong>Nomor HP:</strong> <?= e($userInfo['no_hp'] ?? '-') ?><br>
+<?php if ($userInfo['sekolah_asal']): ?>
+<strong>Sekolah Asal:</strong> <?= e($userInfo['sekolah_asal']) ?> (<?= e($userInfo['tahun_tamat'] ?? '-') ?>)<br>
+<?php endif; ?>
 <?php if ($userInfo['instansi_nama']): ?>
 <strong>Instansi Pilihan:</strong> <?= e($userInfo['instansi_kode']) ?> — <?= e($userInfo['instansi_nama']) ?><br>
 <small style="color:#666"><?= e($userInfo['instansi_desk'] ?? '') ?></small>
@@ -184,18 +202,236 @@ tr:hover{background:#f8f9fa}
 <div class="stat"><div class="num" style="color:#e74c3c"><?= $subtesTerlemah ?></div><div class="label">Subtes Terlemah</div></div>
 </div>
 
-<?php if (!empty($selesai)): ?>
+<?php if (empty($selesai)): ?>
+<!-- Empty State -->
+<div class="section" style="text-align:center;padding:3rem 1rem">
+<div style="font-size:3rem;margin-bottom:1rem">📊</div>
+<h3 style="color:#555;margin-bottom:.5rem">Belum ada data tryout</h3>
+<p style="color:#777;font-size:.9rem;margin-bottom:1.5rem">Mulai tryout pertama Anda untuk melihat grafik progress dan analisis performa.</p>
+<a href="tryout.php" class="btn" style="background:#2980b9;color:#fff;text-decoration:none;padding:.75rem 1.5rem;border-radius:5px;display:inline-block">Mulai Try Out</a>
+</div>
+<?php else: ?>
 <!-- Progress Chart -->
 <div class="section">
 <h2>Grafik Progress</h2>
 <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
-    <button class="btn" style="font-size:.8rem" onclick="drawChart('total')">Total</button>
-    <button class="btn" style="font-size:.8rem" onclick="drawChart('tkp')">TKP</button>
-    <button class="btn" style="font-size:.8rem" onclick="drawChart('tiu')">TIU</button>
-    <button class="btn" style="font-size:.8rem" onclick="drawChart('twk')">TWK</button>
+    <button class="btn" style="font-size:.8rem" onclick="drawChart('total')" aria-label="Tampilkan grafik total skor">Total</button>
+    <button class="btn" style="font-size:.8rem" onclick="drawChart('tkp')" aria-label="Tampilkan grafik skor TKP">TKP</button>
+    <button class="btn" style="font-size:.8rem" onclick="drawChart('tiu')" aria-label="Tampilkan grafik skor TIU">TIU</button>
+    <button class="btn" style="font-size:.8rem" onclick="drawChart('twk')" aria-label="Tampilkan grafik skor TWK">TWK</button>
 </div>
 <canvas id="progressChart" width="900" height="300" style="max-width:100%;height:auto"></canvas>
 </div>
+
+<?php if (!empty($selesai)): ?>
+<!-- Subtes Distribution Pie Chart -->
+<div class="section">
+<h2>Distribusi Skor Subtes (Tryout Terakhir)</h2>
+<canvas id="pieChart" width="400" height="400" style="max-width:100%;height:auto;margin:0 auto;display:block"></canvas>
+<div style="display:flex;justify-content:center;gap:1.5rem;margin-top:1rem;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:16px;height:16px;background:#2980b9;border-radius:3px"></span><span style="font-size:.9rem">TWK</span></div>
+    <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:16px;height:16px;background:#e67e22;border-radius:3px"></span><span style="font-size:.9rem">TIU</span></div>
+    <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:16px;height:16px;background:#27ae60;border-radius:3px"></span><span style="font-size:.9rem">TKP</span></div>
+</div>
+</div>
+
+<script>
+// Notification System
+let notifDropdownOpen = false;
+
+async function loadNotifications() {
+    try {
+        const res = await fetch('../api/get_notifications.php?limit=10');
+        const data = await res.json();
+        
+        if (data.success) {
+            renderNotifications(data.notifications);
+            updateNotifBadge(data.unread_count);
+        }
+    } catch (e) {
+        console.error('Failed to load notifications:', e);
+    }
+}
+
+function renderNotifications(notifications) {
+    const list = document.getElementById('notifList');
+    
+    if (notifications.length === 0) {
+        list.innerHTML = '<p style="color:#777;font-size:.85rem;text-align:center;padding:1rem">Tidak ada notifikasi</p>';
+        return;
+    }
+    
+    const typeColors = {
+        'info': '#2980b9',
+        'success': '#27ae60',
+        'warning': '#f39c12',
+        'error': '#e74c3c'
+    };
+    
+    let html = '';
+    notifications.forEach(n => {
+        const bgColor = n.is_read ? '#f8f9fa' : '#eaf2f8';
+        html += `
+        <div style="background:${bgColor};padding:.8rem;border-bottom:1px solid #eee;cursor:pointer" onclick="openNotification(${n.id}, '${n.link || ''}')" class="notif-item" data-id="${n.id}">
+            <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
+                <span style="width:8px;height:8px;border-radius:50%;background:${typeColors[n.type]}"></span>
+                <span style="font-weight:bold;font-size:.85rem;color:#333">${escapeHtml(n.title)}</span>
+                ${!n.is_read ? '<span style="background:#2980b9;color:#fff;font-size:.65rem;padding:.1rem .3rem;border-radius:4px">Baru</span>' : ''}
+            </div>
+            <div style="font-size:.8rem;color:#555;margin-bottom:.3rem">${escapeHtml(n.message)}</div>
+            <div style="font-size:.7rem;color:#999">${new Date(n.created_at).toLocaleString('id-ID')}</div>
+        </div>
+        `;
+    });
+    
+    html += '<div style="padding:.5rem;text-align:center"><a href="#" onclick="markAllRead();return false" style="font-size:.8rem;color:#2980b9;text-decoration:none">Tandai semua sudah dibaca</a></div>';
+    list.innerHTML = html;
+}
+
+function updateNotifBadge(count) {
+    const badge = document.getElementById('notifBadge');
+    if (count > 0) {
+        badge.textContent = count > 9 ? '9+' : count;
+        badge.style.display = 'inline-block';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+function toggleNotifications() {
+    const dropdown = document.getElementById('notifDropdown');
+    notifDropdownOpen = !notifDropdownOpen;
+    dropdown.style.display = notifDropdownOpen ? 'block' : 'none';
+    
+    if (notifDropdownOpen) {
+        loadNotifications();
+    }
+}
+
+async function openNotification(id, link) {
+    // Mark as read
+    try {
+        const formData = new FormData();
+        formData.append('notification_id', id);
+        await fetch('../api/mark_notification_read.php', { method: 'POST', body: formData });
+    } catch (e) {}
+    
+    // Navigate if link exists
+    if (link) {
+        window.location.href = link;
+    }
+    
+    // Reload notifications
+    loadNotifications();
+}
+
+async function markAllRead() {
+    try {
+        const res = await fetch('../api/get_notifications.php?unread_only=true');
+        const data = await res.json();
+        
+        if (data.success && data.notifications.length > 0) {
+            for (const n of data.notifications) {
+                const formData = new FormData();
+                formData.append('notification_id', n.id);
+                await fetch('../api/mark_notification_read.php', { method: 'POST', body: formData });
+            }
+            loadNotifications();
+        }
+    } catch (e) {}
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('notifDropdown');
+    const button = e.target.closest('button[onclick="toggleNotifications()"]');
+    if (!button && notifDropdownOpen && !dropdown.contains(e.target)) {
+        notifDropdownOpen = false;
+        dropdown.style.display = 'none';
+    }
+});
+
+// Load notifications on page load
+document.addEventListener('DOMContentLoaded', loadNotifications);
+
+// Pie Chart
+const latestScore = end($selesai);
+const pieData = {
+    twk: (int)($latestScore['nilai_twk'] ?? 0),
+    tiu: (int)($latestScore['nilai_tiu'] ?? 0),
+    tkp: (int)($latestScore['nilai_tkp'] ?? 0)
+};
+
+function drawPieChart(){
+    const canvas = document.getElementById('pieChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    const centerX = w/2, centerY = h/2, radius = Math.min(w,h)/2 - 40;
+    
+    const total = pieData.twk + pieData.tiu + pieData.tkp;
+    if (total === 0) return;
+    
+    const data = [
+        { label: 'TWK', value: pieData.twk, color: '#2980b9' },
+        { label: 'TIU', value: pieData.tiu, color: '#e67e22' },
+        { label: 'TKP', value: pieData.tkp, color: '#27ae60' }
+    ];
+    
+    let startAngle = -Math.PI/2;
+    
+    data.forEach(item => {
+        const sliceAngle = (item.value / total) * 2 * Math.PI;
+        
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+        ctx.closePath();
+        ctx.fillStyle = item.color;
+        ctx.fill();
+        
+        // Draw label
+        const midAngle = startAngle + sliceAngle/2;
+        const labelX = centerX + Math.cos(midAngle) * (radius * 0.7);
+        const labelY = centerY + Math.sin(midAngle) * (radius * 0.7);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        if (item.value > 0) {
+            ctx.fillText(item.label, labelX, labelY - 8);
+            ctx.font = '12px Arial';
+            ctx.fillText(item.value, labelX, labelY + 8);
+        }
+        
+        startAngle += sliceAngle;
+    });
+    
+    // Draw center circle (donut chart)
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius * 0.4, 0, 2 * Math.PI);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    
+    // Draw total in center
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Total', centerX, centerY - 10);
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText(total, centerX, centerY + 15);
+}
+
+drawPieChart();
+</script>
+<?php endif; ?>
 
 <script>
 const chartData = <?= json_encode(array_map(fn($r)=>[
@@ -261,7 +497,13 @@ drawChart('total');
 </script>
 <?php endif; ?>
 
-<?php if (!empty($topikStats)): ?>
+<?php if (empty($topikStats)): ?>
+<!-- Empty State for Topik Stats -->
+<div class="section" style="text-align:center;padding:2rem 1rem">
+<div style="font-size:2rem;margin-bottom:.5rem">📚</div>
+<p style="color:#777;font-size:.9rem">Selesaikan lebih banyak soal untuk melihat analisis akurasi per topik.</p>
+</div>
+<?php else: ?>
 <!-- Analisis Akurasi per Topik -->
 <div class="section">
 <h2>Analisis Akurasi per Topik</h2>

@@ -1,5 +1,6 @@
 <?php
 require '../config.php';
+require '../helpers.php';
 header('Content-Type: application/json; charset=utf-8');
 
 $userId = (int)($_SESSION['user_id'] ?? 0);
@@ -7,6 +8,27 @@ if (!$userId) {
     http_response_code(401);
     echo json_encode(['error' => 'Autentikasi diperlukan']);
     exit;
+}
+
+// CSRF validation
+if (!validateCsrfApi()) {
+    http_response_code(403);
+    echo json_encode(['error' => 'CSRF token tidak valid']);
+    exit;
+}
+
+// Skip rate limiting in development
+if (($_ENV['APP_ENV'] ?? 'development') !== 'production') {
+    // Skip rate limiting for testing
+} else {
+    // API rate limiting
+    $identifier = "user_$userId";
+    if (!checkAPIRateLimit($identifier, 'finish_tryout', 10, 60)) {
+        http_response_code(429);
+        echo json_encode(['error' => 'Rate limit exceeded. Please try again later.']);
+        exit;
+    }
+    logAPIRequest($identifier, 'finish_tryout');
 }
 
 $data = json_decode(file_get_contents('php://input'), true);
@@ -42,20 +64,23 @@ foreach ($subtesList as $sub) {
     }
 }
 
-// Minimum total waktu: jumlah durasi minimum (1 menit per subtes)
-$minSeconds = count($subtesList) * 60;
-if ($totalElapsed < $minSeconds) {
-    http_response_code(429);
-    echo json_encode(['error' => 'Waktu terlalu singkat. Mohon selesaikan tryout dengan wajar.']);
-    exit;
-}
+// Skip anti-cheat time validation in development
+if (($_ENV['APP_ENV'] ?? 'development') === 'production') {
+    // Minimum total waktu: jumlah durasi minimum (1 menit per subtes)
+    $minSeconds = count($subtesList) * 60;
+    if ($totalElapsed < $minSeconds) {
+        http_response_code(429);
+        echo json_encode(['error' => 'Waktu terlalu singkat. Mohon selesaikan tryout dengan wajar.']);
+        exit;
+    }
 
-// Maximum total waktu: sum durasi + toleransi 5 menit
-$maxTotalSeconds = array_sum(array_column($subtesList, 'durasi_menit')) * 60 + 300;
-if ($totalElapsed > $maxTotalSeconds) {
-    http_response_code(429);
-    echo json_encode(['error' => 'Waktu melebihi batas. Hasil tidak valid.']);
-    exit;
+    // Maximum total waktu: sum durasi + toleransi 5 menit
+    $maxTotalSeconds = array_sum(array_column($subtesList, 'durasi_menit')) * 60 + 300;
+    if ($totalElapsed > $maxTotalSeconds) {
+        http_response_code(429);
+        echo json_encode(['error' => 'Waktu melebihi batas. Hasil tidak valid.']);
+        exit;
+    }
 }
 
 // Hitung nilai per subtes
@@ -79,4 +104,4 @@ foreach ($nilai as $sub => $val) {
 $stmt = $pdo->prepare("UPDATE tryout_sessions SET nilai_tkp=?, nilai_tiu=?, nilai_twk=?, total_nilai=?, status='selesai', waktu_selesai=NOW() WHERE id=?");
 $stmt->execute([$nilai['TKP'], $nilai['TIU'], $nilai['TWK'], $total, $sessionId]);
 
-echo json_encode(['success'=>true, 'nilai'=>$nilai, 'total'=>$total]);
+echo json_encode(['success' => true, 'data' => ['nilai' => $nilai, 'total' => $total]]);

@@ -57,10 +57,28 @@ tr:hover{background:#f8f9fa}
 .link:hover{text-decoration:underline}
 .empty{color:#777;font-style:italic;text-align:center;padding:2rem}
 
-@media(max-width:600px){
-.main{flex-direction:column;padding:0 .6rem}
+/* Responsive Breakpoints */
+@media(max-width:1024px){
+.container{max-width:95%}
+.main{max-width:95%}
+}
+@media(max-width:768px){
+.header{flex-direction:column;align-items:flex-start}
+.header div{width:100%;justify-content:center}
+.header h1{text-align:center;width:100%}
+.main{flex-direction:column}
 .stats{grid-template-columns:repeat(2,1fr)}
+table{font-size:.8rem}
+}
+@media(max-width:600px){
+.main{padding:0 .6rem}
+.stats{grid-template-columns:repeat(2,1fr)}
+.header h1{font-size:1rem}
+.btn{padding:.5rem .8rem;font-size:.85rem}
 }
 @media(max-width:480px){
 .container{margin:1rem auto;padding:0 .8rem}
+.header{padding:.6rem .8rem}
+.card{padding:1rem}
+.form-group input,.form-group select{padding:.6rem .7rem;font-size:.85rem}
 }

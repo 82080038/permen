@@ -17,19 +17,78 @@ $stats['total_users'] = $pdo->query("SELECT COUNT(*) FROM users WHERE role='user
 $stats['total_tryout'] = $pdo->query("SELECT COUNT(*) FROM tryout_sessions")->fetchColumn();
 $stats['tryout_selesai'] = $pdo->query("SELECT COUNT(*) FROM tryout_sessions WHERE status='selesai'")->fetchColumn();
 
-// Users list
-$users = $pdo->query("SELECT id, nama, email, instansi, created_at FROM users WHERE role='user' ORDER BY created_at DESC")->fetchAll();
+// Users list with pagination
+$usersLimit = min(50, max(10, (int)($_GET['users_limit'] ?? 20)));
+$usersOffset = (int)($_GET['users_offset'] ?? 0);
 
-// Recent tryouts
-$tryouts = $pdo->query("SELECT ts.id, ts.nama, u.nama as peserta, ts.total_nilai, ts.status, ts.waktu_mulai 
+// Get total count
+$usersTotal = $pdo->query("SELECT COUNT(*) FROM users WHERE role='user'")->fetchColumn();
+
+// Get paginated users
+$users = $pdo->prepare("SELECT id, nama, no_hp, sekolah_asal, tahun_tamat, instansi, created_at FROM users WHERE role='user' ORDER BY created_at DESC LIMIT ? OFFSET ?");
+$users->execute([$usersLimit, $usersOffset]);
+$users = $users->fetchAll();
+
+// Calculate pagination metadata
+$usersTotalPages = ceil($usersTotal / $usersLimit);
+$usersCurrentPage = floor($usersOffset / $usersLimit) + 1;
+$usersHasNext = $usersCurrentPage < $usersTotalPages;
+$usersHasPrev = $usersCurrentPage > 1;
+
+// Recent tryouts with pagination
+$tryoutsLimit = min(50, max(10, (int)($_GET['tryouts_limit'] ?? 20)));
+$tryoutsOffset = (int)($_GET['tryouts_offset'] ?? 0);
+
+// Get total count
+$tryoutsTotal = $pdo->query("SELECT COUNT(*) FROM tryout_sessions")->fetchColumn();
+
+// Get paginated tryouts
+$tryouts = $pdo->prepare("SELECT ts.id, ts.nama, u.nama as peserta, ts.total_nilai, ts.status, ts.waktu_mulai 
     FROM tryout_sessions ts LEFT JOIN users u ON ts.user_id = u.id 
-    ORDER BY ts.id DESC LIMIT 20")->fetchAll();
+    ORDER BY ts.id DESC LIMIT ? OFFSET ?");
+$tryouts->execute([$tryoutsLimit, $tryoutsOffset]);
+$tryouts = $tryouts->fetchAll();
+
+// Calculate pagination metadata
+$tryoutsTotalPages = ceil($tryoutsTotal / $tryoutsLimit);
+$tryoutsCurrentPage = floor($tryoutsOffset / $tryoutsLimit) + 1;
+$tryoutsHasNext = $tryoutsCurrentPage < $tryoutsTotalPages;
+$tryoutsHasPrev = $tryoutsCurrentPage > 1;
 
 // Soal per subtes
 $soalPerSubtes = $pdo->query("SELECT subtes, COUNT(*) as jumlah FROM questions GROUP BY subtes")->fetchAll(PDO::FETCH_KEY_PAIR);
 
 // Subtes config
 $subtesConfig = $pdo->query("SELECT * FROM subtes_config ORDER BY urutan")->fetchAll();
+
+// Analytics data
+// User registration trend (last 30 days)
+$userTrend = $pdo->query("
+    SELECT DATE(created_at) as date, COUNT(*) as count 
+    FROM users 
+    WHERE role='user' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+    GROUP BY DATE(created_at)
+    ORDER BY date ASC
+")->fetchAll();
+
+// Tryout completion rate
+$tryoutStats = $pdo->query("
+    SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN status='selesai' THEN 1 ELSE 0 END) as completed,
+        AVG(CASE WHEN status='selesai' THEN total_nilai ELSE NULL END) as avg_score
+    FROM tryout_sessions
+")->fetch();
+
+// Average scores by subtes
+$avgScores = $pdo->query("
+    SELECT 
+        AVG(nilai_tkp) as avg_tkp,
+        AVG(nilai_tiu) as avg_tiu,
+        AVG(nilai_twk) as avg_twk
+    FROM tryout_sessions 
+    WHERE status='selesai'
+")->fetch();
 
 // Handle update subtes_config
 $updateMsg = '';
@@ -97,9 +156,11 @@ tr:hover{background:#f8f9fa}
 .stats{grid-template-columns:repeat(2,1fr)}
 .section{padding:1rem}
 }
+.skip-link:focus{top:0}
 </style>
 </head>
 <body>
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
 <div class="header">
 <h1>Dashboard Admin — SKD CAT-BKN</h1>
 <div>
@@ -109,7 +170,7 @@ tr:hover{background:#f8f9fa}
 </div>
 </div>
 
-<div class="container">
+<div class="container" id="main-content">
 <div class="stats">
 <div class="stat"><div class="num"><?= $stats['total_soal'] ?></div><div class="label">Total Soal</div></div>
 <div class="stat"><div class="num"><?= $stats['total_users'] ?></div><div class="label">Peserta</div></div>
@@ -121,6 +182,8 @@ tr:hover{background:#f8f9fa}
 </div>
 
 <div class="nav-tabs">
+<a href="#analytics" onclick="showTab('analytics')" id="tab-analytics">Analytics</a>
+<a href="#feedback" onclick="showTab('feedback')" id="tab-feedback">Feedback</a>
 <a href="#users" onclick="showTab('users')" id="tab-users" class="active">Peserta</a>
 <a href="#tryouts" onclick="showTab('tryouts')" id="tab-tryouts">Riwayat Tryout</a>
 <a href="#soal" onclick="showTab('soal')" id="tab-soal">Kelola Soal</a>
@@ -128,28 +191,149 @@ tr:hover{background:#f8f9fa}
 <a href="#config" onclick="showTab('config')" id="tab-config">Konfigurasi</a>
 </div>
 
+<div id="panel-analytics" class="section" style="display:none">
+<h2>Analytics Dashboard</h2>
+
+<!-- Tryout Completion Rate -->
+<div style="margin-bottom:1.5rem">
+<h3 style="color:#555;font-size:.95rem;margin-bottom:.5rem">Tryout Completion Rate</h3>
+<div style="display:flex;gap:1rem;flex-wrap:wrap">
+<div style="flex:1;min-width:200px;background:#f8f9fa;padding:1rem;border-radius:6px">
+<div style="font-size:.85rem;color:#666">Total Tryout</div>
+<div style="font-size:1.5rem;font-weight:bold;color:#2980b9"><?= $tryoutStats['total'] ?? 0 ?></div>
+</div>
+<div style="flex:1;min-width:200px;background:#f8f9fa;padding:1rem;border-radius:6px">
+<div style="font-size:.85rem;color:#666">Selesai</div>
+<div style="font-size:1.5rem;font-weight:bold;color:#27ae60"><?= $tryoutStats['completed'] ?? 0 ?></div>
+</div>
+<div style="flex:1;min-width:200px;background:#f8f9fa;padding:1rem;border-radius:6px">
+<div style="font-size:.85rem;color:#666">Completion Rate</div>
+<div style="font-size:1.5rem;font-weight:bold;color:#8e44ad"><?= $tryoutStats['total'] > 0 ? round(($tryoutStats['completed'] / $tryoutStats['total']) * 100, 1) : 0 ?>%</div>
+</div>
+<div style="flex:1;min-width:200px;background:#f8f9fa;padding:1rem;border-radius:6px">
+<div style="font-size:.85rem;color:#666">Rata-rata Skor</div>
+<div style="font-size:1.5rem;font-weight:bold;color:#e67e22"><?= round($tryoutStats['avg_score'] ?? 0, 1) ?></div>
+</div>
+</div>
+</div>
+
+<!-- Average Scores by Subtes -->
+<div style="margin-bottom:1.5rem">
+<h3 style="color:#555;font-size:.95rem;margin-bottom:.5rem">Rata-rata Skor per Subtes</h3>
+<div style="display:flex;gap:1rem;flex-wrap:wrap">
+<div style="flex:1;min-width:150px;background:#d4edda;padding:1rem;border-radius:6px;border-left:4px solid #27ae60">
+<div style="font-size:.85rem;color:#155724">TKP</div>
+<div style="font-size:1.3rem;font-weight:bold;color:#155724"><?= round($avgScores['avg_tkp'] ?? 0, 1) ?></div>
+</div>
+<div style="flex:1;min-width:150px;background:#fff3cd;padding:1rem;border-radius:6px;border-left:4px solid #f39c12">
+<div style="font-size:.85rem;color:#856404">TIU</div>
+<div style="font-size:1.3rem;font-weight:bold;color:#856404"><?= round($avgScores['avg_tiu'] ?? 0, 1) ?></div>
+</div>
+<div style="flex:1;min-width:150px;background:#d1ecf1;padding:1rem;border-radius:6px;border-left:4px solid #2980b9">
+<div style="font-size:.85rem;color:#0c5460">TWK</div>
+<div style="font-size:1.3rem;font-weight:bold;color:#0c5460"><?= round($avgScores['avg_twk'] ?? 0, 1) ?></div>
+</div>
+</div>
+</div>
+
+<!-- User Registration Trend -->
+<div>
+<h3 style="color:#555;font-size:.95rem;margin-bottom:.5rem">Trend Pendaftaran Peserta (30 Hari Terakhir)</h3>
+<div style="background:#f8f9fa;padding:1rem;border-radius:6px">
+<?php if (empty($userTrend)): ?>
+<p style="color:#777;font-size:.85rem">Tidak ada data pendaftaran dalam 30 hari terakhir.</p>
+<?php else: ?>
+<div style="display:flex;gap:.3rem;align-items:flex-end;height:100px;flex-wrap:wrap">
+<?php 
+$maxCount = max(array_column($userTrend, 'count'));
+foreach ($userTrend as $t): 
+$height = $maxCount > 0 ? ($t['count'] / $maxCount) * 100 : 0;
+?>
+<div style="flex:1;min-width:25px;background:#2980b9;height:<?= $height ?>%;border-radius:3px 3px 0 0;position:relative" title="<?= $t['date'] ?>: <?= $t['count'] ?> user">
+</div>
+<?php endforeach; ?>
+</div>
+<div style="margin-top:.5rem;font-size:.75rem;color:#666">
+Total pendaftaran 30 hari terakhir: <?= array_sum(array_column($userTrend, 'count')) ?> user
+</div>
+<?php endif; ?>
+</div>
+</div>
+</div>
+
+<div id="panel-feedback" class="section" style="display:none">
+<h2>Manajemen Feedback User</h2>
+
+<!-- Filters -->
+<div style="margin-bottom:1rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+<select id="filterStatus" onchange="loadFeedback()" style="padding:.5rem;border:1px solid #ddd;border-radius:5px;font-size:.85rem">
+<option value="">Semua Status</option>
+<option value="pending">Pending</option>
+<option value="dilihat">Dilihat</option>
+<option value="diproses">Diproses</option>
+<option value="selesai">Selesai</option>
+<option value="ditolak">Ditolak</option>
+</select>
+<select id="filterCategory" onchange="loadFeedback()" style="padding:.5rem;border:1px solid #ddd;border-radius:5px;font-size:.85rem">
+<option value="">Semua Kategori</option>
+<option value="saran">Saran</option>
+<option value="kritik">Kritik</option>
+<option value="bug">Bug</option>
+<option value="fitur">Fitur</option>
+<option value="lainnya">Lainnya</option>
+</select>
+<button onclick="loadFeedback()" class="btn" style="padding:.5rem .8rem">🔄 Refresh</button>
+</div>
+
+<!-- Feedback List -->
+<div id="feedbackList">
+<p style="color:#666">Memuat feedback...</p>
+</div>
+</div>
+
 <div id="panel-users" class="section">
 <h2>Daftar Peserta</h2>
+<p style="font-size:.85rem;color:#666;margin-bottom:.5rem">Total: <?= $usersTotal ?> peserta</p>
 <div class="table-wrap">
 <table>
-<thead><tr><th>ID</th><th>Nama</th><th>Email</th><th>Instansi</th><th>Terdaftar</th></tr></thead>
+<thead><tr><th>ID</th><th>Nama</th><th>No. HP</th><th>Sekolah</th><th>Instansi</th><th>Terdaftar</th><th>Aksi</th></tr></thead>
 <tbody>
 <?php foreach ($users as $u): ?>
 <tr>
 <td><?= $u['id'] ?></td>
 <td><?= e($u['nama']) ?></td>
-<td><?= e($u['email']) ?></td>
+<td><?= e($u['no_hp'] ?? '-') ?></td>
+<td><?= e($u['sekolah_asal'] ?? '-') ?><?= $u['tahun_tamat'] ? ' (' . $u['tahun_tamat'] . ')' : '' ?></td>
 <td><?= e($u['instansi'] ?? '-') ?></td>
 <td><?= $u['created_at'] ?></td>
+<td>
+<button onclick="resetUserPassword(<?= $u['id'] ?>, '<?= e($u['nama']) ?>')" style="background:#e74c3c;color:#fff;border:none;padding:.3rem .6rem;border-radius:4px;cursor:pointer;font-size:.75rem" aria-label="Reset password untuk <?= e($u['nama']) ?>">Reset Password</button>
+</td>
 </tr>
 <?php endforeach; ?>
 </tbody>
 </table>
 </div>
+<?php if ($usersTotalPages > 1): ?>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;font-size:.85rem">
+<div>
+Halaman <?= $usersCurrentPage ?> dari <?= $usersTotalPages ?>
+</div>
+<div style="display:flex;gap:.3rem">
+<?php if ($usersHasPrev): ?>
+<a href="?users_offset=<?= max(0, $usersOffset - $usersLimit) ?>&users_limit=<?= $usersLimit ?>" class="btn" style="font-size:.8rem">← Sebelumnya</a>
+<?php endif; ?>
+<?php if ($usersHasNext): ?>
+<a href="?users_offset=<?= $usersOffset + $usersLimit ?>&users_limit=<?= $usersLimit ?>" class="btn" style="font-size:.8rem">Selanjutnya →</a>
+<?php endif; ?>
+</div>
+</div>
+<?php endif; ?>
 </div>
 
 <div id="panel-tryouts" class="section" style="display:none">
 <h2>Riwayat Tryout</h2>
+<p style="font-size:.85rem;color:#666;margin-bottom:.5rem">Total: <?= $tryoutsTotal ?> tryout</p>
 <a href="../api/export_csv.php?type=tryouts" class="btn success" style="margin-bottom:1rem">Export CSV</a>
 <div class="table-wrap">
 <table>
@@ -168,6 +352,21 @@ tr:hover{background:#f8f9fa}
 </tbody>
 </table>
 </div>
+<?php if ($tryoutsTotalPages > 1): ?>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;font-size:.85rem">
+<div>
+Halaman <?= $tryoutsCurrentPage ?> dari <?= $tryoutsTotalPages ?>
+</div>
+<div style="display:flex;gap:.3rem">
+<?php if ($tryoutsHasPrev): ?>
+<a href="?tryouts_offset=<?= max(0, $tryoutsOffset - $tryoutsLimit) ?>&tryouts_limit=<?= $tryoutsLimit ?>" class="btn" style="font-size:.8rem">← Sebelumnya</a>
+<?php endif; ?>
+<?php if ($tryoutsHasNext): ?>
+<a href="?tryouts_offset=<?= $tryoutsOffset + $tryoutsLimit ?>&tryouts_limit=<?= $tryoutsLimit ?>" class="btn" style="font-size:.8rem">Selanjutnya →</a>
+<?php endif; ?>
+</div>
+</div>
+<?php endif; ?>
 </div>
 
 <div id="panel-soal" class="section" style="display:none">
@@ -183,7 +382,7 @@ tr:hover{background:#f8f9fa}
 <h3 style="font-size:.95rem;color:#1a5276;margin-bottom:.5rem">Upload Gambar Soal</h3>
 <form id="uploadForm" enctype="multipart/form-data">
     <input type="file" name="gambar" id="gambarInput" accept="image/*" style="margin-bottom:.5rem">
-    <button type="button" class="btn" onclick="uploadGambar()" style="font-size:.85rem">Upload</button>
+    <button type="button" class="btn" onclick="uploadGambar()" style="font-size:.85rem" aria-label="Upload gambar soal">Upload</button>
     <div id="uploadResult" style="margin-top:.5rem;font-size:.85rem"></div>
 </form>
 </div>
@@ -192,7 +391,7 @@ tr:hover{background:#f8f9fa}
 <div style="background:#fff3cd;border:1px solid #f1c40f;border-radius:6px;padding:.8rem;margin-bottom:1rem">
     <h3 style="font-size:.95rem;color:#856404;margin-bottom:.3rem">Soal Perlu Revisi</h3>
     <p style="font-size:.85rem;color:#856404;margin-bottom:.5rem">Soal yang ditandai peserta dengan "M" (ragu-ragu) perlu ditinjau ulang.</p>
-    <button class="btn" style="background:#e67e22;font-size:.85rem" onclick="loadRevisionList()">Tampilkan Soal Perlu Revisi</button>
+    <button class="btn" style="background:#e67e22;font-size:.85rem" onclick="loadRevisionList()" aria-label="Tampilkan soal yang perlu revisi">Tampilkan Soal Perlu Revisi</button>
 </div>
 
 <!-- Cari Soal -->
@@ -204,7 +403,7 @@ tr:hover{background:#f8f9fa}
         <option value="TIU">TIU</option>
         <option value="TKP">TKP</option>
     </select>
-    <button class="btn" onclick="loadSoalList()" style="font-size:.85rem">Cari</button>
+    <button class="btn" onclick="loadSoalList()" style="font-size:.85rem" aria-label="Cari soal">Cari</button>
 </div>
 
 <!-- Daftar Soal -->
@@ -242,8 +441,8 @@ tr:hover{background:#f8f9fa}
             <textarea id="editPembahasan" style="min-height:80px"></textarea>
         </div>
         <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
-            <button class="btn" style="background:#7f8c8d" onclick="closeEditModal()">Batal</button>
-            <button class="btn success" onclick="saveSoalEdit()">Simpan</button>
+            <button class="btn" style="background:#7f8c8d" onclick="closeEditModal()" aria-label="Batal edit soal">Batal</button>
+            <button class="btn success" onclick="saveSoalEdit()" aria-label="Simpan perubahan soal">Simpan</button>
         </div>
     </div>
 </div>
@@ -286,7 +485,7 @@ tr:hover{background:#f8f9fa}
         </div>
     </div>
     <div style="margin-top:1rem">
-        <button class="btn success" onclick="runGenerator()" id="genBtn">Generate Soal</button>
+        <button class="btn success" onclick="runGenerator()" id="genBtn" aria-label="Generate soal massal">Generate Soal</button>
     </div>
 </div>
 
@@ -319,7 +518,7 @@ tr:hover{background:#f8f9fa}
 </tbody>
 </table>
 </div>
-<button type="submit" class="btn" style="margin-top:1rem">Simpan Konfigurasi</button>
+<button type="submit" class="btn" style="margin-top:1rem" aria-label="Simpan konfigurasi subtes">Simpan Konfigurasi</button>
 </form>
 </div>
 
@@ -331,13 +530,134 @@ Dashboard Admin SKD CAT-BKN | Selamat datang, <?= $adminName ?>
 
 <script>
 function showTab(id){
-    ['users','tryouts','soal','generator','config'].forEach(t=>{
+    ['analytics','feedback','users','tryouts','soal','generator','config'].forEach(t=>{
         document.getElementById('panel-'+t).style.display='none';
         document.getElementById('tab-'+t).classList.remove('active');
     });
     document.getElementById('panel-'+id).style.display='block';
     document.getElementById('tab-'+id).classList.add('active');
     if(id==='soal') loadSoalList();
+    if(id==='feedback') loadFeedback();
+}
+
+// --- FEEDBACK MANAGEMENT ---
+async function loadFeedback(){
+    const status = document.getElementById('filterStatus').value;
+    const category = document.getElementById('filterCategory').value;
+    
+    const params = new URLSearchParams();
+    if(status) params.append('status', status);
+    if(category) params.append('category', category);
+    
+    try {
+        const res = await fetch('../api/get_feedback.php?' + params.toString());
+        const data = await res.json();
+        
+        if(data.success){
+            renderFeedbackList(data.feedback);
+        } else {
+            document.getElementById('feedbackList').innerHTML = '<p style="color:#e74c3c">' + (data.error || 'Gagal memuat feedback') + '</p>';
+        }
+    } catch(e){
+        document.getElementById('feedbackList').innerHTML = '<p style="color:#e74c3c">Gagal memuat feedback</p>';
+    }
+}
+
+function renderFeedbackList(feedback){
+    if(feedback.length === 0){
+        document.getElementById('feedbackList').innerHTML = '<p style="color:#777">Tidak ada feedback.</p>';
+        return;
+    }
+    
+    const statusLabels = {
+        'pending': 'Pending',
+        'dilihat': 'Dilihat',
+        'diproses': 'Diproses',
+        'selesai': 'Selesai',
+        'ditolak': 'Ditolak'
+    };
+    
+    const statusColors = {
+        'pending': '#fff3cd',
+        'dilihat': '#d1ecf1',
+        'diproses': '#fff3cd',
+        'selesai': '#d4edda',
+        'ditolak': '#f8d7da'
+    };
+    
+    let html = '<div style="display:flex;flex-direction:column;gap:1rem">';
+    feedback.forEach(f => {
+        html += `
+        <div style="background:#f8f9fa;padding:1rem;border-radius:6px;border-left:4px solid #2980b9">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem">
+                <div>
+                    <span style="font-weight:bold;color:#1a5276">${escapeHtml(f.user_name || 'User #' + f.user_id)}</span>
+                    <span style="margin:0 .5rem;color:#777">•</span>
+                    <span style="font-size:.85rem;color:#666">${f.category.toUpperCase()}</span>
+                </div>
+                <span style="background:${statusColors[f.status]};color:#333;padding:.25rem .5rem;border-radius:10px;font-size:.75rem;font-weight:bold">${statusLabels[f.status]}</span>
+            </div>
+            <p style="color:#333;font-size:.9rem;margin-bottom:.5rem;white-space:pre-wrap">${escapeHtml(f.message)}</p>
+            <div style="font-size:.75rem;color:#777;margin-bottom:.5rem">
+                ${new Date(f.created_at).toLocaleString('id-ID')}
+                ${f.updated_at !== f.created_at ? ' • Updated: ' + new Date(f.updated_at).toLocaleString('id-ID') : ''}
+            </div>
+            ${f.admin_response ? `
+            <div style="margin-top:.5rem;padding:.5rem;background:#e8f5e9;border-radius:4px">
+                <div style="font-size:.75rem;color:#155724;font-weight:bold;margin-bottom:.2rem">📢 Admin Response:</div>
+                <div style="font-size:.85rem;color:#333;white-space:pre-wrap">${escapeHtml(f.admin_response)}</div>
+            </div>
+            ` : ''}
+            <div style="margin-top:.8rem;display:flex;gap:.5rem;flex-wrap:wrap">
+                <select id="status-${f.id}" style="padding:.4rem;border:1px solid #ddd;border-radius:4px;font-size:.8rem">
+                    <option value="pending" ${f.status === 'pending' ? 'selected' : ''}>Pending</option>
+                    <option value="dilihat" ${f.status === 'dilihat' ? 'selected' : ''}>Dilihat</option>
+                    <option value="diproses" ${f.status === 'diproses' ? 'selected' : ''}>Diproses</option>
+                    <option value="selesai" ${f.status === 'selesai' ? 'selected' : ''}>Selesai</option>
+                    <option value="ditolak" ${f.status === 'ditolak' ? 'selected' : ''}>Ditolak</option>
+                </select>
+                <textarea id="response-${f.id}" placeholder="Admin response..." style="flex:1;min-height:40px;padding:.4rem;border:1px solid #ddd;border-radius:4px;font-size:.8rem;resize:vertical">${f.admin_response || ''}</textarea>
+                <button onclick="updateFeedback(${f.id})" class="btn" style="padding:.4rem .8rem;font-size:.8rem">Update</button>
+            </div>
+        </div>
+        `;
+    });
+    html += '</div>';
+    document.getElementById('feedbackList').innerHTML = html;
+}
+
+async function updateFeedback(feedbackId){
+    const status = document.getElementById('status-' + feedbackId).value;
+    const response = document.getElementById('response-' + feedbackId).value;
+    
+    const formData = new FormData();
+    formData.append('feedback_id', feedbackId);
+    formData.append('status', status);
+    formData.append('response', response);
+    
+    try {
+        const res = await fetch('../api/update_feedback.php', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        
+        if(data.success){
+            alert('Feedback berhasil diupdate');
+            loadFeedback();
+        } else {
+            alert(data.error || 'Gagal mengupdate feedback');
+        }
+    } catch(e){
+        alert('Gagal mengupdate feedback');
+    }
+}
+
+function escapeHtml(text){
+    if(!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // --- GENERATOR MASSAL ---
@@ -631,9 +951,34 @@ async function saveSoalEdit(){
 }
 
 function escapeHtml(text){
+    if(!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+async function resetUserPassword(userId, userName){
+    if(!confirm(`Reset password untuk user "${userName}"? Password baru akan di-generate otomatis dan dikirim ke user via notifikasi.`)) return;
+    
+    try {
+        const formData = new FormData();
+        formData.append('user_id', userId);
+        
+        const res = await fetch('../api/reset_user_password.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await res.json();
+        
+        if(data.success){
+            alert(`Password berhasil di-reset!\n\nPassword baru: ${data.new_password}\n\nPassword ini juga telah dikirim ke user via notifikasi.`);
+        } else {
+            alert(data.error || 'Gagal reset password');
+        }
+    } catch(e){
+        alert('Gagal reset password. Silakan coba lagi.');
+    }
 }
 </script>
 </body>

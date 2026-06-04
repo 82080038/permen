@@ -17,7 +17,11 @@ if (!$session) {
 // Ambil data subtes dari tabel normalisasi session_subtes (fallback ke flat columns)
 $stmt = $pdo->prepare("SELECT subtes, nilai, passing_grade, jumlah_soal FROM session_subtes WHERE session_id = ?");
 $stmt->execute([$sessionId]);
-$subData = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+$subDataRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$subData = [];
+foreach ($subDataRows as $row) {
+    $subData[$row['subtes']] = $row;
+}
 
 if (empty($subData)) {
     // Fallback: data dari kolom flat (session lama)
@@ -90,9 +94,11 @@ if ($isLatihan) {
 .details{grid-template-columns:1fr}
 .score{font-size:2rem}
 }
+.skip-link:focus{top:0}
 </style>
 </head>
 <body>
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
 <div class="topbar">
 <a href="../index.php">Beranda</a>
 <a href="latihan.php">Latihan</a>
@@ -107,7 +113,7 @@ if ($isLatihan) {
 <div class="header">
 <h1><?= $isLatihan ? "Hasil Latihan " . htmlspecialchars($latihanSubtes) : 'Hasil Try Out SKD CAT-BKN' ?></h1>
 </div>
-<div class="container">
+<div class="container" id="main-content">
 
 <?php if ($isLatihan): ?>
 <!-- MODE LATIHAN -->
@@ -129,6 +135,10 @@ else { $nilaiSubtes = $nilaiTwk; $passingSubtes = $passingTwk; $statusSubtes = $
 <a href="latihan.php" class="btn" style="background:#27ae60;margin-left:.5rem">Latihan Subtes Lain</a>
 <a href="tryout.php" class="btn" style="background:#e67e22;margin-left:.5rem">Try Out Penuh</a>
 <a href="../index.php" class="btn" style="background:#7f8c8d;margin-left:.5rem">Beranda</a>
+<div style="margin-top:1rem">
+<a href="../api/export_result.php?session_id=<?= $sessionId ?>&format=csv" class="btn" style="background:#2980b9;font-size:.8rem;padding:.5rem 1rem">📄 Export CSV</a>
+<a href="javascript:window.print()" class="btn" style="background:#8e44ad;font-size:.8rem;padding:.5rem 1rem;margin-left:.5rem">🖨️ Cetak/PDF</a>
+</div>
 </div>
 
 <?php else: ?>
@@ -166,49 +176,117 @@ else { $nilaiSubtes = $nilaiTwk; $passingSubtes = $passingTwk; $statusSubtes = $
 
 <!-- Rekomendasi Instansi -->
 <div class="card">
-<h2>Kelayakan Instansi</h2>
+<h2>📊 Rekomendasi Instansi Berdasarkan Nilai Anda</h2>
 <?php
-$instansiList = $pdo->query("SELECT * FROM instansi WHERE aktif = 1 ORDER BY urutan")->fetchAll();
-$eligibleCount = 0;
+$instansiList = $pdo->query("SELECT * FROM instansi WHERE aktif = 1 ORDER BY passing_total DESC, urutan")->fetchAll();
+
+// Hitung gap dan ranking untuk setiap instansi
+$instansiRanking = [];
 foreach ($instansiList as $ins) {
-    $lulusTkp = $nilaiTkp >= $ins['passing_tkp'];
-    $lulusTiu = $nilaiTiu >= $ins['passing_tiu'];
-    $lulusTwk = $nilaiTwk >= $ins['passing_twk'];
-    $lulusTotal = $totalNilai >= $ins['passing_total'];
-    if ($lulusTkp && $lulusTiu && $lulusTwk && $lulusTotal) $eligibleCount++;
+    $gapTkp = $nilaiTkp - $ins['passing_tkp'];
+    $gapTiu = $nilaiTiu - $ins['passing_tiu'];
+    $gapTwk = $nilaiTwk - $ins['passing_twk'];
+    $gapTotal = $totalNilai - $ins['passing_total'];
+    
+    $lulusTkp = $gapTkp >= 0;
+    $lulusTiu = $gapTiu >= 0;
+    $lulusTwk = $gapTwk >= 0;
+    $lulusTotal = $gapTotal >= 0;
+    $lulusSemuaIns = $lulusTkp && $lulusTiu && $lulusTwk && $lulusTotal;
+    
+    // Skor kelayakan: total gap (semakin positif semakin baik)
+    $skorKelayakan = $gapTkp + $gapTiu + $gapTwk + $gapTotal;
+    
+    $instansiRanking[] = [
+        'instansi' => $ins,
+        'gap_tkp' => $gapTkp,
+        'gap_tiu' => $gapTiu,
+        'gap_twk' => $gapTwk,
+        'gap_total' => $gapTotal,
+        'lulus' => $lulusSemuaIns,
+        'skor_kelayakan' => $skorKelayakan
+    ];
 }
+
+// Sort berdasarkan skor kelayakan (descending)
+usort($instansiRanking, function($a, $b) {
+    return $b['skor_kelayakan'] - $a['skor_kelayakan'];
+});
+
+$eligibleCount = count(array_filter($instansiRanking, fn($x) => $x['lulus']));
 ?>
 <p style="font-size:.9rem;color:#555;margin-bottom:1rem">
-<?php if ($lulusSemua): ?>
-🎉 <strong>Selamat!</strong> Anda memenuhi syarat SKD untuk <strong><?= $eligibleCount ?> instansi</strong>.
+<?php if ($eligibleCount > 0): ?>
+🎉 <strong>Selamat!</strong> Nilai Anda memenuhi syarat SKD untuk <strong><?= $eligibleCount ?> instansi</strong>.
 <?php else: ?>
-⚠️ Anda belum memenuhi syarat SKD untuk instansi pilihan. Fokus perbaiki subtes yang belum memenuhi ambang batas.
+⚠️ Nilai Anda belum memenuhi passing grade instansi manapun. Lihat tabel di bawah untuk melihat seberapa jauh gap Anda.
 <?php endif; ?>
 </p>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.6rem">
-<?php foreach ($instansiList as $ins):
-    $lulusTkp = $nilaiTkp >= $ins['passing_tkp'];
-    $lulusTiu = $nilaiTiu >= $ins['passing_tiu'];
-    $lulusTwk = $nilaiTwk >= $ins['passing_twk'];
-    $lulusTotal = $totalNilai >= $ins['passing_total'];
-    $lulusSemuaIns = $lulusTkp && $lulusTiu && $lulusTwk && $lulusTotal;
-    $cardBg = $lulusSemuaIns ? '#d4edda' : '#fff3cd';
-    $borderCol = $lulusSemuaIns ? '#155724' : '#856404';
+
+<div style="overflow-x:auto">
+<table style="width:100%;border-collapse:collapse;font-size:.85rem">
+<thead>
+<tr style="background:#1a5276;color:#fff">
+<th style="padding:.6rem;text-align:center;border:1px solid #1a5276">Rank</th>
+<th style="padding:.6rem;text-align:left;border:1px solid #1a5276">Instansi</th>
+<th style="padding:.6rem;text-align:center;border:1px solid #1a5276">TWK</th>
+<th style="padding:.6rem;text-align:center;border:1px solid #1a5276">TIU</th>
+<th style="padding:.6rem;text-align:center;border:1px solid #1a5276">TKP</th>
+<th style="padding:.6rem;text-align:center;border:1px solid #1a5276">Total</th>
+<th style="padding:.6rem;text-align:center;border:1px solid #1a5276">Status</th>
+</tr>
+</thead>
+<tbody>
+<?php foreach ($instansiRanking as $idx => $item):
+    $ins = $item['instansi'];
+    $lulus = $item['lulus'];
+    $rowBg = $lulus ? '#d4edda' : ($idx === 0 ? '#fff3cd' : ($idx % 2 === 0 ? '#f8f9fa' : '#fff'));
 ?>
-<div style="background:<?= $cardBg ?>;border:1px solid <?= $borderCol ?>;border-radius:5px;padding:.6rem;font-size:.85rem">
+<tr style="background:<?= $rowBg ?>">
+<td style="padding:.6rem;border:1px solid #ddd;text-align:center;font-weight:bold"><?= $idx + 1 ?></td>
+<td style="padding:.6rem;border:1px solid #ddd">
 <div style="font-weight:bold;color:#1a5276"><?= e($ins['kode']) ?></div>
 <div style="font-size:.75rem;color:#555"><?= e($ins['nama']) ?></div>
-<?php if ($lulusSemuaIns): ?>
-<div style="color:#155724;font-size:.75rem;font-weight:bold">✅ Lulus SKD</div>
+</td>
+<td style="padding:.6rem;border:1px solid #ddd;text-align:center">
+<span style="color:<?= $item['gap_twk'] >= 0 ? '#27ae60' : '#e74c3c' ?>;font-weight:bold">
+<?= $item['gap_twk'] >= 0 ? '+' : '' ?><?= $item['gap_twk'] ?>
+</span>
+<span style="color:#777;font-size:.75rem">(PG: <?= $ins['passing_twk'] ?>)</span>
+</td>
+<td style="padding:.6rem;border:1px solid #ddd;text-align:center">
+<span style="color:<?= $item['gap_tiu'] >= 0 ? '#27ae60' : '#e74c3c' ?>;font-weight:bold">
+<?= $item['gap_tiu'] >= 0 ? '+' : '' ?><?= $item['gap_tiu'] ?>
+</span>
+<span style="color:#777;font-size:.75rem">(PG: <?= $ins['passing_tiu'] ?>)</span>
+</td>
+<td style="padding:.6rem;border:1px solid #ddd;text-align:center">
+<span style="color:<?= $item['gap_tkp'] >= 0 ? '#27ae60' : '#e74c3c' ?>;font-weight:bold">
+<?= $item['gap_tkp'] >= 0 ? '+' : '' ?><?= $item['gap_tkp'] ?>
+</span>
+<span style="color:#777;font-size:.75rem">(PG: <?= $ins['passing_tkp'] ?>)</span>
+</td>
+<td style="padding:.6rem;border:1px solid #ddd;text-align:center">
+<span style="color:<?= $item['gap_total'] >= 0 ? '#27ae60' : '#e74c3c' ?>;font-weight:bold">
+<?= $item['gap_total'] >= 0 ? '+' : '' ?><?= $item['gap_total'] ?>
+</span>
+<span style="color:#777;font-size:.75rem">(PG: <?= $ins['passing_total'] ?>)</span>
+</td>
+<td style="padding:.6rem;border:1px solid #ddd;text-align:center;font-weight:bold">
+<?php if ($lulus): ?>
+<span style="color:#155724">✅ LULUS</span>
 <?php else: ?>
-<div style="color:#856404;font-size:.7rem">
-<?= (!$lulusTkp ? 'TKP ' : '') . (!$lulusTiu ? 'TIU ' : '') . (!$lulusTwk ? 'TWK ' : '') . (!$lulusTotal ? 'Total' : '') ?>
-<span style="color:#999">kurang</span>
-</div>
+<span style="color:#856404">❌ Tidak Lulus</span>
 <?php endif; ?>
-</div>
+</td>
+</tr>
 <?php endforeach; ?>
+</tbody>
+</table>
 </div>
+<p style="font-size:.8rem;color:#777;margin-top:.8rem;text-align:center">
+💡 <strong>Tip:</strong> Angka positif (hijau) = nilai Anda di atas passing grade. Angka negatif (merah) = nilai Anda di bawah passing grade. PG = Passing Grade.
+</p>
 </div>
 
 <!-- REKOMENDASI LATIHAN -->
@@ -217,6 +295,43 @@ foreach ($instansiList as $ins) {
 <p style="font-size:.9rem;color:#555;margin-bottom:.8rem">Berdasarkan hasil tryout, topik berikut perlu ditingkatkan:</p>
 <div id="rekomendasiList" style="display:flex;flex-wrap:wrap;gap:.5rem"></div>
 </div>
+
+<!-- EXPORT BUTTONS (Full Tryout Mode) -->
+<?php if (!$isLatihan): ?>
+<div class="card no-print" style="text-align:center">
+<h2>Export Hasil</h2>
+<div style="display:flex;justify-content:center;gap:.5rem;flex-wrap:wrap">
+<a href="../api/export_result.php?session_id=<?= $sessionId ?>&format=csv" class="btn" style="background:#2980b9;font-size:.9rem;padding:.6rem 1.2rem">📄 Export CSV</a>
+<a href="javascript:window.print()" class="btn" style="background:#8e44ad;font-size:.9rem;padding:.6rem 1.2rem">🖨️ Cetak/PDF</a>
+<button onclick="sendEmailResult()" class="btn" style="background:#27ae60;font-size:.9rem;padding:.6rem 1.2rem">� Kirim Notifikasi</button>
+</div>
+</div>
+
+<script>
+async function sendEmailResult(){
+    if (!confirm('Kirim hasil tryout ke notifikasi Anda?')) return;
+    
+    const formData = new FormData();
+    formData.append('session_id', <?= $sessionId ?>);
+    
+    try {
+        const res = await fetch('../api/send_result_notification.php', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            alert('Hasil tryout berhasil dikirim ke notifikasi!');
+        } else {
+            alert(data.error || 'Gagal mengirim notifikasi');
+        }
+    } catch (e) {
+        alert('Gagal mengirim notifikasi. Silakan coba lagi.');
+    }
+}
+</script>
+<?php endif; ?>
 
 <!-- REVIEW SOAL -->
 <div class="card" style="text-align:left">
@@ -380,7 +495,7 @@ loadReview();
 <a href="latihan.php" class="btn" style="background:#27ae60;margin-left:.5rem">Latihan per Subtes</a>
 <a href="materi.php?subtes=TWK" class="btn" style="background:#2980b9;margin-left:.5rem">Pelajari Materi</a>
 <a href="../index.php" class="btn" style="background:#7f8c8d;margin-left:.5rem">Beranda</a>
-<button onclick="window.print()" class="btn" style="background:#8e44ad;margin-left:.5rem">Simpan/Cetak PDF</button>
+<button onclick="window.print()" class="btn" style="background:#8e44ad;margin-left:.5rem" aria-label="Simpan atau cetak hasil sebagai PDF">Simpan/Cetak PDF</button>
 </div>
 <?php endif; ?>
 

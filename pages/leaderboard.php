@@ -74,9 +74,11 @@ foreach (['TWK','TIU','TKP'] as $s) {
 .empty{color:#777;font-style:italic;text-align:center;padding:2rem}
 .grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
 .footer{text-align:center;padding:1.2rem;color:#777;font-size:.85rem;margin-top:1.5rem}
+.skip-link:focus{top:0}
 </style>
 </head>
 <body>
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
 <div class="header">
 <h1>Leaderboard SKD CAT-BKN</h1>
 <div>
@@ -86,7 +88,7 @@ foreach (['TWK','TIU','TKP'] as $s) {
 </div>
 </div>
 
-<div class="container">
+<div class="container" id="main-content">
 <div class="filter-bar">
     <a href="?period=all" class="<?= $period==='all'?'active':'' ?>">Semua Waktu</a>
     <a href="?period=month" class="<?= $period==='month'?'active':'' ?>">30 Hari</a>

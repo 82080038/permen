@@ -187,8 +187,7 @@ foreach ($soalGenerated as $order => $s) {
     }
 }
 
-echo json_encode([
-    'success' => true,
+echo json_encode(['success' => true, 'data' => [
     'generator' => 'smart_internal',
     'no_api_required' => true,
     'mode' => $mode,
@@ -201,7 +200,7 @@ echo json_encode([
     'topik' => $topik,
     'kesulitan' => $kesulitan,
     'soal' => $soalGenerated
-]);
+]]);
 
 // Log admin action
 require '../helpers.php';

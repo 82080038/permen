@@ -1,11 +1,19 @@
 <?php
 require '../config.php';
+require '../helpers.php';
 header('Content-Type: application/json; charset=utf-8');
 
 $userId = (int)($_SESSION['user_id'] ?? 0);
 if (!$userId) {
     http_response_code(401);
     echo json_encode(['error' => 'Autentikasi diperlukan']);
+    exit;
+}
+
+// CSRF validation
+if (!validateCsrfApi()) {
+    http_response_code(403);
+    echo json_encode(['error' => 'CSRF token tidak valid']);
     exit;
 }
 

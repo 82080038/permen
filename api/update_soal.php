@@ -1,10 +1,18 @@
 <?php
 require '../config.php';
+require '../helpers.php';
 header('Content-Type: application/json; charset=utf-8');
 
 if (empty($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'admin') {
     http_response_code(403);
     echo json_encode(['error' => 'Akses ditolak']);
+    exit;
+}
+
+// CSRF validation for API endpoints
+if (!validateCsrfApi()) {
+    http_response_code(403);
+    echo json_encode(['error' => 'CSRF token tidak valid']);
     exit;
 }
 

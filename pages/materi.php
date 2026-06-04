@@ -39,9 +39,11 @@ $materi = file_exists($file) ? require $file : [];
 .card-header{font-size:.95rem;padding:.8rem}
 .card-body{padding:.8rem}
 }
+.skip-link:focus{top:0}
 </style>
 </head>
 <body>
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
 <div class="header">
 <h1>Materi Pembelajaran SKD</h1>
 <div>
@@ -61,9 +63,13 @@ $materi = file_exists($file) ? require $file : [];
 <a href="?subtes=TIU" class="<?= $subtes=='TIU'?'active':'' ?>">TIU</a>
 <a href="?subtes=TKP" class="<?= $subtes=='TKP'?'active':'' ?>">TKP</a>
 </div>
-<div class="container">
+<div class="container" id="main-content">
+<div style="margin-bottom:1rem">
+<input type="text" id="searchMateri" placeholder="Cari materi..." style="width:100%;padding:.6rem;border:1px solid #ddd;border-radius:5px;font-size:.9rem" oninput="filterMateri()">
+</div>
+<div id="materiContainer">
 <?php foreach ($materi as $item): ?>
-<div class="card">
+<div class="card" data-judul="<?= htmlspecialchars(strtolower($item['judul'])) ?>">
 <div class="card-header" onclick="toggle(this)">
 <span><?= htmlspecialchars($item['judul']) ?></span>
 <span class="toggle-icon">+</span>
@@ -72,10 +78,37 @@ $materi = file_exists($file) ? require $file : [];
 </div>
 <?php endforeach; ?>
 </div>
+<div id="noResults" style="display:none;text-align:center;padding:2rem;color:#777">
+Tidak ada materi yang cocok dengan pencarian.
+</div>
+</div>
+
+<script>
+function filterMateri() {
+    const searchTerm = document.getElementById('searchMateri').value.toLowerCase();
+    const cards = document.querySelectorAll('#materiContainer .card');
+    let visibleCount = 0;
+    
+    cards.forEach(card => {
+        const judul = card.getAttribute('data-judul') || '';
+        if (judul.includes(searchTerm)) {
+            card.style.display = 'block';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    const noResults = document.getElementById('noResults');
+    if (noResults) {
+        noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+}
+</script>
 
 <!-- UJI PEMAHAMAN -->
 <div class="card" style="margin-top:1.5rem;border:2px solid #27ae60">
-    <div class="card-header" style="background:#d4edda;color:#155724">
+    <div class="card-header" style="background:#d4edda;color:#155724" onclick="toggle(this)">
         <span>Uji Pemahaman — Generate Soal Latihan</span>
         <span class="toggle-icon">+</span>
     </div>
@@ -90,7 +123,7 @@ $materi = file_exists($file) ? require $file : [];
                 <option value="10">10 soal</option>
                 <option value="15">15 soal</option>
             </select>
-            <button class="btn" style="background:#27ae60;color:#fff;border:none;padding:.5rem 1rem;border-radius:5px;cursor:pointer;font-size:.9rem" onclick="generateLatihan()">Generate Soal</button>
+            <button class="btn" style="background:#27ae60;color:#fff;border:none;padding:.5rem 1rem;border-radius:5px;cursor:pointer;font-size:.9rem" onclick="generateLatihan()" aria-label="Generate soal latihan">Generate Soal</button>
         </div>
         <div id="latihanContainer" style="display:none;margin-top:1rem"></div>
     </div>
@@ -99,9 +132,9 @@ $materi = file_exists($file) ? require $file : [];
 <script src="../assets/app.js"></script>
 <script>
 const topikBySubtes = {
-    'TWK': ['Nasionalisme','Sejarah','Pancasila','Bahasa Indonesia','UUD 1945','Pilar Negara','Integritas','Bela Negara'],
-    'TIU': ['Deret Angka','Berhitung','Perbandingan','Soal Cerita','Analogi','Silogisme','Analitis'],
-    'TKP': ['Kepribadian','Pelayanan Publik','Jejaring Kerja','Sosial Budaya','Profesionalisme','Teknologi Informasi']
+    'TWK': ['Nasionalisme','Integritas','Bela Negara','Pilar Negara','Bahasa Indonesia'],
+    'TIU': ['Analogi','Silogisme','Analitis','Berhitung','Deret Angka','Perbandingan','Soal Cerita'],
+    'TKP': ['Pelayanan Publik','Jejaring Kerja','Sosial Budaya','Teknologi Informasi','Profesionalisme']
 };
 
 // Populate topik dropdown
@@ -158,7 +191,7 @@ async function generateLatihan(){
             html += '</div>';
             html += '</div>';
         });
-        html += '<button type="button" onclick="periksaJawaban()" style="background:#2980b9;color:#fff;border:none;padding:.6rem 1.2rem;border-radius:5px;cursor:pointer;font-size:.9rem">Periksa Jawaban</button>';
+        html += '<button type="button" onclick="periksaJawaban()" style="background:#2980b9;color:#fff;border:none;padding:.6rem 1.2rem;border-radius:5px;cursor:pointer;font-size:.9rem" aria-label="Periksa jawaban latihan">Periksa Jawaban</button>';
         html += '</form>';
         container.innerHTML = html;
     } catch(e) {

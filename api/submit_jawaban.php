@@ -32,6 +32,13 @@ if (!$userId) {
     exit;
 }
 
+// CSRF validation for API endpoints
+if (!validateCsrfApi()) {
+    http_response_code(403);
+    echo json_encode(['error' => 'CSRF token tidak valid']);
+    exit;
+}
+
 // API rate limiting
 $identifier = "user_$userId";
 if (!checkAPIRateLimit($identifier, 'submit_jawaban', 200, 60)) {

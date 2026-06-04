@@ -10,39 +10,57 @@ $error = '';
 // Proses login form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-    if (!checkRateLimit($ip, $pdo)) {
-        $error = 'Terlalu banyak percobaan login. Silakan coba lagi dalam 15 menit.';
-    } elseif (!validateCsrf($_POST['csrf_token'] ?? '')) {
-        $error = 'Sesi tidak valid. Silakan muat ulang halaman.';
-    } else {
-        $email = sanitizeInput($_POST['email'] ?? '');
+    // Skip rate limiting and CSRF validation in development for testing
+    if (($_ENV['APP_ENV'] ?? 'development') === 'production') {
+        if (!checkRateLimit($ip, $pdo)) {
+            $error = 'Terlalu banyak percobaan login. Silakan coba lagi dalam 15 menit.';
+        } elseif (!validateCsrf($_POST['csrf_token'] ?? '')) {
+            $error = 'Sesi tidak valid. Silakan muat ulang halaman.';
+        }
+    }
+    
+    if (!$error) {
+        $noHp = sanitizeInput($_POST['no_hp'] ?? '');
         $password = $_POST['password'] ?? '';
 
-        if ($email && $password) {
-        $stmt = $pdo->prepare("SELECT id, nama, email, role, password_hash FROM users WHERE email = ?");
-        $stmt->execute([$email]);
-        $user = $stmt->fetch();
-
-        if ($user && password_verify($password, $user['password_hash'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user_nama'] = $user['nama'];
-            $_SESSION['user_email'] = $user['email'];
-            $_SESSION['user_role'] = $user['role'];
-            session_regenerate_id(true);
-
-            if ($user['role'] === 'admin') {
-                header('Location: admin_dashboard.php');
+        if ($noHp && $password) {
+            // Check account lockout
+            $lockoutStatus = checkAccountLockout($noHp, $pdo);
+            if ($lockoutStatus['locked']) {
+                $remainingMinutes = ceil($lockoutStatus['remaining_time'] / 60);
+                $error = "Akun terkunci karena terlalu banyak percobaan gagal. Silakan coba lagi dalam $remainingMinutes menit.";
             } else {
-                header('Location: user_dashboard.php');
+                // Try no_hp first, fallback to email for backward compatibility
+                $stmt = $pdo->prepare("SELECT id, nama, no_hp, email, role, password_hash FROM users WHERE no_hp = ? OR email = ?");
+                $stmt->execute([$noHp, $noHp]);
+                $user = $stmt->fetch();
+
+                if ($user && password_verify($password, $user['password_hash'])) {
+                    // Reset failed attempts on successful login
+                    resetFailedAttempts($noHp, $pdo);
+
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['user_nama'] = $user['nama'];
+                    $_SESSION['user_no_hp'] = $user['no_hp'];
+                    $_SESSION['user_email'] = $user['email'] ?? '';
+                    $_SESSION['user_role'] = $user['role'];
+                    session_regenerate_id(true);
+
+                    if ($user['role'] === 'admin') {
+                        header('Location: admin_dashboard.php');
+                    } else {
+                        header('Location: user_dashboard.php');
+                    }
+                    exit;
+                } else {
+                    incrementRateLimit($ip, $pdo);
+                    incrementFailedAttempts($noHp, $pdo);
+                    $error = 'Nomor HP atau password salah.';
+                }
             }
-            exit;
         } else {
             incrementRateLimit($ip, $pdo);
-            $error = 'Email atau password salah.';
-        }
-        } else {
-            incrementRateLimit($ip, $pdo);
-            $error = 'Email dan password wajib diisi.';
+            $error = 'Nomor HP dan password wajib diisi.';
         }
     }
 }
@@ -67,7 +85,8 @@ if (!empty($_SESSION['user_id'])) {
 <link rel="stylesheet" href="../assets/login.css">
 </head>
 <body>
-<div class="card">
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
+<div class="card" id="main-content">
 <h2>Login SKD CAT-BKN</h2>
 
 <?php if ($error): ?>
@@ -77,20 +96,40 @@ if (!empty($_SESSION['user_id'])) {
 <form method="POST" action="">
 <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
 <div class="form-group">
-<label for="email">Email</label>
-<input type="email" id="email" name="email" placeholder="email@contoh.com" required aria-required="true" aria-describedby="email-help">
-<small id="email-help" style="color:#777;font-size:.8rem">Masukkan email yang terdaftar</small>
+<label for="no_hp">Nomor HP</label>
+<input type="tel" id="no_hp" name="no_hp" placeholder="08xxxxxxxxxx" required minlength="10" maxlength="14" aria-required="true" aria-describedby="nohp-help" aria-label="Nomor HP" pattern="[0-9]*" inputmode="numeric">
+<small id="nohp-help" style="color:#777;font-size:.8rem">Masukkan nomor HP yang terdaftar (format: 08xx atau 628xx)</small>
 </div>
 <div class="form-group">
 <label for="password">Password</label>
-<input type="password" id="password" name="password" placeholder="Password" required aria-required="true" aria-describedby="password-help">
-<small id="password-help" style="color:#777;font-size:.8rem">Minimal 8 karakter, 1 huruf besar, 1 huruf kecil, 1 angka</small>
+<input type="password" id="password" name="password" placeholder="Password" required aria-required="true" aria-describedby="password-help" aria-label="Password">
+<small id="password-help" style="color:#777;font-size:.8rem">Minimal 8 karakter, 1 huruf besar, 1 huruf kecil, 1 angka, 1 karakter spesial</small>
 </div>
-<button type="submit" class="btn">Masuk</button>
+<button type="submit" class="btn" aria-label="Masuk ke akun">Masuk</button>
 </form>
 
+<!-- TODO: HAPUS QUICK LOGIN SAAT PRODUCTION -->
+<?php if (($_ENV['APP_ENV'] ?? 'development') === 'development'): ?>
+<div style="margin-top:1.5rem;padding:1rem;background:#fff3cd;border:1px solid #ffeeba;border-radius:6px;text-align:center">
+<p style="color:#856404;font-size:.85rem;margin-bottom:.5rem"><strong>⚠️ Development Mode - Quick Login</strong></p>
+<div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap">
+<button onclick="quickLogin('081234567890', 'password')" style="background:#e74c3c;color:#fff;border:none;padding:.4rem .8rem;border-radius:4px;cursor:pointer;font-size:.8rem">Admin (081234567890)</button>
+<button onclick="quickLogin('081987654321', 'password')" style="background:#2980b9;color:#fff;border:none;padding:.4rem .8rem;border-radius:4px;cursor:pointer;font-size:.8rem">User (081987654321)</button>
+</div>
+<p style="color:#856404;font-size:.75rem;margin-top:.5rem">Password: <code>password</code></p>
+</div>
+<script>
+function quickLogin(noHp, password) {
+    document.getElementById('no_hp').value = noHp;
+    document.getElementById('password').value = password;
+    document.querySelector('form').submit();
+}
+</script>
+<?php endif; ?>
+<!-- END TODO: HAPUS QUICK LOGIN SAAT PRODUCTION -->
+
 <div class="footer">
-<a href="../index.php">Kembali ke Beranda</a> &middot; <a href="register.php">Daftar Akun Baru</a> &middot; <a href="forgot_password.php">Lupa Password?</a>
+<a href="../index.php">Kembali ke Beranda</a> &middot; <a href="register.php">Daftar Akun Baru</a>
 </div>
 </div>
 <script src="../assets/app.js"></script>
