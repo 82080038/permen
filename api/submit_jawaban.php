@@ -1,5 +1,28 @@
 <?php
+/**
+ * API: Submit Answer for Tryout Question
+ * 
+ * Submits a user's answer for a specific question in a tryout session.
+ * Enforces server-side timer validation for both total time and per-subtes time.
+ * Calculates score based on question type (TKP uses weighted scoring, TIU/TWK use binary scoring).
+ * 
+ * @param JSON body {
+ *   answer_id: int The answer record ID,
+ *   jawaban: string The selected answer (A, B, C, D, E)
+ * }
+ * @return JSON {
+ *   success: bool,
+ *   skor: int Calculated score (0-5 for TIU/TWK, 1-5 for TKP)
+ * }
+ * 
+ * HTTP Status Codes:
+ * - 401: User not authenticated
+ * - 400: Invalid data or answer
+ * - 403: Question not found, not owned by user, session finished, or time expired
+ * - 200: Success
+ */
 require '../config.php';
+require '../helpers.php';
 header('Content-Type: application/json; charset=utf-8');
 
 $userId = (int)($_SESSION['user_id'] ?? 0);
@@ -8,6 +31,15 @@ if (!$userId) {
     echo json_encode(['error' => 'Autentikasi diperlukan']);
     exit;
 }
+
+// API rate limiting
+$identifier = "user_$userId";
+if (!checkAPIRateLimit($identifier, 'submit_jawaban', 200, 60)) {
+    http_response_code(429);
+    echo json_encode(['error' => 'Rate limit exceeded. Please try again later.']);
+    exit;
+}
+logAPIRequest($identifier, 'submit_jawaban');
 
 $data = json_decode(file_get_contents('php://input'), true);
 $answerId = (int)($data['answer_id'] ?? 0);
@@ -21,7 +53,8 @@ if (!$answerId || !in_array($jawaban, ['A','B','C','D','E'])) {
 }
 
 // Ambil soal + validasi kepemilikan session
-$stmt = $pdo->prepare("SELECT q.*, ts.waktu_mulai, ts.status,
+$stmt = $pdo->prepare("SELECT q.id, q.subtes, q.jawaban_benar, q.bobot_tkp, q.bobot_a, q.bobot_b, q.bobot_c, q.bobot_d, q.bobot_e, 
+    ts.waktu_mulai, ts.status, ts.id as session_id,
     (SELECT SUM(durasi_menit) FROM session_subtes WHERE session_id = ts.id) as total_durasi_menit
     FROM answers a JOIN questions q ON a.question_id = q.id
     JOIN tryout_sessions ts ON a.session_id = ts.id
@@ -60,7 +93,7 @@ if ($subData && $subData['waktu_mulai_subtes']) {
 // Also validate total time
 $elapsedSeconds = time() - strtotime($soal['waktu_mulai']);
 $totalSeconds = (int)$soal['total_durasi_menit'] * 60;
-if ($totalSeconds > 0 && $elapsedSeconds > $totalSeconds + 300) { // toleransi 5 menit total
+if ($totalSeconds > 0 && $elapsedSeconds > $totalSeconds + 60) { // toleransi 1 menit total (tightened from 5)
     http_response_code(403);
     echo json_encode(['error' => 'Waktu tryout sudah habis.']);
     exit;
@@ -90,7 +123,16 @@ if ($soal['subtes'] === 'TKP') {
     $skor = ($jawaban === $soal['jawaban_benar']) ? 5 : 0;
 }
 
-$stmt = $pdo->prepare("UPDATE answers SET jawaban_user = ?, skor = ? WHERE id = ?");
-$stmt->execute([$jawaban, $skor, $answerId]);
-
-echo json_encode(['success' => true, 'skor' => $skor]);
+// Use database transaction to prevent race conditions
+try {
+    $pdo->beginTransaction();
+    $stmt = $pdo->prepare("UPDATE answers SET jawaban_user = ?, skor = ? WHERE id = ?");
+    $stmt->execute([$jawaban, $skor, $answerId]);
+    $pdo->commit();
+    echo json_encode(['success' => true, 'skor' => $skor]);
+} catch (Exception $e) {
+    $pdo->rollBack();
+    http_response_code(500);
+    echo json_encode(['error' => 'Gagal menyimpan jawaban. Silakan coba lagi.']);
+    exit;
+}

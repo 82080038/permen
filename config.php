@@ -16,10 +16,21 @@ $options = [
 
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);
+    
+    // Enable slow query logging for development
+    if (($_ENV['APP_ENV'] ?? 'development') === 'development') {
+        $pdo->exec("SET SESSION long_query_time = 1");
+    }
 } catch (PDOException $e) {
     // Don't leak credentials in error message
     error_log("DB connection failed: " . $e->getMessage());
     die("Koneksi database gagal. Silakan periksa konfigurasi di .env");
 }
+
+// Session configuration for security
+ini_set('session.gc_maxlifetime', 3600); // 1 hour
+ini_set('session.cookie_httponly', 1); // Prevent JavaScript access to session cookie
+ini_set('session.cookie_samesite', 'Strict'); // CSRF protection
+ini_set('session.use_strict_mode', 1); // Prevent session fixation
 
 session_start();

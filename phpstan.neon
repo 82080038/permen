@@ -1,0 +1,14 @@
+parameters:
+    level: 5
+    paths:
+        - helpers.php
+        - config.php
+        - env_loader.php
+    excludePaths:
+        - api/*
+        - pages/*
+        - tests/*
+        - vendor/*
+    ignoreErrors:
+        - '#Access to undefined constant#'
+        - '#Undefined variable: \$pdo#'

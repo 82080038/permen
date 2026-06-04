@@ -30,3 +30,6 @@ access_log
 *.tmp
 *.temp
 cache/
+
+# Database exports (keep only latest)
+database_export.sql

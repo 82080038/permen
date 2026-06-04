@@ -72,6 +72,10 @@ test.describe('Exploratory — Semua Halaman & Console Check', () => {
   });
 
   test('Latihan — latihan.php', async ({ page }, testInfo) => {
+    // Use quick login for testing
+    await page.goto('http://localhost/permen/pages/login.php?quick=budi');
+    await page.waitForURL(/user_dashboard\.php/, { timeout: 15000 });
+
     await page.goto('http://localhost/permen/pages/latihan.php');
     await expect(page).toHaveTitle(/Latihan/);
     await page.waitForTimeout(500);

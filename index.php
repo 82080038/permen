@@ -32,7 +32,7 @@
 <body>
 <div class="header">
 <h1>SKD CAT-BKN</h1>
-<nav>
+<nav role="navigation" aria-label="Main navigation">
 <a href="pages/materi.php?subtes=TWK">Materi</a>
 <a href="pages/latihan.php">Latihan</a>
 <a href="pages/tryout.php">Try Out</a>

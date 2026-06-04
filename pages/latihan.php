@@ -71,6 +71,7 @@ if ($subtes && in_array($subtes, ['TWK','TIU','TKP'])) {
 <div class="header">
 <h1>Latihan per Subtes — SKD CAT-BKN</h1>
 <div>
+<nav role="navigation" aria-label="Page navigation">
 <a href="../index.php">Beranda</a>
 <a href="materi.php?subtes=TWK">Materi</a>
 <a href="tryout.php">Try Out</a>
@@ -80,6 +81,7 @@ if ($subtes && in_array($subtes, ['TWK','TIU','TKP'])) {
 <?php else: ?>
 <a href="login.php">Login</a>
 <?php endif; ?>
+</nav>
 </div>
 </div>
 <div class="container">

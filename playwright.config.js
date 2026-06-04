@@ -13,10 +13,13 @@ module.exports = defineConfig({
   reporter: 'html',
   timeout: 60000,
   use: {
-    baseURL: 'http://localhost/permen',
+    baseURL: process.env.BASE_URL || 'http://localhost/permen',
     trace: 'on-first-retry',
-    // Jalankan headless secara default (sesuai untuk CI/Linux)
-    // Gunakan flag --headed untuk mode browser terlihat
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+    // Jalankan dalam mode headed untuk monitoring console dan network
+    // Gunakan flag --headless untuk mode tanpa tampilan browser
+    headless: false,
     launchOptions: {
       slowMo: 200,
     },

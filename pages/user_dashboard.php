@@ -70,7 +70,8 @@ $akurasiTopik = $pdo->prepare("
         SUM(CASE WHEN a.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) as benar
     FROM answers a
     JOIN questions q ON a.question_id = q.id
-    WHERE a.user_id = ? AND a.jawaban_user IS NOT NULL AND a.jawaban_user != ''
+    JOIN tryout_sessions ts ON a.session_id = ts.id
+    WHERE ts.user_id = ? AND a.jawaban_user IS NOT NULL AND a.jawaban_user != ''
     GROUP BY q.subtes, q.topik
     HAVING COUNT(*) >= 3
     ORDER BY subtes, benar ASC, total DESC

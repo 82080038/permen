@@ -234,30 +234,53 @@ subtesOrder.forEach(sub => {
  * Then restore any saved answers from localStorage (survive page refresh).
  */
 async function loadSoal(){
-    const res = await fetch('../api/get_soal.php?session_id='+sessionId);
-    const data = await res.json();
-    if(data.error){alert(data.error);return;}
-    soal = data.soal;
-    passages = data.passages || {};
-    // Restore answers from localStorage if available
-    restoreLocalAnswers();
-    renderNumberGrid();
-    renderSoal(0);
-    startTimer();
+    try {
+        const res = await fetch('../api/get_soal.php?session_id='+sessionId);
+        const data = await res.json();
+        if(data.error){
+            if(data.error.includes('Session sudah selesai') || data.error.includes('tidak aktif')){
+                alert('Sesi tryout Anda telah berakhir atau tidak aktif. Anda akan diarahkan ke halaman hasil.');
+                window.location.href = 'hasil.php?session_id='+sessionId;
+                return;
+            }
+            alert(data.error);
+            return;
+        }
+        soal = data.soal;
+        passages = data.passages || {};
+        // Restore answers from localStorage if available
+        restoreLocalAnswers();
+        renderNumberGrid();
+        renderSoal(0);
+        startTimer();
+    } catch (e) {
+        console.error('Error loading questions:', e);
+        alert('Gagal memuat soal. Silakan refresh halaman atau periksa koneksi internet Anda.');
+    }
 }
 
 /**
  * Start countdown timer for the entire tryout.
  * Runs every second. Decrements both total time and per-subtes time.
  * Auto-finishes when time runs out or auto-advances subtes.
+ * FIXED: Added session expiry warning 5 minutes before expiry
  */
 function startTimer(){
+    let warningShown = false;
     timerInterval = setInterval(()=>{
         // Update per-subtes timer
         if (currentSubtes && subtesRemaining[currentSubtes] > 0) {
             subtesRemaining[currentSubtes]--;
         }
         totalSeconds--;
+        
+        // Show warning 5 minutes (300 seconds) before expiry
+        if (!warningShown && totalSeconds === 300) {
+            warningShown = true;
+            alert('PERINGATAN: Sesi Anda akan berakhir dalam 5 menit. Jawaban Anda akan otomatis disimpan.');
+            saveLocalAnswers(); // Force save before expiry
+        }
+        
         if(totalSeconds<=0){clearInterval(timerInterval);finishTryout();return;}
 
         // Check if current subtes time is up
@@ -517,9 +540,38 @@ function nextSoal(){
  * LOCALSTORAGE PERSISTENCE
  * Survives page refresh / browser crash
  * Key format: cat_answers_<sessionId>
+ * FIXED: Added localStorage quota exceeded handling
  * ================================ */
 function saveLocalAnswers(){
-    localStorage.setItem(LS_KEY, JSON.stringify({answers: answers, marked: marked, savedAt: Date.now()}));
+    try {
+        const data = JSON.stringify({answers: answers, marked: marked, savedAt: Date.now()});
+        localStorage.setItem(LS_KEY, data);
+    } catch (e) {
+        if (e.name === 'QuotaExceededError') {
+            console.error('LocalStorage quota exceeded. Attempting to clear old data...');
+            // Try to clear old sessions to free space
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('cat_answers_') && key !== LS_KEY) {
+                    localStorage.removeItem(key);
+                    console.log('Cleared old session:', key);
+                    // Try saving again
+                    try {
+                        const data = JSON.stringify({answers: answers, marked: marked, savedAt: Date.now()});
+                        localStorage.setItem(LS_KEY, data);
+                        console.log('Successfully saved after clearing old data');
+                        return;
+                    } catch (retryError) {
+                        console.error('Still cannot save after clearing old data');
+                    }
+                }
+            }
+            // If still failed, alert user
+            alert('Peringatan: Penyimpanan browser penuh. Jawaban Anda tetap disimpan ke server, tapi tidak dapat disimpan secara lokal untuk recovery.');
+        } else {
+            console.error('Error saving to localStorage:', e);
+        }
+    }
 }
 function restoreLocalAnswers(){
     const saved = localStorage.getItem(LS_KEY);
@@ -528,11 +580,17 @@ function restoreLocalAnswers(){
             const data = JSON.parse(saved);
             if(data.answers) Object.assign(answers, data.answers);
             if(data.marked) Object.assign(marked, data.marked);
-        }catch(e){}
+        }catch(e){
+            console.error('Error restoring from localStorage:', e);
+        }
     }
 }
 function clearLocalAnswers(){
-    localStorage.removeItem(LS_KEY);
+    try {
+        localStorage.removeItem(LS_KEY);
+    } catch (e) {
+        console.error('Error clearing localStorage:', e);
+    }
 }
 
 // --- MARK/RAGU-RAGU + NEEDS REVISION ---
