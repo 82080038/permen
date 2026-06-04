@@ -277,6 +277,63 @@ permen/
 - **Team Analysis:** `docs/TEAM_ANALYSIS_REPORT.md`
 - **Workflows:** `.windsurf/workflows/`
 
+## Git & GitHub Setup
+
+### Initial SSH Key Setup
+
+The repository uses SSH for GitHub authentication. Run the setup script:
+
+```bash
+./scripts/setup_git_ssh.sh
+```
+
+This script will:
+1. Generate SSH key (if not exists)
+2. Display public key to add to GitHub
+3. Configure git remote to use SSH
+4. Test SSH connection
+
+### Manual SSH Key Setup
+
+If you prefer manual setup:
+
+```bash
+# Generate SSH key
+ssh-keygen -t ed25519 -C "your_email@example.com"
+
+# Add to SSH agent
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+
+# Add GitHub to known hosts
+ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+# Display public key
+cat ~/.ssh/id_ed25519.pub
+```
+
+Then add the public key to GitHub:
+1. Go to https://github.com/settings/keys
+2. Click "New SSH key"
+3. Paste the public key
+4. Click "Add SSH key"
+
+### Configure Git Remote
+
+```bash
+# Change remote to SSH
+git remote set-url origin git@github.com:82080038/permen.git
+
+# Verify
+git remote -v
+```
+
+### Push Changes
+
+```bash
+git push origin main
+```
+
 ## Recent Updates (June 2026)
 
 ### Critical Fixes Implemented
