@@ -49,6 +49,7 @@ $materi = file_exists($file) ? require $file : [];
 <div>
 <a href="../index.php">Beranda</a>
 <a href="latihan.php">Latihan</a>
+<a href="daily_quiz.php" style="background:#e74c3c;color:#fff;padding:.2rem .5rem;border-radius:4px">Daily Quiz</a>
 <a href="tryout.php">Try Out</a>
 <?php if (!empty($_SESSION['user_id'])): ?>
 <a href="user_dashboard.php">Dashboard</a>

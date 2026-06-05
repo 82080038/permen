@@ -169,6 +169,7 @@ $timerS = str_pad($remainingSeconds % 60, 2, '0', STR_PAD_LEFT);
 <a href="../index.php">Beranda</a>
 <a href="latihan.php">Latihan</a>
 <a href="materi.php?subtes=TWK">Materi</a>
+<a href="daily_quiz.php" style="background:#e74c3c;color:#fff;padding:.1rem .4rem;border-radius:4px">Daily Quiz</a>
 <a href="leaderboard.php">Leaderboard</a>
 <?php if (!empty($_SESSION['user_id'])): ?>
 <a href="user_dashboard.php">Dashboard</a>

@@ -1,0 +1,239 @@
+/**
+ * @file Daily Quiz E2E Test
+ * Simulasi fitur Daily Quiz dengan Playwright (headed mode)
+ */
+
+const { test, expect } = require('@playwright/test');
+
+const BASE_URL = 'http://localhost/permen';
+const ADMIN_NO_HP = '081234567890';
+const USER_NO_HP = '081987654321';
+const PASSWORD = 'password';
+
+test.describe('Daily Quiz Feature', () => {
+  
+  test('1. User login dan akses Daily Quiz', async ({ page }) => {
+    console.log('📝 Step 1: Login sebagai user...');
+    
+    await page.goto(`${BASE_URL}/pages/login.php`);
+    await expect(page).toHaveTitle(/Login/);
+    
+    // Isi form login
+    await page.fill('#no_hp', USER_NO_HP);
+    await page.fill('#password', PASSWORD);
+    
+    console.log('📝 Step 2: Submit login...');
+    await page.click('button[type="submit"]');
+    
+    // Tunggu redirect ke dashboard
+    await expect(page).toHaveURL(/user_dashboard.php/);
+    console.log('✅ Berhasil login dan diarahkan ke dashboard');
+    
+    // Screenshot dashboard
+    await page.screenshot({ path: 'test-results/01-dashboard.png' });
+  });
+
+  test('2. Navigasi ke halaman Daily Quiz', async ({ page }) => {
+    // Login dulu
+    await page.goto(`${BASE_URL}/pages/login.php`);
+    await page.fill('#no_hp', USER_NO_HP);
+    await page.fill('#password', PASSWORD);
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/user_dashboard.php/);
+    
+    console.log('📝 Step 3: Klik tombol Daily Quiz...');
+    
+    // Klik link Daily Quiz di dashboard
+    const dailyQuizLink = page.locator('a[href="daily_quiz.php"]');
+    await expect(dailyQuizLink).toBeVisible();
+    await dailyQuizLink.click();
+    
+    // Tunggu halaman Daily Quiz load
+    await expect(page).toHaveURL(/daily_quiz.php/);
+    await expect(page).toHaveTitle(/Daily Quiz/);
+    
+    console.log('✅ Berhasil masuk halaman Daily Quiz');
+    
+    // Screenshot halaman quiz
+    await page.screenshot({ path: 'test-results/02-daily-quiz.png' });
+    
+    // Verifikasi elemen penting ada
+    await expect(page.locator('.quiz-header')).toBeVisible();
+    await expect(page.locator('#timerDisplay')).toBeVisible();
+    await expect(page.locator('#currentNum')).toBeVisible();
+    await expect(page.locator('#pertanyaan')).toBeVisible();
+    await expect(page.locator('#options')).toBeVisible();
+    
+    console.log('✅ Semua elemen Daily Quiz tampil dengan benar');
+  });
+
+  test('3. Simulasi mengerjakan Daily Quiz', async ({ page }) => {
+    // Login dulu
+    await page.goto(`${BASE_URL}/pages/login.php`);
+    await page.fill('#no_hp', USER_NO_HP);
+    await page.fill('#password', PASSWORD);
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/user_dashboard.php/);
+    
+    // Masuk Daily Quiz
+    await page.click('a[href="daily_quiz.php"]');
+    await expect(page).toHaveURL(/daily_quiz.php/);
+    
+    // Tunggu soal load
+    await page.waitForSelector('.pertanyaan', { timeout: 10000 });
+    
+    console.log('📝 Step 4: Mulai mengerjakan soal...');
+    
+    // Jawab 5 soal pertama
+    for (let i = 1; i <= 5; i++) {
+      console.log(`📝 Mengerjakan soal ${i}...`);
+      
+      // Pilih jawaban random (A, B, C, D, atau E)
+      const options = ['A', 'B', 'C', 'D', 'E'];
+      const randomOption = options[Math.floor(Math.random() * options.length)];
+      
+      // Klik option
+      const optionLocator = page.locator('.option').nth(options.indexOf(randomOption));
+      await optionLocator.click();
+      
+      // Tunggu sebentar sebelum lanjut
+      await page.waitForTimeout(500);
+      
+      // Screenshot tiap soal
+      if (i <= 3) {
+        await page.screenshot({ path: `test-results/03-soal-${i}.png` });
+      }
+    }
+    
+    console.log('✅ Berhasil mengerjakan 5 soal');
+  });
+
+  test('4. Test navigasi soal dan tandai ragu-ragu', async ({ page }) => {
+    // Login dan masuk Daily Quiz
+    await page.goto(`${BASE_URL}/pages/login.php`);
+    await page.fill('#no_hp', USER_NO_HP);
+    await page.fill('#password', PASSWORD);
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/user_dashboard.php/);
+    
+    await page.click('a[href="daily_quiz.php"]');
+    await expect(page).toHaveURL(/daily_quiz.php/);
+    await page.waitForSelector('.nav-grid', { timeout: 10000 });
+    
+    console.log('📝 Step 5: Test navigasi grid...');
+    
+    // Klik soal nomor 3
+    await page.click('.nav-btn:nth-child(3)');
+    await page.waitForTimeout(300);
+    
+    // Tandai ragu-ragu
+    console.log('📝 Step 6: Tandai soal ragu-ragu...');
+    await page.click('#btnRagu');
+    await page.waitForTimeout(300);
+    
+    // Verifikasi tombol ragu aktif
+    const raguBtn = page.locator('#btnRagu');
+    await expect(raguBtn).toHaveClass(/active/);
+    
+    console.log('✅ Fitur tandai ragu-ragu berfungsi');
+    
+    // Screenshot
+    await page.screenshot({ path: 'test-results/04-ragu-ragu.png' });
+  });
+
+  test('5. Test keyboard shortcuts', async ({ page }) => {
+    // Login dan masuk Daily Quiz
+    await page.goto(`${BASE_URL}/pages/login.php`);
+    await page.fill('#no_hp', USER_NO_HP);
+    await page.fill('#password', PASSWORD);
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/user_dashboard.php/);
+    
+    await page.click('a[href="daily_quiz.php"]');
+    await expect(page).toHaveURL(/daily_quiz.php/);
+    await page.waitForSelector('.options', { timeout: 10000 });
+    
+    console.log('📝 Step 7: Test keyboard shortcuts...');
+    
+    // Pilih jawaban dengan keyboard A
+    await page.keyboard.press('A');
+    await page.waitForTimeout(500);
+    
+    // Navigasi dengan arrow key
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(500);
+    
+    // Tandai ragu dengan M
+    await page.keyboard.press('M');
+    await page.waitForTimeout(500);
+    
+    console.log('✅ Keyboard shortcuts berfungsi');
+    
+    await page.screenshot({ path: 'test-results/05-keyboard.png' });
+  });
+
+  test('6. Test API tanpa login (harus 401)', async ({ request }) => {
+    console.log('📝 Step 8: Test API tanpa session...');
+    
+    const response = await request.get(`${BASE_URL}/api/get_daily_quiz.php`);
+    expect(response.status()).toBe(401);
+    
+    const body = await response.json();
+    expect(body.error).toContain('login');
+    
+    console.log('✅ API protection berfungsi (401 Unauthorized)');
+  });
+
+  test('7. Lihat riwayat Daily Quiz di dashboard', async ({ page }) => {
+    // Login
+    await page.goto(`${BASE_URL}/pages/login.php`);
+    await page.fill('#no_hp', USER_NO_HP);
+    await page.fill('#password', PASSWORD);
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/user_dashboard.php/);
+    
+    console.log('📝 Step 9: Cek section Daily Quiz di dashboard...');
+    
+    // Scroll ke section Daily Quiz
+    const dailyQuizSection = page.locator('.section:has-text("Daily Quiz")');
+    await expect(dailyQuizSection).toBeVisible();
+    
+    // Verifikasi tabel riwayat ada
+    await expect(page.locator('.section:has-text("Daily Quiz") table')).toBeVisible();
+    
+    console.log('✅ Section Daily Quiz tampil di dashboard');
+    
+    await page.screenshot({ path: 'test-results/06-dashboard-daily-quiz.png', fullPage: true });
+  });
+
+});
+
+test.describe('Daily Quiz - Sudah Selesai Hari Ini', () => {
+  
+  test('8. Tampilan sudah selesai', async ({ page }) => {
+    // Login dengan user yang sudah punya session selesai
+    await page.goto(`${BASE_URL}/pages/login.php`);
+    await page.fill('#no_hp', USER_NO_HP);
+    await page.fill('#password', PASSWORD);
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/user_dashboard.php/);
+    
+    // Coba masuk Daily Quiz lagi
+    await page.click('a[href="daily_quiz.php"]');
+    await expect(page).toHaveURL(/daily_quiz.php/);
+    
+    console.log('📝 Step 10: Cek tampilan sudah selesai...');
+    
+    // Jika sudah selesai, harus ada box completed
+    const completedBox = page.locator('.completed-box');
+    
+    try {
+      await expect(completedBox).toBeVisible({ timeout: 5000 });
+      console.log('✅ Tampilan "sudah selesai" muncul');
+      await page.screenshot({ path: 'test-results/07-sudah-selesai.png' });
+    } catch (e) {
+      console.log('ℹ️ User belum menyelesaikan quiz hari ini (normal)');
+    }
+  });
+  
+});

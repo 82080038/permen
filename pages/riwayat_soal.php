@@ -121,6 +121,7 @@ $sum = $summary->fetch();
 <div>
 <a href="../index.php">Beranda</a>
 <a href="user_dashboard.php">Dashboard</a>
+<a href="daily_quiz.php" style="background:#e74c3c;color:#fff;padding:.2rem .5rem;border-radius:4px">Daily Quiz</a>
 <a href="latihan.php">Latihan</a>
 <a href="../api/logout.php">Logout</a>
 </div>
