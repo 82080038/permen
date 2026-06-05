@@ -94,27 +94,20 @@ if ($format === 'csv') {
     fputcsv($output, ['TWK', $nilaiTwk, $passingTwk, $statusTwk], ';');
     fputcsv($output, [], ';');
     
-    // Instansi Eligibility
-    fputcsv($output, ['KELAYAKAN INSTANSI'], ';');
-    fputcsv($output, ['Instansi', 'Passing TKP', 'Passing TIU', 'Passing TWK', 'Passing Total', 'Status'], ';');
+    // Kelayakan SKD (Standar BKN)
+    fputcsv($output, ['KELAYAKAN SKD (Standar BKN 2024)'], ';');
+    fputcsv($output, ['Subtes', 'Passing Grade', 'Nilai Anda', 'Status'], ';');
     
-    $instansiList = $pdo->query("SELECT * FROM instansi WHERE aktif = 1 ORDER BY urutan")->fetchAll();
-    foreach ($instansiList as $ins) {
-        $lulusTkp = $nilaiTkp >= $ins['passing_tkp'];
-        $lulusTiu = $nilaiTiu >= $ins['passing_tiu'];
-        $lulusTwk = $nilaiTwk >= $ins['passing_twk'];
-        $lulusTotal = $totalNilai >= $ins['passing_total'];
-        $status = ($lulusTkp && $lulusTiu && $lulusTwk && $lulusTotal) ? 'LAYAK' : 'TIDAK LAYAK';
-        
-        fputcsv($output, [
-            $ins['nama'],
-            $ins['passing_tkp'],
-            $ins['passing_tiu'],
-            $ins['passing_twk'],
-            $ins['passing_total'],
-            $status
-        ], ';');
-    }
+    $lulusTkp = $nilaiTkp >= 156;
+    $lulusTiu = $nilaiTiu >= 80;
+    $lulusTwk = $nilaiTwk >= 65;
+    $lulusTotal = $totalNilai >= 301;
+    $lulusSemua = $lulusTkp && $lulusTiu && $lulusTwk && $lulusTotal;
+    
+    fputcsv($output, ['TKP', 156, $nilaiTkp, $lulusTkp ? 'LULUS' : 'TIDAK LULUS'], ';');
+    fputcsv($output, ['TIU', 80, $nilaiTiu, $lulusTiu ? 'LULUS' : 'TIDAK LULUS'], ';');
+    fputcsv($output, ['TWK', 65, $nilaiTwk, $lulusTwk ? 'LULUS' : 'TIDAK LULUS'], ';');
+    fputcsv($output, ['TOTAL', 301, $totalNilai, $lulusSemua ? 'MEMENUHI SYARAT SKD' : 'BELUM MEMENUHI SYARAT'], ';');
     
     fclose($output);
     exit;

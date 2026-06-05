@@ -165,27 +165,8 @@ $timerS = str_pad($remainingSeconds % 60, 2, '0', STR_PAD_LEFT);
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
-<div class="topbar">
-<a href="../index.php">Beranda</a>
-<a href="latihan.php">Latihan</a>
-<a href="materi.php?subtes=TWK">Materi</a>
-<a href="daily_quiz.php" style="background:#e74c3c;color:#fff;padding:.1rem .4rem;border-radius:4px">Daily Quiz</a>
-<a href="leaderboard.php">Leaderboard</a>
-<?php if (!empty($_SESSION['user_id'])): ?>
-<a href="user_dashboard.php">Dashboard</a>
-<a href="../api/logout.php">Logout</a>
-<?php else: ?>
-<a href="login.php">Login</a>
-<?php endif; ?>
-</div>
-<div class="header">
-<h1>Try Out SKD CAT-BKN</h1>
-<div style="display:flex;align-items:center;gap:.3rem">
-    <button class="theme-toggle" onclick="toggleTheme()" title="Dark/Light Mode" aria-label="Toggle dark/light mode">🌙</button>
-    <button class="font-toggle" onclick="cycleFontSize()" title="Ukuran Font" aria-label="Ubah ukuran font">Aa</button>
-    <div class="timer" id="timer" aria-live="polite" aria-atomic="true"><?= htmlspecialchars($timerM) ?>:<?= htmlspecialchars($timerS) ?></div>
-</div>
-</div>
+<?php $pageTitle = 'Try Out SKD CAT-BKN'; $activePage = 'tryout'; $showThemeToggle = true; ?>
+<?php require '../includes/navigation.php'; ?>
 <div class="nav">
 <span id="subtes-info">Memuat soal...</span>
 </div>
@@ -276,11 +257,17 @@ async function loadSoal(){
                 'X-Requested-With': 'XMLHttpRequest'
             }
         });
-        
+
+        if (res.status === 401 || res.status === 403) {
+            alert('Sesi Anda telah berakhir. Silakan login kembali.');
+            window.location.href = 'login.php';
+            return;
+        }
+
         if (!res.ok) {
             throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         }
-        
+
         const text = await res.text();
         
         // Check if response is HTML (error page) instead of JSON
@@ -503,7 +490,7 @@ function renderSoal(idx){
         html += '<label class="'+selected+'"><input type="radio" name="jawaban" value="'+opt+'" '+(selected?'checked':'')+' onchange="pilihJawaban('+s.answer_id+',\''+opt+'\',this)"> ' + opt + '. ' + escapeHtml(s['pilihan_'+opt.toLowerCase()]) + '</label>';
     });
     html += '</div>';
-    html += '<div class="pembahasan" id="pembahasanBox" style="display:block">' + escapeHtml(s.pembahasan) + '</div>';
+    html += '<div class="pembahasan" id="pembahasanBox" style="display:none">' + escapeHtml(s.pembahasan) + '</div>';
     document.getElementById('soalContainer').innerHTML = html;
     renderNumberGrid();
     // Scroll to question content, not nav grid
@@ -531,9 +518,23 @@ function pilihJawaban(answerId, opt, el){
             'X-CSRF-Token': csrfToken
         },
         body:JSON.stringify({answer_id:answerId,jawaban:opt})
+    }).then(r=>{
+        if(r.status === 401 || r.status === 403){
+            alert('Sesi Anda telah berakhir. Silakan login kembali.');
+            window.location.href = 'login.php';
+        }
+    }).catch(e=>{
+        console.error('Error submitting answer:', e);
     });
-    // Auto-advance to next question
+    // Auto-advance to next question (unless marked as ragu)
     setTimeout(()=>{
+        // Check if current question is marked as ragu
+        const s = soal[currentIdx];
+        if (marked[s.answer_id]) {
+            // Don't auto-advance if marked as ragu
+            return;
+        }
+
         if(currentIdx >= soal.length - 1){
             // Last question answered
             const answeredCount = Object.keys(answers).length;
@@ -669,6 +670,15 @@ function toggleMark(){
     marked[s.answer_id] = !marked[s.answer_id];
     saveLocalAnswers();
     renderNumberGrid();
+    // Update button text to indicate state
+    const btn = document.getElementById('btnMark');
+    if (marked[s.answer_id]) {
+        btn.textContent = 'Ragu ✓';
+        btn.title = 'Auto-advance dinonaktifkan untuk soal ini';
+    } else {
+        btn.textContent = 'Ragu (M)';
+        btn.title = 'Tandai ragu-ragu';
+    }
     // Send revision flag to server
     fetch('../api/mark_revision.php',{
         method:'POST',
@@ -683,13 +693,17 @@ function toggleMark(){
 // --- BOOKMARK/FAVORIT ---
 async function toggleBookmark(){
     const s = soal[currentIdx];
+    if (!s || !s.question_id) {
+        showToast('Soal tidak valid', 'error');
+        return;
+    }
     const isBookmarked = bookmarked[s.question_id];
     const action = isBookmarked ? 'remove' : 'add';
-    
+
     const formData = new FormData();
     formData.append('question_id', s.question_id);
     formData.append('action', action);
-    
+
     try {
         const res = await fetch('../api/bookmark_question.php', {
             method: 'POST',
@@ -698,8 +712,15 @@ async function toggleBookmark(){
             },
             body: formData
         });
+
+        if (res.status === 401 || res.status === 403) {
+            showToast('Sesi telah berakhir. Silakan login kembali.', 'error');
+            setTimeout(() => window.location.href = 'login.php', 2000);
+            return;
+        }
+
         const data = await res.json();
-        
+
         if (data.success) {
             bookmarked[s.question_id] = !isBookmarked;
             const btn = document.getElementById('btnBookmark');
@@ -725,9 +746,11 @@ document.addEventListener('copy', e=>{ if(e.target.closest('.passage-bacaan, .qu
 document.addEventListener('cut', e=>{ if(e.target.closest('.passage-bacaan, .question')) e.preventDefault(); });
 // Detect window blur (user switches tab/app)
 let blurCount = 0;
+let blurAlertShown = false;
 window.addEventListener('blur', ()=>{
     blurCount++;
-    if(blurCount >= 3){
+    if(blurCount >= 3 && !blurAlertShown){
+        blurAlertShown = true;
         alert('Peringatan: Anda telah meninggalkan halaman tryout terlalu sering. Integritas tes akan dievaluasi.');
     }
 });

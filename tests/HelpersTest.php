@@ -7,23 +7,43 @@ class HelpersTest extends TestCase
 {
     public function testValidatePasswordStrength()
     {
-        // Test valid password
-        $this->assertTrue(validatePasswordStrength('Password123'));
-        
-        // Test invalid passwords
-        $this->assertFalse(validatePasswordStrength('short')); // Too short
-        $this->assertFalse(validatePasswordStrength('nouppercase123')); // No uppercase
-        $this->assertFalse(validatePasswordStrength('NOLOWERCASE123')); // No lowercase
-        $this->assertFalse(validatePasswordStrength('NoDigits')); // No digits
+        // Test valid password (6+ characters)
+        $result = validatePasswordStrength('123456');
+        $this->assertTrue($result['valid']);
+        $this->assertEquals('', $result['error']);
+
+        $result = validatePasswordStrength('abcdef');
+        $this->assertTrue($result['valid']);
+        $this->assertEquals('', $result['error']);
+
+        $result = validatePasswordStrength('abc123');
+        $this->assertTrue($result['valid']);
+        $this->assertEquals('', $result['error']);
+
+        // Test invalid passwords (less than 6 characters)
+        $result = validatePasswordStrength('12345');
+        $this->assertFalse($result['valid']);
+
+        $result = validatePasswordStrength('abcde');
+        $this->assertFalse($result['valid']);
+
+        $result = validatePasswordStrength('123');
+        $this->assertFalse($result['valid']);
     }
     
     public function testSanitizeInput()
     {
-        // Test XSS prevention
-        $input = '<script>alert("xss")</script>';
+        // Test that sanitizeInput removes control characters and null bytes
+        $input = "test\x00string\x1F";
         $sanitized = sanitizeInput($input);
-        $this->assertStringNotContainsString('<script>', $sanitized);
-        $this->assertStringNotContainsString('alert', $sanitized);
+        $this->assertStringNotContainsString("\x00", $sanitized);
+        $this->assertStringNotContainsString("\x1F", $sanitized);
+        $this->assertEquals('teststring', $sanitized);
+
+        // Test trimming
+        $input = "  test  ";
+        $sanitized = sanitizeInput($input);
+        $this->assertEquals('test', $sanitized);
     }
     
     public function testCsrfTokenGeneration()

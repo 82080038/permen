@@ -152,20 +152,23 @@ Buka browser: `http://localhost/permen/`
 ### Install dependencies
 ```bash
 npm install
-npx playwright install chromium
-npx playwright install-deps chromium
+npx playwright install
+npx playwright install-deps
 ```
 
 ### Jalankan test
 ```bash
-# Headless (CI)
+# Headless (default)
 npm test
 
-# Headed (browser terlihat — Linux butuh xvfb)
-xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" npm run test:headed
+# Headed (browser terlihat)
+npm run test:headed
 
 # Debug mode
 npx playwright test --debug
+
+# UI mode
+npm run test:ui
 ```
 
 Lihat `tests/README.md` untuk detail lebih lanjut.

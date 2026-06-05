@@ -44,21 +44,8 @@ $materi = file_exists($file) ? require $file : [];
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
-<div class="header">
-<h1>Materi Pembelajaran SKD</h1>
-<div>
-<a href="../index.php">Beranda</a>
-<a href="latihan.php">Latihan</a>
-<a href="daily_quiz.php" style="background:#e74c3c;color:#fff;padding:.2rem .5rem;border-radius:4px">Daily Quiz</a>
-<a href="tryout.php">Try Out</a>
-<?php if (!empty($_SESSION['user_id'])): ?>
-<a href="user_dashboard.php">Dashboard</a>
-<a href="../api/logout.php">Logout</a>
-<?php else: ?>
-<a href="login.php">Login</a>
-<?php endif; ?>
-</div>
-</div>
+<?php $pageTitle = 'Materi Pembelajaran SKD'; $activePage = 'latihan'; ?>
+<?php require '../includes/navigation.php'; ?>
 <div class="nav">
 <a href="?subtes=TWK" class="<?= $subtes=='TWK'?'active':'' ?>">TWK</a>
 <a href="?subtes=TIU" class="<?= $subtes=='TIU'?'active':'' ?>">TIU</a>
@@ -141,9 +128,10 @@ const topikBySubtes = {
 // Populate topik dropdown
 const subtes = '<?= $subtes ?>';
 const sel = document.getElementById('latihTopik');
-topikBySubtes[subtes].forEach(t => {
+topikBySubtes[subtes].forEach((t, idx) => {
     const opt = document.createElement('option');
     opt.value = t; opt.textContent = t;
+    if (idx === 0) opt.selected = true; // Auto-select first topik
     sel.appendChild(opt);
 });
 
@@ -167,10 +155,11 @@ async function generateLatihan(){
             return;
         }
 
+        const result = data.data || data;
         let html = '<h3 style="color:#1a5276;margin-bottom:.8rem">Latihan ' + subtes + ' — ' + topik + '</h3>';
-        html += '<div style="font-size:.85rem;color:#666;margin-bottom:.8rem">' + data.jumlah + ' soal generated. Pilih jawaban, lalu klik "Periksa Jawaban".</div>';
+        html += '<div style="font-size:.85rem;color:#666;margin-bottom:.8rem">' + result.jumlah + ' soal generated. Pilih jawaban, lalu klik "Periksa Jawaban".</div>';
         html += '<form id="latihanForm">';
-        data.soal.forEach((q,i) => {
+        result.soal.forEach((q,i) => {
             html += '<div style="border:1px solid #ddd;border-radius:6px;padding:.8rem;margin-bottom:.6rem;background:#fff">';
             html += '<strong>Soal ' + (i+1) + '</strong><div style="margin:.3rem 0 .5rem;font-size:.9rem">' + escapeHtml(q.pertanyaan) + '</div>';
             ['A','B','C','D','E'].forEach(opt => {

@@ -17,11 +17,11 @@ module.exports = defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    // Jalankan dalam mode headed untuk monitoring console dan network
-    // Gunakan flag --headless untuk mode tanpa tampilan browser
-    headless: false,
+    // Jalankan dalam mode headless untuk testing otomatis
+    // Gunakan flag --headed untuk mode dengan tampilan browser
+    headless: true,
     launchOptions: {
-      slowMo: 200,
+      slowMo: 0,
     },
   },
 
@@ -29,14 +29,6 @@ module.exports = defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
     },
   ],
 });

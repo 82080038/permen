@@ -18,6 +18,7 @@ $userName = e($_SESSION['user_nama'] ?? 'User');
 <meta name="theme-color" content="#1a5276">
 <title>Feedback — SKD CAT-BKN</title>
 <link rel="stylesheet" href="../assets/form.css">
+<link rel="stylesheet" href="../assets/style.css">
 <style>
 .feedback-container{max-width:600px;margin:2rem auto;padding:0 1rem}
 .category-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:.5rem;margin-bottom:1rem}
@@ -39,16 +40,8 @@ textarea{min-height:120px;resize:vertical}
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
-<div class="header">
-<h1>Feedback</h1>
-<div>
-<a href="../index.php">Beranda</a>
-<a href="user_dashboard.php">Dashboard</a>
-<a href="daily_quiz.php" style="background:#e74c3c;color:#fff;padding:.2rem .5rem;border-radius:4px">Daily Quiz</a>
-<a href="tryout.php">Try Out</a>
-<a href="../api/logout.php">Logout</a>
-</div>
-</div>
+<?php $pageTitle = 'Feedback'; $activePage = 'feedback'; ?>
+<?php require '../includes/navigation.php'; ?>
 
 <div class="feedback-container" id="main-content">
 <div class="card">
@@ -123,6 +116,12 @@ async function submitFeedback(e) {
             selectCategory(document.querySelector('[data-category="lainnya"]'));
             updateCharCount();
             loadFeedbackHistory();
+            // Tampilkan opsi redirect setelah 2 detik
+            setTimeout(() => {
+                if (confirm('Feedback berhasil dikirim! Terima kasih atas kontribusi Anda.\n\nKlik OK untuk kembali ke Beranda, atau Cancel untuk tetap di halaman ini.')) {
+                    window.location.href = '../index.php';
+                }
+            }, 1500);
         } else {
             showToast(data.error || 'Gagal mengirim feedback', 'error');
         }

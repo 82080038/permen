@@ -61,10 +61,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="theme-color" content="#1a5276">
 <title>Register — SKD CAT-BKN</title>
 <link rel="stylesheet" href="../assets/form.css">
+<link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
-<div class="header"><h1>Daftar Akun SKD CAT-BKN</h1></div>
+<?php $pageTitle = 'Daftar Akun SKD CAT-BKN'; $activePage = 'beranda'; ?>
+<?php require '../includes/navigation.php'; ?>
 <div class="container">
 <div class="card">
 <h2>Buat Akun Baru</h2>
@@ -102,14 +104,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <small id="instansi-help" style="color:#777;font-size:.8rem">Pilih instansi yang ingin dilamar (opsional)</small>
 </div>
 <div class="form-group">
-<label for="password">Password (minimal 8 karakter, 1 huruf besar, 1 huruf kecil, 1 angka, 1 karakter spesial)</label>
-<input type="password" id="password" name="password" required minlength="8" aria-required="true" aria-describedby="password-help password-strength" aria-label="Password" oninput="checkPasswordStrength()">
-<small id="password-help" style="color:#777;font-size:.8rem">Gunakan kombinasi huruf, angka, dan karakter spesial (!@#$%^&*(),.?":{}|<>) untuk keamanan</small>
-<div id="password-strength" style="font-size:.8rem;margin-top:.3rem"></div>
+<label for="password">Password (minimal 6 karakter)</label>
+<input type="password" id="password" name="password" required minlength="6" aria-required="true" aria-describedby="password-help" aria-label="Password">
+<small id="password-help" style="color:#777;font-size:.8rem">Gunakan password yang mudah diingat namun sulit ditebak</small>
 </div>
 <div class="form-group">
 <label for="password2">Konfirmasi Password</label>
-<input type="password" id="password2" name="password2" required minlength="8" aria-required="true" aria-label="Konfirmasi password">
+<input type="password" id="password2" name="password2" required minlength="6" aria-required="true" aria-label="Konfirmasi password">
 </div>
 <button type="submit" class="btn" aria-label="Daftar akun baru">Daftar</button>
 </form>
@@ -120,24 +121,5 @@ Sudah punya akun? <a href="login.php" class="link">Login di sini</a>
 </div>
 <div class="footer">SKD CAT-BKN Try Out & Bimbel</div>
 <script src="../assets/app.js"></script>
-<script>
-function checkPasswordStrength() {
-    const password = document.getElementById('password').value;
-    const feedback = document.getElementById('password-strength');
-    let issues = [];
-    
-    if (password.length < 8) issues.push('minimal 8 karakter');
-    if (!/[A-Z]/.test(password)) issues.push('1 huruf besar');
-    if (!/[a-z]/.test(password)) issues.push('1 huruf kecil');
-    if (!/[0-9]/.test(password)) issues.push('1 angka');
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) issues.push('1 karakter spesial');
-    
-    if (issues.length === 0) {
-        feedback.innerHTML = '<span style="color:#27ae60">✓ Password kuat</span>';
-    } else {
-        feedback.innerHTML = '<span style="color:#e74c3c">Kurang: ' + issues.join(', ') + '</span>';
-    }
-}
-</script>
 </body>
 </html>

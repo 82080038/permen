@@ -99,20 +99,8 @@ if ($isLatihan) {
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
-<div class="topbar">
-<a href="../index.php">Beranda</a>
-<a href="latihan.php">Latihan</a>
-<a href="materi.php?subtes=TWK">Materi</a>
-<?php if (!empty($_SESSION['user_id'])): ?>
-<a href="user_dashboard.php">Dashboard</a>
-<a href="../api/logout.php">Logout</a>
-<?php else: ?>
-<a href="login.php">Login</a>
-<?php endif; ?>
-</div>
-<div class="header">
-<h1><?= $isLatihan ? "Hasil Latihan " . htmlspecialchars($latihanSubtes) : 'Hasil Try Out SKD CAT-BKN' ?></h1>
-</div>
+<?php $pageTitle = $isLatihan ? "Hasil Latihan " . htmlspecialchars($latihanSubtes) : 'Hasil Try Out SKD CAT-BKN'; $activePage = $isLatihan ? 'latihan' : 'tryout'; ?>
+<?php require '../includes/navigation.php'; ?>
 <div class="container" id="main-content">
 
 <?php if ($isLatihan): ?>
@@ -176,116 +164,35 @@ else { $nilaiSubtes = $nilaiTwk; $passingSubtes = $passingTwk; $statusSubtes = $
 
 <!-- Rekomendasi Instansi -->
 <div class="card">
-<h2>📊 Rekomendasi Instansi Berdasarkan Nilai Anda</h2>
-<?php
-$instansiList = $pdo->query("SELECT * FROM instansi WHERE aktif = 1 ORDER BY passing_total DESC, urutan")->fetchAll();
-
-// Hitung gap dan ranking untuk setiap instansi
-$instansiRanking = [];
-foreach ($instansiList as $ins) {
-    $gapTkp = $nilaiTkp - $ins['passing_tkp'];
-    $gapTiu = $nilaiTiu - $ins['passing_tiu'];
-    $gapTwk = $nilaiTwk - $ins['passing_twk'];
-    $gapTotal = $totalNilai - $ins['passing_total'];
-    
-    $lulusTkp = $gapTkp >= 0;
-    $lulusTiu = $gapTiu >= 0;
-    $lulusTwk = $gapTwk >= 0;
-    $lulusTotal = $gapTotal >= 0;
-    $lulusSemuaIns = $lulusTkp && $lulusTiu && $lulusTwk && $lulusTotal;
-    
-    // Skor kelayakan: total gap (semakin positif semakin baik)
-    $skorKelayakan = $gapTkp + $gapTiu + $gapTwk + $gapTotal;
-    
-    $instansiRanking[] = [
-        'instansi' => $ins,
-        'gap_tkp' => $gapTkp,
-        'gap_tiu' => $gapTiu,
-        'gap_twk' => $gapTwk,
-        'gap_total' => $gapTotal,
-        'lulus' => $lulusSemuaIns,
-        'skor_kelayakan' => $skorKelayakan
-    ];
-}
-
-// Sort berdasarkan skor kelayakan (descending)
-usort($instansiRanking, function($a, $b) {
-    return $b['skor_kelayakan'] - $a['skor_kelayakan'];
-});
-
-$eligibleCount = count(array_filter($instansiRanking, fn($x) => $x['lulus']));
-?>
+<h2>📊 Kelayakan SKD</h2>
 <p style="font-size:.9rem;color:#555;margin-bottom:1rem">
-<?php if ($eligibleCount > 0): ?>
-🎉 <strong>Selamat!</strong> Nilai Anda memenuhi syarat SKD untuk <strong><?= $eligibleCount ?> instansi</strong>.
-<?php else: ?>
-⚠️ Nilai Anda belum memenuhi passing grade instansi manapun. Lihat tabel di bawah untuk melihat seberapa jauh gap Anda.
-<?php endif; ?>
+<strong>Passing Grade Standar BKN 2024:</strong> TKP 156, TIU 80, TWK 65, Total 301 (semua instansi menggunakan standar yang sama).
 </p>
-
-<div style="overflow-x:auto">
-<table style="width:100%;border-collapse:collapse;font-size:.85rem">
-<thead>
-<tr style="background:#1a5276;color:#fff">
-<th style="padding:.6rem;text-align:center;border:1px solid #1a5276">Rank</th>
-<th style="padding:.6rem;text-align:left;border:1px solid #1a5276">Instansi</th>
-<th style="padding:.6rem;text-align:center;border:1px solid #1a5276">TWK</th>
-<th style="padding:.6rem;text-align:center;border:1px solid #1a5276">TIU</th>
-<th style="padding:.6rem;text-align:center;border:1px solid #1a5276">TKP</th>
-<th style="padding:.6rem;text-align:center;border:1px solid #1a5276">Total</th>
-<th style="padding:.6rem;text-align:center;border:1px solid #1a5276">Status</th>
-</tr>
-</thead>
-<tbody>
-<?php foreach ($instansiRanking as $idx => $item):
-    $ins = $item['instansi'];
-    $lulus = $item['lulus'];
-    $rowBg = $lulus ? '#d4edda' : ($idx === 0 ? '#fff3cd' : ($idx % 2 === 0 ? '#f8f9fa' : '#fff'));
+<?php
+$lulusTkp = $nilaiTkp >= 156;
+$lulusTiu = $nilaiTiu >= 80;
+$lulusTwk = $nilaiTwk >= 65;
+$lulusTotal = $totalNilai >= 301;
+$lulusSemua = $lulusTkp && $lulusTiu && $lulusTwk && $lulusTotal;
 ?>
-<tr style="background:<?= $rowBg ?>">
-<td style="padding:.6rem;border:1px solid #ddd;text-align:center;font-weight:bold"><?= $idx + 1 ?></td>
-<td style="padding:.6rem;border:1px solid #ddd">
-<div style="font-weight:bold;color:#1a5276"><?= e($ins['kode']) ?></div>
-<div style="font-size:.75rem;color:#555"><?= e($ins['nama']) ?></div>
-</td>
-<td style="padding:.6rem;border:1px solid #ddd;text-align:center">
-<span style="color:<?= $item['gap_twk'] >= 0 ? '#27ae60' : '#e74c3c' ?>;font-weight:bold">
-<?= $item['gap_twk'] >= 0 ? '+' : '' ?><?= $item['gap_twk'] ?>
-</span>
-<span style="color:#777;font-size:.75rem">(PG: <?= $ins['passing_twk'] ?>)</span>
-</td>
-<td style="padding:.6rem;border:1px solid #ddd;text-align:center">
-<span style="color:<?= $item['gap_tiu'] >= 0 ? '#27ae60' : '#e74c3c' ?>;font-weight:bold">
-<?= $item['gap_tiu'] >= 0 ? '+' : '' ?><?= $item['gap_tiu'] ?>
-</span>
-<span style="color:#777;font-size:.75rem">(PG: <?= $ins['passing_tiu'] ?>)</span>
-</td>
-<td style="padding:.6rem;border:1px solid #ddd;text-align:center">
-<span style="color:<?= $item['gap_tkp'] >= 0 ? '#27ae60' : '#e74c3c' ?>;font-weight:bold">
-<?= $item['gap_tkp'] >= 0 ? '+' : '' ?><?= $item['gap_tkp'] ?>
-</span>
-<span style="color:#777;font-size:.75rem">(PG: <?= $ins['passing_tkp'] ?>)</span>
-</td>
-<td style="padding:.6rem;border:1px solid #ddd;text-align:center">
-<span style="color:<?= $item['gap_total'] >= 0 ? '#27ae60' : '#e74c3c' ?>;font-weight:bold">
-<?= $item['gap_total'] >= 0 ? '+' : '' ?><?= $item['gap_total'] ?>
-</span>
-<span style="color:#777;font-size:.75rem">(PG: <?= $ins['passing_total'] ?>)</span>
-</td>
-<td style="padding:.6rem;border:1px solid #ddd;text-align:center;font-weight:bold">
-<?php if ($lulus): ?>
-<span style="color:#155724">✅ LULUS</span>
-<?php else: ?>
-<span style="color:#856404">❌ Tidak Lulus</span>
-<?php endif; ?>
-</td>
-</tr>
-<?php endforeach; ?>
-</tbody>
-</table>
+<div style="background:<?= $lulusSemua ? '#d4edda' : '#fff3cd' ?>;border:1px solid <?= $lulusSemua ? '#155724' : '#856404' ?>;border-radius:6px;padding:1rem;margin-bottom:1rem">
+<div style="font-weight:bold;color:#1a5276;font-size:1rem;margin-bottom:.5rem">
+<?= $lulusSemua ? '✅ Memenuhi Syarat SKD' : '⚠️ Belum Memenuhi Syarat SKD' ?>
 </div>
-<p style="font-size:.8rem;color:#777;margin-top:.8rem;text-align:center">
-💡 <strong>Tip:</strong> Angka positif (hijau) = nilai Anda di atas passing grade. Angka negatif (merah) = nilai Anda di bawah passing grade. PG = Passing Grade.
+<div style="font-size:.9rem;color:#555">
+<?php if ($lulusSemua): ?>
+Nilai Anda memenuhi passing grade standar BKN. Anda berpotensi lolos ke tahap seleksi berikutnya untuk semua instansi.
+<?php else: ?>
+Anda perlu meningkatkan nilai di subtes berikut:
+<?php if (!$lulusTkp) echo '<br>• TKP: kurang ' . (156 - $nilaiTkp); ?>
+<?php if (!$lulusTiu) echo '<br>• TIU: kurang ' . (80 - $nilaiTiu); ?>
+<?php if (!$lulusTwk) echo '<br>• TWK: kurang ' . (65 - $nilaiTwk); ?>
+<?php if (!$lulusTotal) echo '<br>• Total: kurang ' . (301 - $totalNilai); ?>
+<?php endif; ?>
+</div>
+</div>
+<p style="font-size:.8rem;color:#777;text-align:center">
+Sumber: BKN (Badan Kepegawaian Negara) - Seleksi Sekolah Kedinasan 2024
 </p>
 </div>
 

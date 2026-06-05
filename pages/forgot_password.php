@@ -60,10 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="theme-color" content="#1a5276">
 <title>Request Reset Password — SKD CAT-BKN</title>
 <link rel="stylesheet" href="../assets/form.css">
+<link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
-<div class="header"><h1>Request Reset Password — SKD CAT-BKN</h1></div>
+<?php $pageTitle = 'Request Reset Password — SKD CAT-BKN'; $activePage = 'beranda'; ?>
+<?php require '../includes/navigation.php'; ?>
 <div class="container" id="main-content">
 <div class="card">
 <h2>Request Reset Password</h2>

@@ -6,16 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="assets/style.css">
 <title>SKD CAT-BKN Try Out & Bimbel</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f7fa;color:#222;line-height:1.6;-webkit-text-size-adjust:100%}
-.header{background:#1a5276;color:#fff;padding:.8rem 1rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:.5rem}
-.header h1{font-size:1.1rem;white-space:nowrap}.header nav{display:flex;flex-wrap:wrap;gap:.4rem .8rem}
-.header nav a{color:#fff;text-decoration:none;font-size:.85rem;white-space:nowrap;padding:.25rem 0}
-.hamburger{display:none;background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;padding:.5rem;min-width:44px;min-height:44px}
-.mobile-menu{display:none;position:absolute;top:100%;left:0;right:0;background:#1a5276;flex-direction:column;padding:1rem;gap:.5rem}
-.mobile-menu.active{display:flex}
-.skip-link:focus{top:0}
 .hero{background:#2980b9;color:#fff;text-align:center;padding:2.5rem 1rem}
 .hero h2{font-size:1.7rem;margin-bottom:.5rem}.hero p{font-size:1rem;opacity:.9}
 .cta{margin-top:1.2rem}.cta a{display:inline-block;background:#e74c3c;color:#fff;padding:.75rem 1.2rem;border-radius:5px;text-decoration:none;font-weight:bold;margin:.3rem;font-size:.95rem;min-width:44px;min-height:44px}
@@ -27,46 +20,15 @@
 @media(max-width:480px){
 .hero{padding:2rem .8rem}
 .hero h2{font-size:1.35rem}
-.header h1{font-size:1rem}
 .cta a{display:block;width:100%;margin:.3rem 0}
 .features{grid-template-columns:1fr}
-.hamburger{display:block}
-.header nav{display:none}
-.mobile-menu{display:none}
-.mobile-menu.active{display:flex}
 }
 </style>
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
-<div class="header">
-<h1>SKD CAT-BKN</h1>
-<button class="hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
-<nav role="navigation" aria-label="Main navigation">
-<a href="pages/materi.php?subtes=TWK">Materi</a>
-<a href="pages/latihan.php">Latihan</a>
-<a href="pages/tryout.php">Try Out</a>
-<?php if (!empty($_SESSION['user_id'])): ?>
-<a href="pages/user_dashboard.php">Dashboard</a>
-<a href="api/logout.php">Logout</a>
-<?php else: ?>
-<a href="pages/login.php">Login</a>
-<a href="pages/register.php">Daftar</a>
-<?php endif; ?>
-</nav>
-<div class="mobile-menu" role="navigation" aria-label="Mobile navigation">
-<a href="pages/materi.php?subtes=TWK">Materi</a>
-<a href="pages/latihan.php">Latihan</a>
-<a href="pages/tryout.php">Try Out</a>
-<?php if (!empty($_SESSION['user_id'])): ?>
-<a href="pages/user_dashboard.php">Dashboard</a>
-<a href="api/logout.php">Logout</a>
-<?php else: ?>
-<a href="pages/login.php">Login</a>
-<a href="pages/register.php">Daftar</a>
-<?php endif; ?>
-</div>
-</div>
+<?php $pageTitle = 'SKD CAT-BKN'; $activePage = 'beranda'; ?>
+<?php require 'includes/navigation.php'; ?>
 <div class="hero" id="main-content">
 <h2>Siapkan Diri untuk SKD Sekolah Kedinasan</h2>
 <p>Aplikasi Try Out & Bimbel berdasarkan Permen PANRB No. 20/2021 & KepmenPANRB No. 208/2025</p>

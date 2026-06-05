@@ -116,16 +116,8 @@ $sum = $summary->fetch();
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
-<div class="header">
-<h1>Riwayat Soal — SKD CAT-BKN</h1>
-<div>
-<a href="../index.php">Beranda</a>
-<a href="user_dashboard.php">Dashboard</a>
-<a href="daily_quiz.php" style="background:#e74c3c;color:#fff;padding:.2rem .5rem;border-radius:4px">Daily Quiz</a>
-<a href="latihan.php">Latihan</a>
-<a href="../api/logout.php">Logout</a>
-</div>
-</div>
+<?php $pageTitle = 'Riwayat Soal — SKD CAT-BKN'; $activePage = 'latihan'; ?>
+<?php require '../includes/navigation.php'; ?>
 
 <div class="container" id="main-content">
 <!-- Summary -->

@@ -18,8 +18,9 @@ This workflow runs comprehensive end-to-end tests using Playwright with console 
    /opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/skd_cat_bkn.sql
    ```
 
-3. Node.js dependencies must be installed:
+3. Dependencies must be installed:
    ```bash
+   composer install
    npm install
    npx playwright install chromium
    ```
@@ -31,6 +32,8 @@ This workflow runs comprehensive end-to-end tests using Playwright with console 
 # Linux requires xvfb for headed mode
 xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" npm run test:headed
 ```
+
+Note: Playwright config is set to `headless: false` by default for monitoring
 
 ### Headless Mode (default)
 ```bash

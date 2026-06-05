@@ -127,14 +127,21 @@ ini_set('session.use_strict_mode', 1);
 ### Playwright E2E Tests
 
 ```bash
-# Install Playwright browsers
+# Install Playwright browsers and dependencies
 npx playwright install
+npx playwright install-deps
+
+# Run tests in headless mode (default)
+npm test
 
 # Run tests in headed mode (with browser UI)
-npx playwright test --headed
+npm run test:headed
 
-# Run tests in headless mode
-npx playwright test
+# Debug mode
+npx playwright test --debug
+
+# UI mode
+npm run test:ui
 
 # View test report
 npx playwright show-report
@@ -144,7 +151,7 @@ npx playwright show-report
 
 ```bash
 # Run PHPUnit
-./vendor/bin/phpunit
+composer test
 
 # Run specific test
 ./vendor/bin/phpunit tests/HelpersTest.php
@@ -335,6 +342,25 @@ git push origin main
 ```
 
 ## Recent Updates (June 2026)
+
+### Navigation Refactoring (June 6, 2026)
+1. **Centralized Navigation Component**
+   - Created `includes/navigation.php` for consistent navigation across all pages
+   - All pages now use the navigation include instead of inline HTML
+   - Added `$activePage` parameter to highlight the current page in the menu
+   - Menu items now show active state with red background (#e74c3c)
+
+2. **CSS Consistency**
+   - Added `style.css` to form pages (feedback, forgot_password, profile, register)
+   - Removed duplicate CSS definitions from individual pages
+   - All pages now use consistent styling from `assets/style.css`
+
+3. **Pages Updated**
+   - index.php - Now uses navigation include
+   - latihan.php, daily_quiz.php, leaderboard.php, feedback.php
+   - materi.php, riwayat_soal.php, hasil.php
+   - profile.php, user_dashboard.php, admin_dashboard.php
+   - tryout.php, register.php, forgot_password.php
 
 ### Critical Fixes Implemented
 1. Session expiry handling with 5-minute warning

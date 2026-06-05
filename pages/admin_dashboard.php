@@ -165,15 +165,8 @@ tr:hover{background:#f8f9fa}
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
-<div class="header">
-<h1>Dashboard Admin — SKD CAT-BKN</h1>
-<div>
-<button class="theme-toggle" onclick="toggleTheme()" title="Dark/Light Mode" aria-label="Toggle dark/light mode">🌙</button>
-<a href="../index.php">Beranda</a>
-<a href="user_dashboard.php">User View</a>
-<a href="../api/logout.php">Logout</a>
-</div>
-</div>
+<?php $pageTitle = 'Dashboard Admin — SKD CAT-BKN'; $activePage = 'admin_dashboard'; $showThemeToggle = true; ?>
+<?php require '../includes/navigation.php'; ?>
 
 <div class="container" id="main-content">
 <div class="stats">
@@ -699,10 +692,11 @@ function updateGenTopik(){
     const subtes = document.getElementById('genSubtes').value;
     const sel = document.getElementById('genTopik');
     sel.innerHTML = '';
-    topikMap[subtes].forEach(t=>{
+    topikMap[subtes].forEach((t, idx)=>{
         const opt = document.createElement('option');
         opt.value = t.v;
         opt.textContent = t.v;
+        if (idx === 0) opt.selected = true; // Auto-select first topik
         sel.appendChild(opt);
     });
 }

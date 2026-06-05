@@ -260,30 +260,14 @@ function isValidEmail(string $email): bool
 
 /**
  * Validasi password strength
- * Requirements: minimal 8 karakter, minimal 1 huruf besar, 1 huruf kecil, 1 angka
+ * Requirements: minimal 6 karakter (huruf, angka, atau gabungan)
  * @param string $password Password to validate
  * @return array ['valid' => bool, 'error' => string]
  */
 function validatePasswordStrength(string $password): array
 {
-    if (strlen($password) < 8) {
-        return ['valid' => false, 'error' => 'Password minimal 8 karakter'];
-    }
-    
-    if (!preg_match('/[A-Z]/', $password)) {
-        return ['valid' => false, 'error' => 'Password harus mengandung minimal 1 huruf besar'];
-    }
-    
-    if (!preg_match('/[a-z]/', $password)) {
-        return ['valid' => false, 'error' => 'Password harus mengandung minimal 1 huruf kecil'];
-    }
-    
-    if (!preg_match('/[0-9]/', $password)) {
-        return ['valid' => false, 'error' => 'Password harus mengandung minimal 1 angka'];
-    }
-    
-    if (!preg_match('/[!@#$%^&*(),.?":{}|<>]/', $password)) {
-        return ['valid' => false, 'error' => 'Password harus mengandung minimal 1 karakter spesial (!@#$%^&*(),.?":{}|<>)'];
+    if (strlen($password) < 6) {
+        return ['valid' => false, 'error' => 'Password minimal 6 karakter'];
     }
     
     return ['valid' => true, 'error' => ''];

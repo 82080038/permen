@@ -37,9 +37,21 @@ sudo /opt/lampp/lampp start
 # Import additional data (optional)
 /opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_master_materi.sql
 /opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_tips.sql
+/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_soal_1_twk.sql
+/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_soal_1_tiu.sql
+/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_soal_1_tkp.sql
 ```
 
-### 5. Verify Installation
+### 5. Install Dependencies
+```bash
+# Install PHP dependencies
+composer install
+
+# Install Node.js dependencies
+npm install
+```
+
+### 6. Verify Installation
 ```bash
 # Check XAMPP status
 sudo /opt/lampp/lampp status
@@ -47,6 +59,7 @@ sudo /opt/lampp/lampp status
 # Check database
 /opt/lampp/bin/mysql -u root -proot skd_cat_bkn -e "SHOW TABLES;"
 /opt/lampp/bin/mysql -u root -proot skd_cat_bkn -e "SELECT COUNT(*) FROM questions;"
+/opt/lampp/bin/mysql -u root -proot skd_cat_bkn -e "SELECT COUNT(*) FROM users;"
 ```
 
 ## Access Application
@@ -56,10 +69,17 @@ Open browser and navigate to:
 http://localhost/permen/
 ```
 
-## Default Test User
+## Default Test Users
 
-Email: `budi@skd.test`
-Password: `password`
+- **Regular User:**
+  - Email: `budi@skd.test`
+  - Password: `password`
+  - Quick login: `http://localhost/permen/pages/login.php?quick=budi`
+
+- **Admin User:**
+  - Email: `admin@skd.test`
+  - Password: `admin123`
+  - Quick login: `http://localhost/permen/pages/login.php?quick=admin`
 
 ## Database Structure
 

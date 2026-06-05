@@ -55,9 +55,6 @@ $passingTiu = (int)($passingMap['TIU'] ?? 80);
 $passingTwk = (int)($passingMap['TWK'] ?? 65);
 $passingTotal = (int)($passingMap['TKP'] ?? 126) + (int)($passingMap['TIU'] ?? 80) + (int)($passingMap['TWK'] ?? 65);
 
-// Ambil semua instansi untuk rekomendasi
-$instansiList = $pdo->query("SELECT * FROM instansi WHERE aktif = 1 ORDER BY urutan")->fetchAll();
-
 // Ambil rekomendasi materi
 $rekomendasiMateri = $pdo->query("SELECT * FROM rekomendasi_materi WHERE aktif = 1 ORDER BY urutan")->fetchAll();
 
@@ -146,33 +143,8 @@ tr:hover{background:#f8f9fa}
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
-<div class="header">
-<h1>Dashboard Peserta — SKD CAT-BKN</h1>
-<div style="display:flex;align-items:center;gap:.4rem .8rem;flex-wrap:wrap">
-<button class="theme-toggle" onclick="toggleTheme()" title="Dark/Light Mode" aria-label="Toggle dark/light mode">🌙</button>
-<div style="position:relative">
-<button onclick="toggleNotifications()" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;padding:.4rem;min-width:44px;min-height:44px" aria-label="Notifikasi">
-🔔
-<span id="notifBadge" style="position:absolute;top:0;right:0;background:#e74c3c;color:#fff;font-size:.7rem;padding:.1rem .4rem;border-radius:10px;display:none">0</span>
-</button>
-<div id="notifDropdown" style="display:none;position:absolute;top:100%;right:0;background:#fff;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15);min-width:300px;max-height:400px;overflow-y:auto;z-index:1000">
-<div id="notifList" style="padding:1rem">
-<p style="color:#666;font-size:.85rem">Memuat notifikasi...</p>
-</div>
-</div>
-</div>
-<a href="../index.php">Beranda</a>
-<a href="latihan.php">Latihan</a>
-<a href="daily_quiz.php" style="background:#e74c3c;color:#fff;padding:.2rem .5rem;border-radius:4px">Daily Quiz</a>
-<a href="tryout.php">Try Out</a>
-<a href="leaderboard.php">Leaderboard</a>
-<a href="feedback.php">Feedback</a>
-<?php if ($userRole === 'admin'): ?>
-<a href="admin_dashboard.php">Admin</a>
-<?php endif; ?>
-<a href="../api/logout.php">Logout</a>
-</div>
-</div>
+<?php $pageTitle = 'Dashboard Peserta — SKD CAT-BKN'; $activePage = 'user_dashboard'; $showThemeToggle = true; $showNotifications = true; $showAdminLink = true; ?>
+<?php require '../includes/navigation.php'; ?>
 
 <div class="container" id="main-content">
 <div class="welcome">
@@ -186,7 +158,7 @@ tr:hover{background:#f8f9fa}
 <strong>Instansi Pilihan:</strong> <?= e($userInfo['instansi_kode']) ?> — <?= e($userInfo['instansi_nama']) ?><br>
 <small style="color:#666"><?= e($userInfo['instansi_desk'] ?? '') ?></small>
 <?php else: ?>
-<strong>Belum memilih instansi.</strong> <a href="register.php" style="color:#2980b9">Pilih instansi di profil</a> untuk mendapatkan rekomendasi.
+<strong>Belum memilih instansi.</strong> <a href="profile.php" style="color:#2980b9">Pilih instansi di profil</a> untuk mendapatkan rekomendasi.
 <?php endif; ?>
 </p>
 </div>
@@ -568,34 +540,50 @@ if (!empty($rekomSub)):
     $latestTotal = $latest['total_nilai'] ?? 0;
 ?>
 <div class="section" style="margin-top:1.2rem">
-<h2>Kelayakan Instansi</h2>
-<p style="font-size:.9rem;color:#555;margin-bottom:1rem">Berdasarkan nilai tryout terakhir Anda (TKP: <?= $latestTkp ?>, TIU: <?= $latestTiu ?>, TWK: <?= $latestTwk ?>, Total: <?= $latestTotal ?>):</p>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem">
-<?php foreach ($instansiList as $ins): 
-    $lulusTkp = $latestTkp >= $ins['passing_tkp'];
-    $lulusTiu = $latestTiu >= $ins['passing_tiu'];
-    $lulusTwk = $latestTwk >= $ins['passing_twk'];
-    $lulusTotal = $latestTotal >= $ins['passing_total'];
-    $lulusSemua = $lulusTkp && $lulusTiu && $lulusTwk && $lulusTotal;
-    $cardColor = $lulusSemua ? '#d4edda' : '#fff3cd';
-    $borderColor = $lulusSemua ? '#155724' : '#856404';
+<h2>Kelayakan SKD</h2>
+<p style="font-size:.9rem;color:#555;margin-bottom:1rem">
+<strong>Passing Grade Standar BKN 2024:</strong> TKP 156, TIU 80, TWK 65, Total 301 (semua instansi menggunakan standar yang sama).
+</p>
+<p style="font-size:.9rem;color:#555;margin-bottom:1rem">
+Berdasarkan nilai tryout terakhir Anda (TKP: <?= $latestTkp ?>, TIU: <?= $latestTiu ?>, TWK: <?= $latestTwk ?>, Total: <?= $latestTotal ?>):
+</p>
+<?php
+$lulusTkp = $latestTkp >= 156;
+$lulusTiu = $latestTiu >= 80;
+$lulusTwk = $latestTwk >= 65;
+$lulusTotal = $latestTotal >= 301;
+$lulusSemua = $lulusTkp && $lulusTiu && $lulusTwk && $lulusTotal;
 ?>
-<div style="background:<?= $cardColor ?>;border:1px solid <?= $borderColor ?>;border-radius:6px;padding:.8rem;font-size:.9rem">
-<div style="font-weight:bold;color:#1a5276"><?= e($ins['kode']) ?></div>
-<div style="font-size:.8rem;color:#555;margin-bottom:.3rem"><?= e($ins['nama']) ?></div>
-<?php if ($lulusSemua): ?>
-<div style="color:#155724;font-weight:bold;font-size:.85rem">✅ Memenuhi syarat SKD</div>
-<?php else: ?>
-<div style="color:#856404;font-size:.8rem">
-<?php if (!$lulusTkp) echo 'TKP kurang ' . ($ins['passing_tkp'] - $latestTkp) . '<br>'; ?>
-<?php if (!$lulusTiu) echo 'TIU kurang ' . ($ins['passing_tiu'] - $latestTiu) . '<br>'; ?>
-<?php if (!$lulusTwk) echo 'TWK kurang ' . ($ins['passing_twk'] - $latestTwk) . '<br>'; ?>
-<?php if (!$lulusTotal) echo 'Total kurang ' . ($ins['passing_total'] - $latestTotal) . '<br>'; ?>
+<div style="background:<?= $lulusSemua ? '#d4edda' : '#fff3cd' ?>;border:1px solid <?= $lulusSemua ? '#155724' : '#856404' ?>;border-radius:6px;padding:1rem;margin-bottom:1rem">
+<div style="font-weight:bold;color:#1a5276;font-size:1rem;margin-bottom:.5rem">
+<?= $lulusSemua ? '✅ Memenuhi Syarat SKD' : '⚠️ Belum Memenuhi Syarat SKD' ?>
 </div>
+<div style="font-size:.9rem;color:#555">
+<?php if ($lulusSemua): ?>
+Nilai Anda memenuhi passing grade standar BKN. Anda berpotensi lolos ke tahap seleksi berikutnya untuk semua instansi.
+<?php else: ?>
+Anda perlu meningkatkan nilai di subtes berikut:
+<?php if (!$lulusTkp) echo '<br>• TKP: kurang ' . (156 - $latestTkp); ?>
+<?php if (!$lulusTiu) echo '<br>• TIU: kurang ' . (80 - $latestTiu); ?>
+<?php if (!$lulusTwk) echo '<br>• TWK: kurang ' . (65 - $latestTwk); ?>
+<?php if (!$lulusTotal) echo '<br>• Total: kurang ' . (301 - $latestTotal); ?>
 <?php endif; ?>
 </div>
-<?php endforeach; ?>
 </div>
+<?php if ($userInfo['instansi_nama']): ?>
+<div style="background:#eaf2f8;border-left:4px solid #2980b9;border-radius:0 6px 6px 0;padding:1rem">
+<div style="font-weight:bold;color:#1a5276">Instansi Pilihan Anda: <?= e($userInfo['instansi_kode']) ?> — <?= e($userInfo['instansi_nama']) ?></div>
+<div style="font-size:.9rem;color:#555;margin-top:.3rem">
+<?= $lulusSemua ? '✅ Nilai Anda memenuhi passing grade instansi ini.' : '⚠️ Nilai Anda belum memenuhi passing grade instansi ini.' ?>
+</div>
+</div>
+<?php else: ?>
+<div style="background:#f8f9fa;border-left:4px solid #999;border-radius:0 6px 6px 0;padding:1rem">
+<div style="font-size:.9rem;color:#555">
+Belum memilih instansi pilihan. <a href="profile.php" style="color:#2980b9">Pilih instansi di profil</a> untuk melihat status kelayakan spesifik.
+</div>
+</div>
+<?php endif; ?>
 </div>
 <?php endif; ?>
 

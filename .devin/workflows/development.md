@@ -39,10 +39,15 @@ sudo /opt/lampp/lampp startmysql
 
 #### Option B: Import from SQL Files
 ```bash
-# Import all SQL files from sql/ directory
-/opt/lampp/bin/mysql -u root -proot < sql/01_create_tables.sql
-/opt/lampp/bin/mysql -u root -proot < sql/02_insert_data.sql
-# ... import other SQL files as needed
+# Import main schema
+/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/skd_cat_bkn.sql
+
+# Import additional data
+/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_master_materi.sql
+/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_tips.sql
+/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_soal_1_twk.sql
+/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_soal_1_tiu.sql
+/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_soal_1_tkp.sql
 ```
 
 ### 3. Environment Configuration
@@ -63,7 +68,6 @@ DB_PASS=root
 DB_CHARSET=utf8mb4
 APP_ENV=development
 BASE_URL=http://localhost/permen
-GEMINI_API_KEY=YOUR_API_KEY_HERE
 ```
 
 ### 4. Install Dependencies
@@ -115,7 +119,7 @@ npx playwright show-report
 #### PHP Unit Tests
 ```bash
 # Run PHPUnit tests
-./vendor/bin/phpunit
+composer test
 
 # Run specific test
 ./vendor/bin/phpunit tests/HelpersTest.php
@@ -123,19 +127,19 @@ npx playwright show-report
 
 ### Code Quality
 
-#### PHP Code Sniffer
+#### PHP CS Fixer
 ```bash
 # Check code style
-./vendor/bin/phpcs
+composer cs-check
 
 # Fix code style automatically
-./vendor/bin/phpcbf
+composer cs-fix
 ```
 
 #### PHPStan (Static Analysis)
 ```bash
 # Run static analysis
-./vendor/bin/phpstan analyse
+composer phpstan
 ```
 
 ### Database Management
