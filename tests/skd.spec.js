@@ -38,8 +38,8 @@ test.describe('SKD CAT-BKN Try Out & Bimbel', () => {
   test('latihan per subtes menampilkan 3 pilihan', async ({ page }) => {
     // Use normal login form (CSRF token is already in the hidden field)
     await page.goto('http://localhost/permen/pages/login.php');
-    await page.fill('input[name="email"]', 'budi@skd.test');
-    await page.fill('input[name="password"]', 'Password123!');
+    await page.fill('input[name="no_hp"]', '081987654321');
+    await page.fill('input[name="password"]', 'password');
     await page.click('button[type="submit"]');
     await page.waitForURL(/user_dashboard\.php/, { timeout: 15000 });
 
@@ -54,8 +54,8 @@ test.describe('SKD CAT-BKN Try Out & Bimbel', () => {
   test('logout dari user dashboard redirect ke login', async ({ page }) => {
     // Use normal login form (CSRF token is already in the hidden field)
     await page.goto('http://localhost/permen/pages/login.php');
-    await page.fill('input[name="email"]', 'budi@skd.test');
-    await page.fill('input[name="password"]', 'Password123!');
+    await page.fill('input[name="no_hp"]', '081987654321');
+    await page.fill('input[name="password"]', 'password');
     await page.click('button[type="submit"]');
     await page.waitForURL(/user_dashboard\.php/, { timeout: 15000 });
     await expect(page).toHaveTitle(/Dashboard Peserta/);

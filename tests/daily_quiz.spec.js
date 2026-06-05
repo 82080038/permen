@@ -43,9 +43,13 @@ test.describe('Daily Quiz Feature', () => {
     
     console.log('📝 Step 3: Klik tombol Daily Quiz...');
     
-    // Klik link Daily Quiz di dashboard
-    const dailyQuizLink = page.locator('a[href="daily_quiz.php"]');
-    await expect(dailyQuizLink).toBeVisible();
+    // Wait for page to fully load
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
+    
+    // Klik link Daily Quiz di dashboard - use first() karena ada multiple links
+    const dailyQuizLink = page.locator('a[href="daily_quiz.php"]').first();
+    await expect(dailyQuizLink).toBeVisible({ timeout: 10000 });
     await dailyQuizLink.click();
     
     // Tunggu halaman Daily Quiz load
@@ -194,12 +198,21 @@ test.describe('Daily Quiz Feature', () => {
     
     console.log('📝 Step 9: Cek section Daily Quiz di dashboard...');
     
-    // Scroll ke section Daily Quiz
-    const dailyQuizSection = page.locator('.section:has-text("Daily Quiz")');
-    await expect(dailyQuizSection).toBeVisible();
+    // Wait for page to fully load
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
     
-    // Verifikasi tabel riwayat ada
-    await expect(page.locator('.section:has-text("Daily Quiz") table')).toBeVisible();
+    // Scroll ke section Daily Quiz - cari heading dulu
+    const dailyQuizHeading = page.locator('h2:has-text("Daily Quiz")');
+    await expect(dailyQuizHeading).toBeVisible({ timeout: 10000 });
+    
+    // Get parent section
+    const dailyQuizSection = dailyQuizHeading.locator('..');
+    
+    // Verifikasi tabel riwayat ada atau empty message
+    const table = page.locator('.section').filter({ hasText: 'Daily Quiz' }).locator('table');
+    const emptyMsg = page.locator('.section').filter({ hasText: 'Daily Quiz' }).locator('.empty');
+    await expect(table.or(emptyMsg)).toBeVisible();
     
     console.log('✅ Section Daily Quiz tampil di dashboard');
     

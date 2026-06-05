@@ -74,8 +74,8 @@ test.describe('Exploratory — Semua Halaman & Console Check', () => {
   test('Latihan — latihan.php', async ({ page }, testInfo) => {
     // Use normal login for testing
     await page.goto('http://localhost/permen/pages/login.php');
-    await page.fill('input[name="email"]', 'budi@skd.test');
-    await page.fill('input[name="password"]', 'Password123!');
+    await page.fill('input[name="no_hp"]', '081987654321');
+    await page.fill('input[name="password"]', 'password');
     await page.click('button[type="submit"]');
     await page.waitForURL(/user_dashboard\.php/, { timeout: 15000 });
 
@@ -110,8 +110,8 @@ test.describe('Exploratory — Semua Halaman & Console Check', () => {
 
   test('Admin dashboard — admin_dashboard.php (with login)', async ({ page }, testInfo) => {
     await page.goto('http://localhost/permen/pages/login.php');
-    await page.fill('input[name="email"]', 'admin@skd.test');
-    await page.fill('input[name="password"]', 'Admin1234!');
+    await page.fill('input[name="no_hp"]', '081234567890');
+    await page.fill('input[name="password"]', 'password');
     await page.click('button[type="submit"]');
     await page.waitForURL(/admin_dashboard\.php/, { timeout: 15000 });
     await page.waitForTimeout(1000);
@@ -121,8 +121,8 @@ test.describe('Exploratory — Semua Halaman & Console Check', () => {
 
   test('User dashboard — user_dashboard.php (with login)', async ({ page }, testInfo) => {
     await page.goto('http://localhost/permen/pages/login.php');
-    await page.fill('input[name="email"]', 'budi@skd.test');
-    await page.fill('input[name="password"]', 'Password123!');
+    await page.fill('input[name="no_hp"]', '081987654321');
+    await page.fill('input[name="password"]', 'password');
     await page.click('button[type="submit"]');
     await page.waitForURL(/user_dashboard\.php/, { timeout: 15000 });
     await page.waitForTimeout(1000);

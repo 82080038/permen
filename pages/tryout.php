@@ -193,8 +193,20 @@ $timerS = str_pad($remainingSeconds % 60, 2, '0', STR_PAD_LEFT);
 <div class="sidebar" id="sidebar">
 <button id="sidebarToggle" onclick="document.getElementById('sidebar').classList.toggle('collapsed')" aria-label="Toggle sidebar navigation">Sembunyikan/Tampilkan Navigasi</button>
 <h3>Navigasi Soal</h3>
-<div id="navStatus" style="font-size:.8rem;color:var(--text-muted);margin-bottom:.4rem"></div>
-<div class="number-grid" id="numberGrid"></div>
+<div id="navStatus" style="font-size:.8rem;color:var(--text-muted);margin-bottom:.4rem">Memuat...</div>
+<div class="number-grid" id="numberGrid">
+<!-- Placeholder buttons shown during loading -->
+<button style="opacity:.5;cursor:default" disabled>1</button>
+<button style="opacity:.5;cursor:default" disabled>2</button>
+<button style="opacity:.5;cursor:default" disabled>3</button>
+<button style="opacity:.5;cursor:default" disabled>4</button>
+<button style="opacity:.5;cursor:default" disabled>5</button>
+<button style="opacity:.5;cursor:default" disabled>6</button>
+<button style="opacity:.5;cursor:default" disabled>7</button>
+<button style="opacity:.5;cursor:default" disabled>8</button>
+<button style="opacity:.5;cursor:default" disabled>9</button>
+<button style="opacity:.5;cursor:default" disabled>10</button>
+</div>
 <div style="margin-top:1rem;font-size:.85rem;color:var(--text-muted)">
 <div><span style="display:inline-block;width:12px;height:12px;background:#27ae60;border-radius:2px;margin-right:4px"></span> Sudah dijawab</div>
 <div><span style="display:inline-block;width:12px;height:12px;background:#f1c40f;border-radius:2px;margin-right:4px"></span> Ragu-ragu</div>

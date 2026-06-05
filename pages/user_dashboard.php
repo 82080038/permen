@@ -88,16 +88,19 @@ $topikStats = $akurasiTopik->fetchAll();
 <meta name="theme-color" content="#1a5276">
 <title>Dashboard Peserta — SKD CAT-BKN</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f7fa;color:#222;line-height:1.6;-webkit-text-size-adjust:100%}
-.header{background:#1a5276;color:#fff;padding:.8rem 1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem}
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f7fa;color:#222;line-height:1.6;-webkit-text-size-adjust:100%;transition:background .2s,color .2s}
+:root{--bg-body:#f5f7fa;--bg-card:#fff;--text-main:#222;--text-muted:#555;--header-bg:#1a5276;--border-color:#eee;--link-color:#2980b9;--success-bg:#d4edda;--danger-bg:#f8d7da;--warning-bg:#fff3cd}
+[data-theme="dark"]{--bg-body:#1a1a2e;--bg-card:#16213e;--text-main:#f0f0f0;--text-muted:#b0b0b0;--header-bg:#0f3460;--border-color:#555;--link-color:#74b9ff;--success-bg:#1e3a2f;--danger-bg:#3a1e2f;--warning-bg:#3a3010}
+body{background:var(--bg-body);color:var(--text-main)}
+.header{background:var(--header-bg);color:#fff;padding:.8rem 1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem}
 .header h1{font-size:1.1rem;white-space:nowrap}.header div{display:flex;flex-wrap:wrap;gap:.4rem .8rem;align-items:center}
 .header a{color:#fff;text-decoration:none;font-size:.85rem;white-space:nowrap;min-height:44px;display:flex;align-items:center}
 .container{max-width:1000px;margin:1.5rem auto;padding:0 1rem}
-.welcome{background:#fff;border-radius:8px;padding:1.2rem;box-shadow:0 2px 6px rgba(0,0,0,.08);margin-bottom:1.5rem}
+.welcome{background:var(--bg-card);border-radius:8px;padding:1.2rem;box-shadow:0 2px 6px rgba(0,0,0,.08);margin-bottom:1.5rem}
 .welcome h2{color:#1a5276;font-size:1.15rem;margin-bottom:.3rem}
 .welcome p{color:#555;font-size:.9rem}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.8rem;margin-bottom:1.5rem}
-.stat{background:#fff;border-radius:8px;padding:.9rem;box-shadow:0 2px 6px rgba(0,0,0,.08);text-align:center}
+.stat{background:var(--bg-card);border-radius:8px;padding:.9rem;box-shadow:0 2px 6px rgba(0,0,0,.08);text-align:center}
 .stat .num{font-size:1.6rem;font-weight:bold;color:#2980b9}
 .stat .label{color:#555;font-size:.85rem;margin-top:.3rem}
 .stat .sub{color:#777;font-size:.75rem}
@@ -107,19 +110,19 @@ $topikStats = $akurasiTopik->fetchAll();
 .btn.success{background:#27ae60}
 .btn.warning{background:#e67e22}
 .btn.danger{background:#e74c3c}
-.section{background:#fff;border-radius:8px;padding:1.2rem;box-shadow:0 2px 6px rgba(0,0,0,.08);margin-bottom:1.2rem;overflow:hidden}
+.section{background:var(--bg-card);border-radius:8px;padding:1.2rem;box-shadow:0 2px 6px rgba(0,0,0,.08);margin-bottom:1.2rem;overflow:hidden}
 .section h2{color:#1a5276;font-size:1.05rem;margin-bottom:.8rem;border-bottom:2px solid #eaf2f8;padding-bottom:.4rem}
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:500px}
-th,td{border:1px solid #eee;padding:.4rem .5rem;text-align:left}
-th{background:#f8f9fa;color:#555}
+th,td{border:1px solid var(--border-color);padding:.4rem .5rem;text-align:left}
+th{background:var(--bg-body);color:var(--text-muted);border-color:var(--border-color)}
 tr:hover{background:#f8f9fa}
 .badge{display:inline-block;padding:.2rem .5rem;border-radius:10px;font-size:.75rem;font-weight:bold}
-.badge.lulus{background:#d4edda;color:#155724}
-.badge.gagal{background:#f8d7da;color:#721c24}
-.badge.berjalan{background:#fff3cd;color:#856404}
+.badge.lulus{background:var(--success-bg);color:#27ae60}
+.badge.gagal{background:var(--danger-bg);color:#e74c3c}
+.badge.berjalan{background:var(--warning-bg);color:#f39c12}
 .empty{color:#777;font-style:italic;text-align:center;padding:2rem}
-.rekomendasi{background:#eaf2f8;border-left:4px solid #2980b9;padding:1rem;border-radius:0 6px 6px 0;margin-top:1rem}
+.rekomendasi{background:var(--bg-body);border-left:4px solid var(--link-color);padding:1rem;border-radius:0 6px 6px 0;margin-top:1rem}
 .rekomendasi h3{color:#1a5276;font-size:1rem;margin-bottom:.3rem}
 .rekomendasi p{color:#444;font-size:.9rem}
 .footer{text-align:center;padding:1.2rem;color:#777;font-size:.85rem;margin-top:1.5rem}
@@ -132,6 +135,7 @@ tr:hover{background:#f8f9fa}
 .stats{grid-template-columns:1fr}
 }
 .skip-link:focus{top:0}
+.theme-toggle{background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;padding:.2rem .5rem;border-radius:4px;cursor:pointer;font-size:.8rem;margin-right:.3rem;min-height:44px;min-width:44px}
 .topic-bar{margin-bottom:.8rem}
 .topic-bar-header{display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.2rem}
 .topic-bar-track{background:#e9ecef;border-radius:10px;height:20px;overflow:hidden}
@@ -145,6 +149,7 @@ tr:hover{background:#f8f9fa}
 <div class="header">
 <h1>Dashboard Peserta — SKD CAT-BKN</h1>
 <div style="display:flex;align-items:center;gap:.4rem .8rem;flex-wrap:wrap">
+<button class="theme-toggle" onclick="toggleTheme()" title="Dark/Light Mode" aria-label="Toggle dark/light mode">🌙</button>
 <div style="position:relative">
 <button onclick="toggleNotifications()" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;padding:.4rem;min-width:44px;min-height:44px" aria-label="Notifikasi">
 🔔
@@ -671,5 +676,24 @@ $dailyHistory = $dailyQuizHistory->fetchAll();
 <div class="footer">
 Dashboard Peserta SKD CAT-BKN | Latihan persiapan Sekolah Kedinasan
 </div>
+<script>
+// Dark mode toggle
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+}
+// Load saved theme
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme) {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+}
+// Notifications toggle
+function toggleNotifications() {
+    const dropdown = document.getElementById('notifDropdown');
+    dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+}
+</script>
 </body>
 </html>

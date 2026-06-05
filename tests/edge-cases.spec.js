@@ -22,10 +22,10 @@ test.describe('Edge Cases — Error Handling', () => {
     expect(data.error || data.message).toBeTruthy();
   });
 
-  test('handles invalid email format in login', async ({ page }) => {
+  test('handles invalid no_hp format in login', async ({ page }) => {
     await page.goto('http://localhost/permen/pages/login.php');
-    await page.fill('input[name="email"]', 'invalid-email');
-    await page.fill('input[name="password"]', 'Password123!');
+    await page.fill('input[name="no_hp"]', 'invalid-no-hp');
+    await page.fill('input[name="password"]', 'password');
     await page.click('button[type="submit"]');
     // Should stay on login page with error
     await expect(page).toHaveURL(/login\.php/);
@@ -33,7 +33,7 @@ test.describe('Edge Cases — Error Handling', () => {
 
   test('handles wrong password in login', async ({ page }) => {
     await page.goto('http://localhost/permen/pages/login.php');
-    await page.fill('input[name="email"]', 'budi@skd.test');
+    await page.fill('input[name="no_hp"]', '081987654321');
     await page.fill('input[name="password"]', 'wrongpassword');
     await page.click('button[type="submit"]');
     // Should stay on login page with error
@@ -50,8 +50,8 @@ test.describe('Edge Cases — Navigation', () => {
   test('handles direct access to admin dashboard without admin role', async ({ page }) => {
     // Login as regular user
     await page.goto('http://localhost/permen/pages/login.php');
-    await page.fill('input[name="email"]', 'budi@skd.test');
-    await page.fill('input[name="password"]', 'Password123!');
+    await page.fill('input[name="no_hp"]', '081987654321');
+    await page.fill('input[name="password"]', 'password');
     await page.click('button[type="submit"]');
     await page.waitForURL(/user_dashboard\.php/, { timeout: 15000 });
 
@@ -94,8 +94,8 @@ test.describe('Edge Cases — CSRF Protection', () => {
   test('rejects form submission without CSRF token', async ({ request }) => {
     const response = await request.post('http://localhost/permen/pages/login.php', {
       form: {
-        email: 'budi@skd.test',
-        password: 'Password123!',
+        no_hp: '081987654321',
+        password: 'password',
         // Missing csrf_token
       }
     });

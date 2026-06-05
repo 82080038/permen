@@ -119,35 +119,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
 <meta name="theme-color" content="#1a5276">
 <title>Dashboard Admin — SKD CAT-BKN</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f7fa;color:#222;line-height:1.6;-webkit-text-size-adjust:100%}
-.header{background:#1a5276;color:#fff;padding:.8rem 1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem}
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f7fa;color:#222;line-height:1.6;-webkit-text-size-adjust:100%;transition:background .2s,color .2s}
+:root{--bg-body:#f5f7fa;--bg-card:#fff;--text-main:#222;--text-muted:#555;--header-bg:#1a5276;--border-color:#eee;--link-color:#2980b9;--success-bg:#d4edda;--danger-bg:#f8d7da;--warning-bg:#fff3cd;--nav-bg:#eaf2f8}
+[data-theme="dark"]{--bg-body:#1a1a2e;--bg-card:#16213e;--text-main:#f0f0f0;--text-muted:#b0b0b0;--header-bg:#0f3460;--border-color:#555;--link-color:#74b9ff;--success-bg:#1e3a2f;--danger-bg:#3a1e2f;--warning-bg:#3a3010;--nav-bg:#1a5276}
+body{background:var(--bg-body);color:var(--text-main)}
+.header{background:var(--header-bg);color:#fff;padding:.8rem 1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem}
 .header h1{font-size:1.1rem;white-space:nowrap}.header div{display:flex;flex-wrap:wrap;gap:.4rem .8rem;align-items:center}
 .header a{color:#fff;text-decoration:none;font-size:.85rem;white-space:nowrap;min-height:44px;display:flex;align-items:center}
 .container{max-width:1200px;margin:1.5rem auto;padding:0 1rem}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.8rem;margin-bottom:1.5rem}
-.stat{background:#fff;border-radius:8px;padding:1rem;box-shadow:0 2px 6px rgba(0,0,0,.08);text-align:center}
+.stat{background:var(--bg-card);border-radius:8px;padding:1rem;box-shadow:0 2px 6px rgba(0,0,0,.08);text-align:center}
 .stat .num{font-size:1.7rem;font-weight:bold;color:#2980b9}
 .stat .label{color:#555;font-size:.85rem;margin-top:.3rem}
-.section{background:#fff;border-radius:8px;padding:1.2rem;box-shadow:0 2px 6px rgba(0,0,0,.08);margin-bottom:1.2rem;overflow:hidden}
+.section{background:var(--bg-card);border-radius:8px;padding:1.2rem;box-shadow:0 2px 6px rgba(0,0,0,.08);margin-bottom:1.2rem;overflow:hidden}
 .section h2{color:#1a5276;font-size:1.05rem;margin-bottom:.8rem;border-bottom:2px solid #eaf2f8;padding-bottom:.4rem}
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:500px}
-th,td{border:1px solid #eee;padding:.4rem .5rem;text-align:left}
-th{background:#f8f9fa;color:#555}
+th,td{border:1px solid var(--border-color);padding:.4rem .5rem;text-align:left}
+th{background:var(--bg-body);color:var(--text-muted)}
 tr:hover{background:#f8f9fa}
 .badge{display:inline-block;padding:.25rem .5rem;border-radius:10px;font-size:.75rem;font-weight:bold}
-.badge.selesai{background:#d4edda;color:#155724}
-.badge.berjalan{background:#fff3cd;color:#856404}
+.badge.selesai{background:var(--success-bg);color:#27ae60}
+.badge.berjalan{background:var(--warning-bg);color:#f39c12}
 .btn{display:inline-block;background:#2980b9;color:#fff;padding:.45rem .7rem;border-radius:5px;text-decoration:none;font-size:.85rem;margin-right:.3rem;min-height:36px;min-width:44px}
 .btn.danger{background:#e74c3c}
 .btn.success{background:#27ae60}
 .nav-tabs{display:flex;gap:.4rem;margin-bottom:1rem;flex-wrap:wrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.nav-tabs a{padding:.45rem .8rem;background:#eaf2f8;color:#1a5276;text-decoration:none;border-radius:5px;font-size:.85rem;font-weight:600;white-space:nowrap;min-height:36px;display:flex;align-items:center}
+.nav-tabs a{padding:.45rem .8rem;background:var(--nav-bg);color:var(--link-color);text-decoration:none;border-radius:5px;font-size:.85rem;font-weight:600;white-space:nowrap;min-height:36px;display:flex;align-items:center}
 .nav-tabs a:hover,.nav-tabs a.active{background:#2980b9;color:#fff}
 #soalForm{display:none}
 .form-group{margin-bottom:.8rem}
 .form-group label{display:block;font-size:.85rem;color:#555;margin-bottom:.3rem;font-weight:600}
-.form-group input,.form-group textarea,.form-group select{width:100%;padding:.5rem;border:1px solid #ddd;border-radius:5px;font-size:.9rem}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:.5rem;border:1px solid var(--border-color);border-radius:5px;font-size:.9rem;background:var(--bg-card);color:var(--text-main)}
 .form-group textarea{min-height:60px}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
 .footer{text-align:center;padding:1.2rem;color:#777;font-size:.85rem;margin-top:1.5rem}
@@ -157,6 +160,7 @@ tr:hover{background:#f8f9fa}
 .section{padding:1rem}
 }
 .skip-link:focus{top:0}
+.theme-toggle{background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;padding:.2rem .5rem;border-radius:4px;cursor:pointer;font-size:.8rem;margin-right:.3rem;min-height:44px;min-width:44px}
 </style>
 </head>
 <body>
@@ -164,6 +168,7 @@ tr:hover{background:#f8f9fa}
 <div class="header">
 <h1>Dashboard Admin — SKD CAT-BKN</h1>
 <div>
+<button class="theme-toggle" onclick="toggleTheme()" title="Dark/Light Mode" aria-label="Toggle dark/light mode">🌙</button>
 <a href="../index.php">Beranda</a>
 <a href="user_dashboard.php">User View</a>
 <a href="../api/logout.php">Logout</a>
@@ -978,6 +983,19 @@ async function resetUserPassword(userId, userName){
     } catch(e){
         alert('Gagal reset password. Silakan coba lagi.');
     }
+}
+
+// Dark mode toggle
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+}
+// Load saved theme
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme) {
+    document.documentElement.setAttribute('data-theme', savedTheme);
 }
 </script>
 </body>
