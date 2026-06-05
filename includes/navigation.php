@@ -7,13 +7,11 @@
  * @param string $activePage Halaman yang sedang aktif (beranda, latihan, daily_quiz, tryout, leaderboard, feedback, profile, admin_dashboard, user_dashboard)
  * @param bool $showThemeToggle Tampilkan tombol theme toggle (default: false)
  * @param bool $showNotifications Tampilkan tombol notifikasi (default: false)
- * @param bool $showAdminLink Tampilkan link admin (default: false)
  */
 $pageTitle = $pageTitle ?? 'SKD CAT-BKN';
 $activePage = $activePage ?? '';
 $showThemeToggle = $showThemeToggle ?? false;
 $showNotifications = $showNotifications ?? false;
-$showAdminLink = $showAdminLink ?? false;
 $userId = $_SESSION['user_id'] ?? null;
 $userRole = $_SESSION['role'] ?? '';
 
@@ -41,22 +39,31 @@ function isActive($page, $active) {
 </div>
 </div>
 <?php endif; ?>
+
+<?php if ($userRole === 'admin'): ?>
 <a href="../index.php" <?= isActive('beranda', $activePage) ?>>Beranda</a>
-<?php if ($userId): ?>
+<a href="admin_dashboard.php" <?= isActive('admin_dashboard', $activePage) ?>>Dashboard</a>
+<a href="latihan.php" <?= isActive('latihan', $activePage) ?>>Latihan</a>
+<a href="tryout.php" <?= isActive('tryout', $activePage) ?>>Try Out</a>
+<a href="leaderboard.php" <?= isActive('leaderboard', $activePage) ?>>Leaderboard</a>
+<a href="feedback.php" <?= isActive('feedback', $activePage) ?>>Feedback</a>
+<a href="../api/logout.php">Logout</a>
+<?php elseif ($userId): ?>
+<a href="../index.php" <?= isActive('beranda', $activePage) ?>>Beranda</a>
 <a href="profile.php" <?= isActive('profile', $activePage) ?>>Profil</a>
-<?php endif; ?>
 <a href="latihan.php" <?= isActive('latihan', $activePage) ?>>Latihan</a>
 <a href="daily_quiz.php" <?= isActive('daily_quiz', $activePage) ?>>Daily Quiz</a>
 <a href="tryout.php" <?= isActive('tryout', $activePage) ?>>Try Out</a>
 <a href="leaderboard.php" <?= isActive('leaderboard', $activePage) ?>>Leaderboard</a>
 <a href="feedback.php" <?= isActive('feedback', $activePage) ?>>Feedback</a>
-<?php if ($showAdminLink && $userRole === 'admin'): ?>
-<a href="admin_dashboard.php" <?= isActive('admin_dashboard', $activePage) ?>>Admin</a>
-<?php endif; ?>
-<?php if ($userId): ?>
 <a href="../api/logout.php">Logout</a>
 <?php else: ?>
+<a href="../index.php" <?= isActive('beranda', $activePage) ?>>Beranda</a>
+<a href="latihan.php" <?= isActive('latihan', $activePage) ?>>Latihan</a>
+<a href="tryout.php" <?= isActive('tryout', $activePage) ?>>Try Out</a>
+<a href="leaderboard.php" <?= isActive('leaderboard', $activePage) ?>>Leaderboard</a>
 <a href="login.php">Login</a>
+<a href="register.php">Daftar</a>
 <?php endif; ?>
 </div>
 </div>
