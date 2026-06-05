@@ -353,8 +353,8 @@ async function loadReview(){
     // Stats
     let statsHtml = '';
     for(const sub of ['TWK','TIU','TKP']){
-        const s = data.stats[sub];
-        if(s.total > 0){
+        const s = data.stats?.[sub];
+        if(s && s.total > 0){
             statsHtml += '<div style="display:inline-block;margin-right:1.5rem;margin-bottom:.5rem">';
             statsHtml += '<strong>'+sub+'</strong>: ';
             statsHtml += '<span style="color:#27ae60">Benar '+s.benar+'</span> / ';
@@ -368,7 +368,7 @@ async function loadReview(){
 
     // Rekomendasi: hitung topik yang sering salah
     const topikSalah = {};
-    data.soal.forEach(q => {
+    (data.soal || []).forEach(q => {
         if(q.jawaban_user !== q.jawaban_benar) {
             const key = q.subtes + ' — ' + q.topik;
             topikSalah[key] = (topikSalah[key] || 0) + 1;
@@ -390,7 +390,7 @@ async function loadReview(){
     // Questions
     let html = '';
     let currentPassage = null;
-    data.soal.forEach((q,i)=>{
+    (data.soal || []).forEach((q,i)=>{
         const isCorrect = q.jawaban_user === q.jawaban_benar;
         const isEmpty = !q.jawaban_user;
         const statusColor = isEmpty ? '#999' : (isCorrect ? '#27ae60' : '#e74c3c');

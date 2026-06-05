@@ -244,9 +244,9 @@ async function loadNotifications() {
         const res = await fetch('../api/get_notifications.php?limit=10');
         const data = await res.json();
         
-        if (data.success) {
-            renderNotifications(data.notifications);
-            updateNotifBadge(data.unread_count);
+        if (data.success && data.data) {
+            renderNotifications(data.data.notifications);
+            updateNotifBadge(data.data.unread_count);
         }
     } catch (e) {
         console.error('Failed to load notifications:', e);
@@ -256,7 +256,7 @@ async function loadNotifications() {
 function renderNotifications(notifications) {
     const list = document.getElementById('notifList');
     
-    if (notifications.length === 0) {
+    if (!notifications || notifications.length === 0) {
         list.innerHTML = '<p style="color:#777;font-size:.85rem;text-align:center;padding:1rem">Tidak ada notifikasi</p>';
         return;
     }
@@ -330,8 +330,8 @@ async function markAllRead() {
         const res = await fetch('../api/get_notifications.php?unread_only=true');
         const data = await res.json();
         
-        if (data.success && data.notifications.length > 0) {
-            for (const n of data.notifications) {
+        if (data.success && data.data && data.data.notifications.length > 0) {
+            for (const n of data.data.notifications) {
                 const formData = new FormData();
                 formData.append('notification_id', n.id);
                 await fetch('../api/mark_notification_read.php', { method: 'POST', body: formData });
@@ -361,11 +361,13 @@ document.addEventListener('click', (e) => {
 document.addEventListener('DOMContentLoaded', loadNotifications);
 
 // Pie Chart
-const latestScore = end($selesai);
+<?php
+$latestScore = !empty($selesai) ? reset($selesai) : null;
+?>
 const pieData = {
-    twk: (int)($latestScore['nilai_twk'] ?? 0),
-    tiu: (int)($latestScore['nilai_tiu'] ?? 0),
-    tkp: (int)($latestScore['nilai_tkp'] ?? 0)
+    twk: <?= (int)($latestScore['nilai_twk'] ?? 0) ?>,
+    tiu: <?= (int)($latestScore['nilai_tiu'] ?? 0) ?>,
+    tkp: <?= (int)($latestScore['nilai_tkp'] ?? 0) ?>
 };
 
 function drawPieChart(){
