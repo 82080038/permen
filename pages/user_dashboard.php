@@ -158,6 +158,7 @@ tr:hover{background:#f8f9fa}
 </div>
 <a href="../index.php">Beranda</a>
 <a href="latihan.php">Latihan</a>
+<a href="daily_quiz.php" style="background:#e74c3c;color:#fff;padding:.2rem .5rem;border-radius:4px">Daily Quiz</a>
 <a href="tryout.php">Try Out</a>
 <a href="leaderboard.php">Leaderboard</a>
 <a href="feedback.php">Feedback</a>
@@ -186,6 +187,7 @@ tr:hover{background:#f8f9fa}
 </div>
 
 <div class="actions">
+<a href="daily_quiz.php" class="btn" style="background:#e74c3c">Daily Quiz Hari Ini</a>
 <a href="tryout.php" class="btn danger">Mulai Try Out Penuh</a>
 <a href="latihan.php" class="btn success">Latihan per Subtes</a>
 <a href="riwayat_soal.php" class="btn" style="background:#8e44ad">Riwayat Soal</a>
@@ -591,6 +593,46 @@ if (!empty($rekomSub)):
 </div>
 </div>
 <?php endif; ?>
+
+<?php
+// Fetch riwayat daily quiz
+$dailyQuizHistory = $pdo->prepare("SELECT * FROM daily_quiz_sessions WHERE user_id = ? AND status = 'selesai' ORDER BY quiz_date DESC LIMIT 7");
+$dailyQuizHistory->execute([$userId]);
+$dailyHistory = $dailyQuizHistory->fetchAll();
+?>
+
+<!-- Daily Quiz Section -->
+<div class="section">
+<h2>Daily Quiz</h2>
+<?php if (empty($dailyHistory)): ?>
+<div class="empty">Mulai Daily Quiz untuk latihan harian 10 soal campuran!</div>
+<div style="text-align:center;margin-top:1rem">
+<a href="daily_quiz.php" class="btn" style="background:#e74c3c">Mulai Daily Quiz</a>
+</div>
+<?php else: ?>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Tanggal</th><th>Benar</th><th>Salah</th><th>Kosong</th><th>Nilai</th></tr>
+</thead>
+<tbody>
+<?php foreach ($dailyHistory as $dh): ?>
+<tr>
+<td><?= date('d M Y', strtotime($dh['quiz_date'])) ?></td>
+<td style="color:#27ae60;font-weight:bold"><?= $dh['benar'] ?></td>
+<td style="color:#e74c3c"><?= $dh['salah'] ?></td>
+<td style="color:#95a5a6"><?= $dh['kosong'] ?></td>
+<td style="font-weight:bold;color:#2980b9"><?= $dh['nilai_total'] ?></td>
+</tr>
+<?php endforeach; ?>
+</tbody>
+</table>
+</div>
+<div style="text-align:center;margin-top:1rem">
+<a href="daily_quiz.php" class="btn" style="background:#e74c3c">Kerjakan Daily Quiz Hari Ini</a>
+</div>
+<?php endif; ?>
+</div>
 
 <div class="section">
 <h2>Riwayat Tryout</h2>

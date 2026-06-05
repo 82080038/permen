@@ -25,9 +25,9 @@ Aplikasi latihan Seleksi Kompetensi Dasar (SKD) dengan format Computer Assisted 
 
 ### Generator Soal
 12. **Smart Generator** — Generate soal otomatis tanpa API eksternal (PHP + template)
-13. **AI Generator** — Integrasi Gemini 2.0 Flash untuk variasi kreatif (opsional, butuh API key)
-14. **User Generator** — Peserta generate soal latihan sendiri (max 20 soal, no DB storage)
-15. **Generator Massal Admin** — Generate puluhan soal sekaligus dengan parameter subtes/topik/jumlah
+13. **User Generator** — Peserta generate soal latihan sendiri (max 20 soal, no DB storage)
+14. **Generator Massal Admin** — Generate puluhan soal sekaligus dengan parameter subtes/topik/jumlah
+15. **Daily Quiz** — 10 soal harian campuran (4 TWK, 3 TIU, 3 TKP) dengan tracking progress
 
 ### Admin & Quality Control
 16. **Soal Revision Workflow** — Peserta tandai "M" (ragu-ragu) → admin review → tandai "Sudah Direvisi"
@@ -54,7 +54,7 @@ Aplikasi latihan Seleksi Kompetensi Dasar (SKD) dengan format Computer Assisted 
 Duplikat file `.env.example` menjadi `.env` dan sesuaikan:
 ```bash
 cp .env.example .env
-# Edit .env — isi password database dan (opsional) API key Gemini
+# Edit .env — isi password database
 ```
 
 ### 2. Jalankan XAMPP

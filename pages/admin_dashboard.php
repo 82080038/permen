@@ -374,7 +374,6 @@ Halaman <?= $tryoutsCurrentPage ?> dari <?= $tryoutsTotalPages ?>
 <p>Total soal: <?= $stats['total_soal'] ?> (TWK: <?= $soalPerSubtes['TWK'] ?? 0 ?>, TIU: <?= $soalPerSubtes['TIU'] ?? 0 ?>, TKP: <?= $soalPerSubtes['TKP'] ?? 0 ?>)</p>
 <div style="margin-bottom:1rem">
 <a href="../api/generate_soal_smart.php?subtes=TIU&tipe=numerik&topik=Deret+Angka&jumlah=5" target="_blank" class="btn success">+ Generate Soal (Smart)</a>
-<a href="../api/generate_soal_ai.php?subtes=TIU&tipe=numerik&topik=Deret+Angka&jumlah=5" target="_blank" class="btn">+ Generate Soal (AI)</a>
 </div>
 
 <!-- Upload Gambar -->

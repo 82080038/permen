@@ -262,20 +262,7 @@ Menghasilkan soal baru secara otomatis menggunakan algoritma PHP tanpa API ekste
 
 ---
 
-## 6. Generate Soal (AI External — Opsional)
-
-### GET `/api/generate_soal_ai.php`
-Menghasilkan soal baru menggunakan Gemini 2.0 Flash API. Memerlukan API key di file.
-
-**Parameter**: Sama seperti Smart Generator.
-
-**Response**: Sama seperti Smart Generator, dengan `generator: "gemini"`.
-
-**Catatan**: Jika API key belum diatur, akan mengembalikan error instruksi pengaturan.
-
----
-
-## 7. Generate Soal User (Latihan Pribadi)
+## 6. Generate Soal User (Latihan Pribadi)
 
 ### GET `/api/generate_user_soal.php?subtes=X&topik=Y&jumlah=N`
 Peserta generate soal latihan pribadi. **Tidak disimpan ke DB**, hanya dikembalikan ke frontend untuk praktik langsung.
@@ -291,7 +278,7 @@ Peserta generate soal latihan pribadi. **Tidak disimpan ke DB**, hanya dikembali
 
 ---
 
-## 8. Review Hasil Try Out
+## 7. Review Hasil Try Out
 
 ### GET `/api/get_review.php?session_id={id}`
 Mengambil detail jawaban user per soal untuk halaman hasil/review.
@@ -302,7 +289,7 @@ Mengambil detail jawaban user per soal untuk halaman hasil/review.
 
 ---
 
-## 9. Transisi Subtes
+## 8. Transisi Subtes
 
 ### POST `/api/next_subtes.php`
 Mencatat waktu user pindah ke subtes berikutnya.
@@ -314,7 +301,7 @@ Mencatat waktu user pindah ke subtes berikutnya.
 
 ---
 
-## 10. Soal Revision (Peserta)
+## 9. Soal Revision (Peserta)
 
 ### POST `/api/mark_revision.php`
 Peserta menandai soal perlu direvisi (via tombol M / ragu-ragu).
@@ -326,7 +313,7 @@ Peserta menandai soal perlu direvisi (via tombol M / ragu-ragu).
 
 ---
 
-## 11. Admin — Update Revision Status
+## 10. Admin — Update Revision Status
 
 ### POST `/api/update_revision.php`
 Admin menandai soal sudah direvisi atau toggle visibility.
@@ -338,21 +325,21 @@ Admin menandai soal sudah direvisi atau toggle visibility.
 
 ---
 
-## 12. Admin — List Soal
+## 11. Admin — List Soal
 
 ### GET `/api/list_soal.php?q=keyword&subtes=TIU&needs_revision=1&is_active=1`
 Mengambil daftar soal untuk admin dashboard dengan filter.
 
 ---
 
-## 13. Admin — Get Soal Detail
+## 12. Admin — Get Soal Detail
 
 ### GET `/api/get_soal_detail.php?id={question_id}`
 Detail lengkap soal untuk modal edit.
 
 ---
 
-## 14. Admin — Update Soal
+## 13. Admin — Update Soal
 
 ### POST `/api/update_soal.php`
 Update pertanyaan, pilihan, jawaban, pembahasan, atau gambar soal.
@@ -361,7 +348,7 @@ Update pertanyaan, pilihan, jawaban, pembahasan, atau gambar soal.
 
 ---
 
-## 15. Admin — Upload Gambar
+## 14. Admin — Upload Gambar
 
 ### POST `/api/upload_image.php`
 Upload gambar soal ke `assets/soal/`.

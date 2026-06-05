@@ -13,6 +13,19 @@ Format ini mengikuti [Keep a Changelog](https://keepachangelog.com/) dan [Semant
 
 ### Added
 - **Quick Login (Development Only)** — Tombol quick login di halaman login untuk testing (HAPUS SAAT PRODUCTION)
+- **Daily Quiz / Drilling Soal** — Sistem latihan harian 10 soal campuran (4 TWK, 3 TIU, 3 TKP) dengan tracking progress harian
+  - `pages/daily_quiz.php` — Halaman mengerjakan soal harian dengan navigasi dan timer
+  - `api/get_daily_quiz.php` — Generate soal random harian per user
+  - `api/submit_daily_answer.php` — Submit jawaban real-time
+  - `api/finish_daily_quiz.php` — Hitung hasil dan simpan ke history
+  - `sql/daily_quiz.sql` — Tabel `daily_quiz_sessions`, `daily_quiz_questions`, `daily_quiz_answers`
+- **Daily Quiz Dashboard** — Section riwayat daily quiz di user dashboard dengan statistik benar/salah/kosong
+
+### Removed
+- **AI Generator (Gemini)** — Dihapus karena tidak jadi digunakan
+  - `api/generate_soal_ai.php` — File dihapus
+  - Referensi API key Gemini dihapus dari `.env` dan `.env.example`
+  - Dokumentasi di `README.md`, `docs/API.md`, `CHANGELOG.md` diperbarui
 
 ### Data Reset
 - Semua data user, tryout, dan related tables dihapus untuk implementasi sistem baru
@@ -113,11 +126,9 @@ Format ini mengikuti [Keep a Changelog](https://keepachangelog.com/) dan [Semant
 - Update parameter tryout default ke 110 soal / 110 menit (TKP 45, TIU 35, TWK 30) sesuai KepmenPANRB No. 208/2025.
 
 ### Added
-- Tabel `master_materi` — kisi-kisi per subtes untuk acuan AI generate soal.
+- Tabel `master_materi` — kisi-kisi per subtes untuk acuan generate soal.
 - Tabel `tips_tricks` — 18 tips reusable dengan contoh soal + penerapan (format: TRIK, akronim, langkah-langkah).
-- Tabel `soal_ai_cache` — cache soal yang dihasilkan AI agar tidak duplicate.
 - Batch soal manual Batch 1 (90 soal baru: 30 TKP, 30 TIU, 30 TWK) dengan tingkat kesulitan (mudah/sedang/sulit).
-- `api/generate_soal_ai.php` — integrasi Gemini 2.0 Flash API untuk generate soal otomatis per topik (opsional, memerlukan API key).
 - `api/generate_soal_smart.php` — **Smart Generator Internal** yang menghasilkan soal via algoritma PHP + template tanpa API eksternal. Dukungan: TIU numerik (deret, berhitung, perbandingan, cerita), TWK, TKP.
 - `pages/latihan.php` — Mode latihan per subtes terpisah: TWK (30 soal/30 menit), TIU (35 soal/35 menit), TKP (45 soal/45 menit). Setiap user bisa latihan fokus pada satu subtes.
 - `pages/hasil.php` — Mendeteksi mode latihan dan menampilkan hasil yang disederhanakan (hanya subtes yang dilatih).
@@ -133,7 +144,7 @@ Format ini mengikuti [Keep a Changelog](https://keepachangelog.com/) dan [Semant
 - **Database Integrity**: `UNIQUE` constraint `unique_session_question` ditambahkan di tabel `answers` untuk mencegah duplikat soal per session.
 - **Input Validation**: `submit_jawaban.php` memvalidasi bahwa jawaban hanya boleh A-E.
 - **Navigasi Konsisten**: Semua halaman (`materi.php`, `latihan.php`, `tryout.php`, `hasil.php`) memiliki navigasi seragam.
-- **Dokumentasi API**: `docs/API.md` diperbarui dengan endpoint Smart Generator, AI Generator, dan catatan keamanan.
+- **Dokumentasi API**: `docs/API.md` diperbarui dengan endpoint Smart Generator dan catatan keamanan.
 - **Playwright E2E Testing**: Framework testing terinstall dengan konfigurasi headed. Suite test mencakup: halaman utama, materi, latihan per subtes, quick login admin/user, logout, Smart Generator API, dan keamanan API (401). Semua 8 test passed.
 
 ### Added (Sistem Autentikasi & Dashboard)
