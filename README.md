@@ -88,6 +88,9 @@ Buka browser: `http://localhost/permen/`
   .htaccess              # Proteksi file & direktori + security headers
   .gitignore             # File yang dikecualikan dari Git
 
+  includes/
+    navigation.php       # Centralized navigation component
+
   assets/
     style.css            # Shared styles
     app.js               # Shared vanilla JS
@@ -132,6 +135,10 @@ Buka browser: `http://localhost/permen/`
     leaderboard.php      # Peringkat nasional
     login.php            # Login
     register.php         # Registrasi
+    profile.php          # Edit profil user
+    feedback.php         # Form feedback user
+    daily_quiz.php       # Daily Quiz 10 soal harian
+    forgot_password.php  # Request reset password
 
   tests/
     skd.spec.js          # Test E2E Playwright (dasar)
@@ -176,11 +183,12 @@ Lihat `tests/README.md` untuk detail lebih lanjut.
 ## Catatan
 - Jumlah soal default tryout penuh: TKP=45, TIU=35, TWK=30 (total **110 soal / 110 menit**) sesuai KepmenPANRB No. 208/2025.
 - Latihan per subtes: TWK 30 soal/30 menit, TIU 35 soal/35 menit, TKP 45 soal/45 menit.
-- Passing grade default: TKP=126, TIU=80, TWK=65, Total=271.
+- Passing grade BKN 2024: TKP=156, TIU=80, TWK=65, Total=301 (standar uniform untuk semua instansi).
 - Timer tryout sinkron dengan waktu mulai di database (refresh tidak mereset timer).
 - Pembahasan soal ditampilkan langsung saat mengerjakan untuk mode belajar.
 - **Smart Generator** — Aplikasi bisa generate soal baru tanpa API eksternal.
 - **AI Generator** (opsional) — Integrasi Gemini 2.0 Flash, isi `GEMINI_API_KEY` di `.env`.
+- **Navigation Component** — Semua halaman menggunakan `includes/navigation.php` untuk konsistensi navigasi.
 
 ## Dokumentasi Teknis
 
