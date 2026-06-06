@@ -186,6 +186,11 @@ require '../includes/breadcrumbs.php';
 <button id="sidebarToggle" onclick="document.getElementById('sidebar').classList.toggle('collapsed')" aria-label="Toggle sidebar navigation">Sembunyikan/Tampilkan Navigasi</button>
 <h3>Navigasi Soal</h3>
 <div id="navStatus" style="font-size:.8rem;color:var(--text-muted);margin-bottom:.4rem">Memuat...</div>
+<div style="margin-bottom:.4rem">
+    <button onclick="filterRagu()" style="padding:.3rem .6rem;font-size:.8rem;background:#f39c12;color:#fff;border:none;border-radius:3px;cursor:pointer;margin-right:.5rem">🔍 Ragu-ragu</button>
+    <button onclick="filterUnanswered()" style="padding:.3rem .6rem;font-size:.8rem;background:#95a5a6;color:#fff;border:none;border-radius:3px;cursor:pointer">🔍 Belum Dijawab</button>
+    <button onclick="showAll()" style="padding:.3rem .6rem;font-size:.8rem;background:#7f8c8d;color:#fff;border:none;border-radius:3px;cursor:pointer">🔍 Semua</button>
+</div>
 <div class="number-grid" id="numberGrid">
 <!-- Placeholder buttons shown during loading -->
 <button style="opacity:.5;cursor:default" disabled>1</button>
@@ -363,12 +368,17 @@ function startTimer(){
  * Render the sidebar navigation grid showing all question numbers.
  * Each button shows status: active (blue), answered (green), marked (yellow), or unanswered.
  * Also updates the status text showing answered/unanswered/marked counts.
+ * Supports filtering: all, ragu, unanswered
  */
 function renderNumberGrid(){
     const grid = document.getElementById('numberGrid');
     grid.innerHTML = '';
     let answeredCount = 0, markedCount = 0;
     soal.forEach((s,i)=>{
+        // Apply filter
+        if (currentFilter === 'ragu' && !marked[s.answer_id]) return;
+        if (currentFilter === 'unanswered' && answers[s.answer_id]) return;
+        
         const btn = document.createElement('button');
         btn.textContent = i+1;
         btn.onclick = ()=>renderSoal(i);
@@ -382,7 +392,8 @@ function renderNumberGrid(){
         const total = soal.length;
         const text = '<strong style="color:#27ae60">' + answeredCount + '</strong> dijawab, '
             + '<strong style="color:#999">' + (total - answeredCount) + '</strong> belum'
-            + (markedCount > 0 ? ' (<strong style="color:#f39c12">' + markedCount + '</strong> ragu)' : '');
+            + (markedCount > 0 ? ' (<strong style="color:#f39c12">' + markedCount + '</strong> ragu)' : '')
+            + (currentFilter !== 'all' ? ' <span style="color:#e74c3c">[Filter: ' + currentFilter + ']</span>' : '');
         status.innerHTML = text;
     }
     // Scroll active button into view
@@ -531,7 +542,7 @@ function pilihJawaban(answerId, opt, el){
             'Content-Type':'application/json',
             'X-CSRF-Token': csrfToken
         },
-        body:JSON.stringify({answer_id:answerId,jawaban:opt})
+        body:JSON.stringify({answer_id:answerId,jawaban:opt,is_ragu:marked[answerId]?1:0})
     }).then(r=>{
         if(r.status === 401 || r.status === 403){
             alert('Sesi Anda telah berakhir. Silakan login kembali.');
@@ -702,6 +713,24 @@ function toggleMark(){
         },
         body:JSON.stringify({question_id:s.question_id, needs_revision:marked[s.answer_id]?1:0})
     });
+}
+
+// --- FILTER FUNCTIONS ---
+let currentFilter = 'all'; // 'all', 'ragu', 'unanswered'
+
+function filterRagu(){
+    currentFilter = 'ragu';
+    renderNumberGrid();
+}
+
+function filterUnanswered(){
+    currentFilter = 'unanswered';
+    renderNumberGrid();
+}
+
+function showAll(){
+    currentFilter = 'all';
+    renderNumberGrid();
 }
 
 // --- BOOKMARK/FAVORIT ---

@@ -52,6 +52,7 @@ $data = json_decode(file_get_contents('php://input'), true);
 $answerId = (int)($data['answer_id'] ?? 0);
 $jawaban = $data['jawaban'] ?? '';
 $jawaban = strtoupper(substr(trim($jawaban), 0, 1));
+$isRagu = (int)($data['is_ragu'] ?? 0);
 
 if (!$answerId || !in_array($jawaban, ['A','B','C','D','E'])) {
     http_response_code(400);
@@ -133,14 +134,14 @@ if ($soal['subtes'] === 'TKP') {
 // Use database transaction to prevent race conditions
 try {
     $pdo->beginTransaction();
-    $stmt = $pdo->prepare("UPDATE answers SET jawaban_user = ?, skor = ? WHERE id = ?");
-    $stmt->execute([$jawaban, $skor, $answerId]);
+    $stmt = $pdo->prepare("UPDATE answers SET jawaban_user = ?, skor = ?, is_ragu = ? WHERE id = ?");
+    $stmt->execute([$jawaban, $skor, $isRagu, $answerId]);
     
     // Log answer submission for audit trail
-    logUserAction($userId, 'submit_answer', "answer_id=$answerId, session_id={$soal['session_id']}, jawaban=$jawaban, skor=$skor");
+    logUserAction($userId, 'submit_answer', "answer_id=$answerId, session_id={$soal['session_id']}, jawaban=$jawaban, skor=$skor, is_ragu=$isRagu");
     
     $pdo->commit();
-    echo json_encode(['success' => true, 'skor' => $skor]);
+    echo json_encode(['success' => true, 'skor' => $skor, 'is_ragu' => $isRagu]);
 } catch (Exception $e) {
     $pdo->rollBack();
     http_response_code(500);
