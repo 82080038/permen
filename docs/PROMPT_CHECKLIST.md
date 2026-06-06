@@ -55,22 +55,22 @@
 ## FLOW 5: Tryout CAT System
 
 ### 5.1 Full Tryout Enhancement
-- [ ] "Implementasikan fitur 'Ragu-ragu' (doubt flag): user bisa tandai soal dengan tombol M atau checkbox. Tampilkan daftar soal yang diragukan di sidebar untuk review sebelum submit. Simpan status ragu-ragu di tabel answers."
+- [x] "Implementasikan fitur 'Ragu-ragu' (doubt flag): user bisa tandai soal dengan tombol M atau checkbox. Tampilkan daftar soal yang diragukan di sidebar untuk review sebelum submit. Simpan status ragu-ragu di tabel answers."
 
 ### 5.2 Strict Mode (No Back Navigation)
-- [ ] "Tambahkan opsi 'Strict Mode' di tryout: user tidak bisa kembali ke soal sebelumnya setelah menjawab. Implementasikan validasi server-side untuk mencegah navigasi back. Tampilkan warning sebelum memulai strict mode."
+- [x] "Tambahkan opsi 'Strict Mode' di tryout: user tidak bisa kembali ke soal sebelumnya setelah menjawab. Implementasikan validasi server-side untuk mencegah navigasi back. Tampilkan warning sebelum memulai strict mode."
 
 ### 5.3 Scheduled Tryouts
-- [ ] "Buat sistem scheduled tryout: admin bisa jadwalkan tryout dengan waktu tertentu (misal: setiap hari Sabtu jam 09:00). User bisa register untuk scheduled tryout. Timer hanya mulai pada waktu yang dijadwalkan."
+- [x] "Buat sistem scheduled tryout: admin bisa jadwalkan tryout dengan waktu tertentu (misal: setiap hari Sabtu jam 09:00). User bisa register untuk scheduled tryout. Timer hanya mulai pada waktu yang dijadwalkan."
 
 ### 5.4 Tryout Variants/Packages
-- [ ] "Implementasikan multiple tryout packages: Paket A (mudah), Paket B (sedang), Paket C (sulit). Setiap paket memiliki passing grade berbeda. User bisa memilih paket sebelum mulai tryout."
+- [x] "Implementasikan multiple tryout packages: Paket A (mudah), Paket B (sedang), Paket C (sulit). Setiap paket memiliki passing grade berbeda. User bisa memilih paket sebelum mulai tryout."
 
 ### 5.5 Figural Image Support
-- [ ] "Tambahkan dukungan soal figural dengan gambar: upload gambar SVG/PNG untuk soal TIU figural. Implementasikan tap-to-zoom untuk mobile. Tambahkan lazy loading untuk gambar agar performa tetap baik."
+- [x] "Tambahkan dukungan soal figural dengan gambar: upload gambar SVG/PNG untuk soal TIU figural. Implementasikan tap-to-zoom untuk mobile. Tambahkan lazy loading untuk gambar agar performa tetap baik."
 
 ### 5.6 Pause/Resume Tryout
-- [ ] "Implementasikan fitur pause/resume tryout: user bisa pause tryout (max 3 kali, max 10 menit total). Timer di-pause di server-side. Resume hanya bisa dalam batas waktu yang ditentukan."
+- [x] "Implementasikan fitur pause/resume tryout: user bisa pause tryout (max 3 kali, max 10 menit total). Timer di-pause di server-side. Resume hanya bisa dalam batas waktu yang ditentukan."
 
 ---
 
