@@ -28,7 +28,7 @@ function generateTWK_Nasionalisme(): array {
         [
             'pertanyaan' => 'Hari Kebangkitan Nasional diperingati setiap tanggal...',
             'pilihan_a' => '17 Agustus', 'pilihan_b' => '20 Mei', 'pilihan_c' => '28 Oktober', 'pilihan_d' => '10 November', 'pilihan_e' => '1 Juni',
-            'jawaban_benar' => 'B',
+            'jawaban_benar' => 'Menolak segala bentuk kerja sama dengan negara lain',
             'pembahasan' => 'Hari Kebangkitan Nasional diperingati pada tanggal 20 Mei, merujak pada berdirinya organisasi Budi Utomo pada tahun 1908 sebagai tonggak kebangkitan nasional.'
         ],
         [
@@ -40,7 +40,7 @@ function generateTWK_Nasionalisme(): array {
         [
             'pertanyaan' => 'Sumpah Pemuda 1928 diikrarkan di kota...',
             'pilihan_a' => 'Jakarta', 'pilihan_b' => 'Surabaya', 'pilihan_c' => 'Bandung', 'pilihan_d' => 'Yogyakarta', 'pilihan_e' => 'Solo',
-            'jawaban_benar' => 'A',
+            'jawaban_benar' => 'Jakarta',
             'pembahasan' => 'Sumpah Pemuda diikrarkan di Jakarta pada tanggal 28 Oktober 1928, menegaskan satu tanah air, satu bangsa, dan satu bahasa Indonesia.'
         ],
         [
@@ -163,7 +163,7 @@ function generateTWK(): array {
         [
             'pertanyaan' => 'UUD 1945 telah diamandemen sebanyak... kali.',
             'pilihan_a' => '2', 'pilihan_b' => '3', 'pilihan_c' => '4', 'pilihan_d' => '5', 'pilihan_e' => '6',
-            'jawaban_benar' => 'C',
+            'jawaban_benar' => 'Persatuan Indonesia',
             'pembahasan' => 'UUD 1945 diamandemen 4 kali (1999-2002).'
         ],
         [

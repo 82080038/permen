@@ -129,7 +129,11 @@ test.describe('Admin Dashboard Comprehensive Test', () => {
     // Test Beranda link
     await page.click('.header a:has-text("Beranda")');
     await page.waitForURL(/index\.php/);
-    await expect(page.locator('.header')).toBeVisible();
+    // Wait for page to load completely
+    await page.waitForLoadState('domcontentloaded');
+    // Check if we're on homepage by looking for title or hero section
+    const title = await page.title();
+    expect(title).toContain('SKD CAT-BKN');
 
     // Go back to admin
     await page.goto(`${BASE}/pages/admin_dashboard.php`);

@@ -35,7 +35,7 @@ $user    = $_ENV['DB_USER']    ?? 'root';
 $pass    = $_ENV['DB_PASS']    ?? '';
 $charset = $_ENV['DB_CHARSET']  ?? 'utf8mb4';
 
-$dsn = "mysql:host=$host;dbname=$db;charset=$charset;unix_socket=/opt/lampp/var/mysql/mysql.sock";
+$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -69,6 +69,11 @@ session_start();
 // Load helpers (but skip config.php to avoid HTML error handlers)
 require '../helpers.php';
 
+// Load smart generators for auto-generation
+require_once __DIR__ . '/generators/tkp_generator.php';
+require_once __DIR__ . '/generators/tiu_generator.php';
+require_once __DIR__ . '/generators/twk_generator.php';
+
 header('Content-Type: application/json; charset=utf-8');
 
 try {
@@ -89,12 +94,12 @@ try {
     
     if (!$sessionId) {
         http_response_code(400);
-        echo json_encode(['error' => 'Session ID diperlukan']);
+        echo json_encode(['error' => 'Session ID diperlukan. Pastikan parameter session_id tersedia di URL.']);
         exit;
     }
     if (!$userId) {
         http_response_code(401);
-        echo json_encode(['error' => 'Autentikasi diperlukan']);
+        echo json_encode(['error' => 'Autentikasi diperlukan. Silakan login terlebih dahulu.']);
         exit;
     }
 
@@ -105,14 +110,14 @@ try {
 
     if (!$session) {
         http_response_code(403);
-        echo json_encode(['error' => 'Session tidak ditemukan atau bukan milik Anda']);
+        echo json_encode(['error' => 'Session tidak ditemukan atau bukan milik Anda. Periksa session_id yang Anda masukkan.']);
         exit;
     }
 
     // Cek apakah session masih berjalan
     if ($session['status'] !== 'berjalan') {
         http_response_code(403);
-        echo json_encode(['error' => 'Session sudah selesai atau tidak aktif']);
+        echo json_encode(['error' => 'Session sudah selesai atau tidak aktif. Status saat ini: ' . $session['status'] . '.']);
         exit;
     }
 
@@ -144,7 +149,22 @@ try {
     $count = $stmt->fetchColumn();
 
     if ($count == 0) {
-        // Generate soal acak dari session_subtes (FIXED: Single query with WHERE IN to avoid N+1 problem)
+        // Check rolling limit per subtes (max 5 tryouts per day per subtes)
+        $stmtLimit = $pdo->prepare("SELECT COUNT(DISTINCT ts.id) as tryout_count 
+                                    FROM tryout_sessions ts 
+                                    WHERE ts.user_id = ? 
+                                    AND ts.status = 'selesai' 
+                                    AND DATE(ts.waktu_mulai) = CURDATE()");
+        $stmtLimit->execute([$userId]);
+        $dailyTryoutCount = $stmtLimit->fetchColumn();
+        
+        if ($dailyTryoutCount >= 5) {
+            http_response_code(429);
+            echo json_encode(['error' => 'Anda telah mencapai batas maksimal 5 tryout per hari. Silakan coba lagi besok. Jumlah tryout hari ini: ' . $dailyTryoutCount . '.']);
+            exit;
+        }
+        
+        // Generate soal acak dari session_subtes dengan exclusion dan auto-generation
         $insert = $pdo->prepare("INSERT INTO answers (session_id, question_id) VALUES (?, ?)");
         
         // Collect all question IDs in a single query
@@ -152,16 +172,77 @@ try {
         foreach (array_keys($subtesConfig) as $sub) {
             $jumlah = isset($subtesConfig[$sub]) ? (int)$subtesConfig[$sub]['jumlah_soal'] : 30;
             if ($jumlah > 0) {
-                $stmt = $pdo->prepare("SELECT id FROM questions WHERE subtes = ? AND is_active = 1");
-                $stmt->execute([$sub]);
-                $soalIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
-                if (empty($soalIds)) {
-                    // Jika tidak ada soal untuk subtes ini, skip
-                    continue;
+                // Get questions user has already answered (exclusion)
+                $stmtExcl = $pdo->prepare("SELECT DISTINCT question_id FROM answers a 
+                                          INNER JOIN tryout_sessions ts ON a.session_id = ts.id 
+                                          WHERE ts.user_id = ? AND ts.status = 'selesai'");
+                $stmtExcl->execute([$userId]);
+                $excludedIds = $stmtExcl->fetchAll(PDO::FETCH_COLUMN);
+                
+                // Build exclusion clause
+                $exclusionClause = '';
+                $params = [$sub];
+                if (!empty($excludedIds)) {
+                    $placeholders = implode(',', array_fill(0, count($excludedIds), '?'));
+                    $exclusionClause = " AND id NOT IN ($placeholders)";
+                    $params = array_merge($params, $excludedIds);
                 }
-                shuffle($soalIds);
-                $pilih = array_slice($soalIds, 0, min($jumlah, count($soalIds)));
-                $allQuestionIds = array_merge($allQuestionIds, $pilih);
+                
+                $stmt = $pdo->prepare("SELECT id, topik FROM questions WHERE subtes = ? AND is_active = 1$exclusionClause");
+                $stmt->execute($params);
+                $soalData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                if (empty($soalData)) {
+                    // Auto-generate new questions using Smart Generator
+                    error_log("get_soal.php: No questions available for $sub, auto-generating $jumlah questions");
+                    
+                    for ($i = 0; $i < $jumlah; $i++) {
+                        try {
+                            if ($sub === 'TKP') {
+                                $s = generateTKP('Kepribadian'); // Default to Kepribadian for TKP
+                            } elseif ($sub === 'TIU') {
+                                $s = generateDeretAngka('sedang'); // Default to Deret Angka for TIU
+                            } elseif ($sub === 'TWK') {
+                                $s = generateTWK_Nasionalisme(); // Default to Nasionalisme for TWK
+                            } else {
+                                continue;
+                            }
+                            
+                            // Check duplicate
+                            $stmtCheck = $pdo->prepare("SELECT id FROM questions WHERE pertanyaan = ? LIMIT 1");
+                            $stmtCheck->execute([$s['pertanyaan']]);
+                            if ($stmtCheck->fetch()) {
+                                continue; // Skip duplicate
+                            }
+                            
+                            // Insert new question
+                            $stmtIns = $pdo->prepare("INSERT INTO questions (subtes, tipe, topik, pertanyaan, pilihan_a, pilihan_b, pilihan_c, pilihan_d, pilihan_e, jawaban_benar, pembahasan, difficulty, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
+                            
+                            $tipe = ($sub === 'TKP') ? 'pribadi' : (($sub === 'TWK') ? 'wawasan' : 'numerik');
+                            $topik = ($sub === 'TKP') ? 'Kepribadian' : (($sub === 'TWK') ? 'Nasionalisme' : 'Deret Angka');
+                            
+                            $stmtIns->execute([
+                                $sub, $tipe, $topik,
+                                $s['pertanyaan'], $s['pilihan_a'], $s['pilihan_b'], $s['pilihan_c'],
+                                $s['pilihan_d'], $s['pilihan_e'], $s['jawaban_benar'],
+                                $s['pembahasan'], 'sedang'
+                            ]);
+                            
+                            $newId = $pdo->lastInsertId();
+                            $allQuestionIds[] = $newId;
+                            error_log("get_soal.php: Auto-generated question ID $newId for $sub");
+                        } catch (Exception $e) {
+                            error_log("get_soal.php: Error auto-generating question: " . $e->getMessage());
+                            continue;
+                        }
+                    }
+                } else {
+                    // Extract IDs and shuffle
+                    $soalIds = array_column($soalData, 'id');
+                    shuffle($soalIds);
+                    $pilih = array_slice($soalIds, 0, min($jumlah, count($soalIds)));
+                    $allQuestionIds = array_merge($allQuestionIds, $pilih);
+                }
             }
         }
         

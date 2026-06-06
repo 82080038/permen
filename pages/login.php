@@ -47,9 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     session_regenerate_id(true);
 
                     if ($user['role'] === 'admin') {
-                        header('Location: admin_dashboard.php');
+                        header('Location: /permen/pages/admin_dashboard.php');
                     } else {
-                        header('Location: user_dashboard.php');
+                        header('Location: /permen/pages/user_dashboard.php');
                     }
                     exit;
                 } else {
@@ -68,9 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Jika sudah login, redirect
 if (!empty($_SESSION['user_id'])) {
     if ($_SESSION['user_role'] === 'admin') {
-        header('Location: admin_dashboard.php');
+        header('Location: /permen/pages/admin_dashboard.php');
     } else {
-        header('Location: user_dashboard.php');
+        header('Location: /permen/pages/user_dashboard.php');
     }
     exit;
 }
@@ -129,7 +129,7 @@ function quickLogin(noHp, password) {
 <!-- END TODO: HAPUS QUICK LOGIN SAAT PRODUCTION -->
 
 <div class="footer">
-<a href="../index.php">Kembali ke Beranda</a> &middot; <a href="register.php">Daftar Akun Baru</a>
+<a href="/permen/index.php">Kembali ke Beranda</a> &middot; <a href="register.php">Daftar Akun Baru</a>
 </div>
 </div>
 <script src="../assets/app.js"></script>

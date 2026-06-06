@@ -385,6 +385,11 @@ function checkAPIRateLimit(string $identifier, string $endpoint, int $limit = 60
 {
     global $pdo;
     
+    // Bypass rate limiting in development environment
+    if (($_ENV['APP_ENV'] ?? 'development') === 'development') {
+        return true;
+    }
+    
     $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM api_rate_limits WHERE identifier = ? AND endpoint = ? AND created_at > DATE_SUB(NOW(), INTERVAL ? SECOND)");
     $stmt->execute([$identifier, $endpoint, $window]);
     $result = $stmt->fetch();

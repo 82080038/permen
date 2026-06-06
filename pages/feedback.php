@@ -4,7 +4,7 @@ require '../helpers.php';
 
 // Guard: only logged in users
 if (empty($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: ../pages/login.php');
     exit;
 }
 
@@ -119,7 +119,7 @@ async function submitFeedback(e) {
             // Tampilkan opsi redirect setelah 2 detik
             setTimeout(() => {
                 if (confirm('Feedback berhasil dikirim! Terima kasih atas kontribusi Anda.\n\nKlik OK untuk kembali ke Beranda, atau Cancel untuk tetap di halaman ini.')) {
-                    window.location.href = '../index.php';
+                    window.location.href = '/permen/index.php';
                 }
             }, 1500);
         } else {

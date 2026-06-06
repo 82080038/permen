@@ -3,14 +3,14 @@ require '../config.php';
 require '../helpers.php';
 $sessionId = $_GET['session_id'] ?? 0;
 if (!$sessionId) {
-    header('Location: ../index.php');
+    header('Location: /permen/index.php');
     exit;
 }
 $stmt = $pdo->prepare("SELECT * FROM tryout_sessions WHERE id = ?");
 $stmt->execute([$sessionId]);
 $session = $stmt->fetch();
 if (!$session) {
-    header('Location: ../index.php');
+    header('Location: /permen/index.php');
     exit;
 }
 
@@ -122,9 +122,9 @@ else { $nilaiSubtes = $nilaiTwk; $passingSubtes = $passingTwk; $statusSubtes = $
 <a href="latihan.php?subtes=<?= $latihanSubtes ?>" class="btn">Latihan <?= $latihanSubtes ?> Lagi</a>
 <a href="latihan.php" class="btn" style="background:#27ae60;margin-left:.5rem">Latihan Subtes Lain</a>
 <a href="tryout.php" class="btn" style="background:#e67e22;margin-left:.5rem">Try Out Penuh</a>
-<a href="../index.php" class="btn" style="background:#7f8c8d;margin-left:.5rem">Beranda</a>
+<a href="/permen/index.php" class="btn" style="background:#7f8c8d;margin-left:.5rem">Beranda</a>
 <div style="margin-top:1rem">
-<a href="../api/export_result.php?session_id=<?= $sessionId ?>&format=csv" class="btn" style="background:#2980b9;font-size:.8rem;padding:.5rem 1rem">📄 Export CSV</a>
+<a href="/permen/api/export_result.php?session_id=<?= $sessionId ?>&format=csv" class="btn" style="background:#2980b9;font-size:.8rem;padding:.5rem 1rem">📄 Export CSV</a>
 <a href="javascript:window.print()" class="btn" style="background:#8e44ad;font-size:.8rem;padding:.5rem 1rem;margin-left:.5rem">🖨️ Cetak/PDF</a>
 </div>
 </div>
@@ -208,7 +208,7 @@ Sumber: BKN (Badan Kepegawaian Negara) - Seleksi Sekolah Kedinasan 2024
 <div class="card no-print" style="text-align:center">
 <h2>Export Hasil</h2>
 <div style="display:flex;justify-content:center;gap:.5rem;flex-wrap:wrap">
-<a href="../api/export_result.php?session_id=<?= $sessionId ?>&format=csv" class="btn" style="background:#2980b9;font-size:.9rem;padding:.6rem 1.2rem">📄 Export CSV</a>
+<a href="/permen/api/export_result.php?session_id=<?= $sessionId ?>&format=csv" class="btn" style="background:#2980b9;font-size:.9rem;padding:.6rem 1.2rem">📄 Export CSV</a>
 <a href="javascript:window.print()" class="btn" style="background:#8e44ad;font-size:.9rem;padding:.6rem 1.2rem">🖨️ Cetak/PDF</a>
 <button onclick="sendEmailResult()" class="btn" style="background:#27ae60;font-size:.9rem;padding:.6rem 1.2rem">� Kirim Notifikasi</button>
 </div>
@@ -322,7 +322,7 @@ async function loadReview(){
         html += '</div>';
         html += '<div style="font-size:.9rem;margin-bottom:.5rem">'+escapeHtml(q.pertanyaan)+'</div>';
         if(q.image_url){
-            html += '<img src="'+escapeHtml(q.image_url)+'" style="max-width:100%;max-height:150px;margin:.4rem 0;border:1px solid #ddd;border-radius:4px">';
+            html += '<img src="'+escapeHtml(q.image_url)+'" alt="Gambar soal" style="max-width:100%;max-height:150px;margin:.4rem 0;border:1px solid #ddd;border-radius:4px">';
         }
 
         ['A','B','C','D','E'].forEach(opt=>{
@@ -394,14 +394,15 @@ function escapeHtml(text){
     return div.innerHTML;
 }
 
-loadReview();
+// Wait for DOM to be ready before loading review
+document.addEventListener('DOMContentLoaded', loadReview);
 </script>
 
 <div class="card no-print" style="text-align:center">
 <a href="tryout.php" class="btn">Coba Lagi</a>
 <a href="latihan.php" class="btn" style="background:#27ae60;margin-left:.5rem">Latihan per Subtes</a>
 <a href="materi.php?subtes=TWK" class="btn" style="background:#2980b9;margin-left:.5rem">Pelajari Materi</a>
-<a href="../index.php" class="btn" style="background:#7f8c8d;margin-left:.5rem">Beranda</a>
+<a href="/permen/index.php" class="btn" style="background:#7f8c8d;margin-left:.5rem">Beranda</a>
 <button onclick="window.print()" class="btn" style="background:#8e44ad;margin-left:.5rem" aria-label="Simpan atau cetak hasil sebagai PDF">Simpan/Cetak PDF</button>
 </div>
 <?php endif; ?>

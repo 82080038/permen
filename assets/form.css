@@ -11,7 +11,7 @@ body {
     color: #222;
     line-height: 1.6;
     -webkit-text-size-adjust: 100%;
-    transition: background .3s, color .3s
+    transition: background .3s ease, color .3s ease
 }
 
 .header {
@@ -37,7 +37,7 @@ body {
     border-radius: 8px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, .08);
     padding: 1.5rem;
-    transition: background .3s, box-shadow .3s
+    transition: background .3s ease, box-shadow .3s ease
 }
 
 .card h2 {
@@ -103,7 +103,7 @@ body {
     border-radius: 5px;
     margin-bottom: 1rem;
     font-size: .9rem;
-    transition: background .3s, color .3s
+    transition: background .3s ease, color .3s ease
 }
 
 .alert.error {
@@ -127,7 +127,7 @@ body {
 .link {
     color: #2980b9;
     text-decoration: none;
-    transition: color .3s
+    transition: color .3s ease
 }
 
 .link:hover {
@@ -138,14 +138,14 @@ body {
     color: #e74c3c;
     font-size: .8rem;
     margin-top: .3rem;
-    transition: color .3s
+    transition: color .3s ease
 }
 
 /* Dark Mode */
 @media(prefers-color-scheme:dark) {
     body {
         background: #1a1a2e;
-        color: #e0e0e0
+        color: #e8e8e8
     }
 
     .header {
@@ -162,14 +162,14 @@ body {
     }
 
     .form-group label {
-        color: #b0b0b0
+        color: #d0d0d0
     }
 
     .form-group input,
     .form-group select {
         background: #0f3460;
         border-color: #1f4068;
-        color: #e0e0e0
+        color: #e8e8e8
     }
 
     .form-group input:focus,
@@ -197,7 +197,7 @@ body {
     }
 
     .footer {
-        color: #888
+        color: #a0a0a0
     }
 
     .link {
@@ -212,7 +212,7 @@ body {
 /* Manual dark mode toggle support */
 body.dark-mode {
     background: #1a1a2e;
-    color: #e0e0e0
+    color: #e8e8e8
 }
 
 body.dark-mode .header {
@@ -229,14 +229,14 @@ body.dark-mode .card h2 {
 }
 
 body.dark-mode .form-group label {
-    color: #b0b0b0
+    color: #d0d0d0
 }
 
 body.dark-mode .form-group input,
 body.dark-mode .form-group select {
     background: #0f3460;
     border-color: #1f4068;
-    color: #e0e0e0
+    color: #e8e8e8
 }
 
 body.dark-mode .form-group input:focus,
@@ -264,7 +264,7 @@ body.dark-mode .alert.success {
 }
 
 body.dark-mode .footer {
-    color: #888
+    color: #a0a0a0
 }
 
 body.dark-mode .link {

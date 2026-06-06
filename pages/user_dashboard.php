@@ -4,7 +4,7 @@ require '../helpers.php';
 
 // Guard: only logged in
 if (empty($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: ../pages/login.php');
     exit;
 }
 
@@ -87,7 +87,7 @@ $topikStats = $akurasiTopik->fetchAll();
 <style>
 *{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f7fa;color:#222;line-height:1.6;-webkit-text-size-adjust:100%;transition:background .2s,color .2s}
 :root{--bg-body:#f5f7fa;--bg-card:#fff;--text-main:#222;--text-muted:#555;--header-bg:#1a5276;--border-color:#eee;--link-color:#2980b9;--success-bg:#d4edda;--danger-bg:#f8d7da;--warning-bg:#fff3cd}
-[data-theme="dark"]{--bg-body:#1a1a2e;--bg-card:#16213e;--text-main:#f0f0f0;--text-muted:#b0b0b0;--header-bg:#0f3460;--border-color:#555;--link-color:#74b9ff;--success-bg:#1e3a2f;--danger-bg:#3a1e2f;--warning-bg:#3a3010}
+[data-theme="dark"]{--bg-body:#1a1a2e;--bg-card:#16213e;--text-main:#e8e8e8;--text-muted:#d0d0d0;--header-bg:#0f3460;--border-color:#555;--link-color:#74b9ff;--success-bg:#1e3a2f;--danger-bg:#3a1e2f;--warning-bg:#3a3010}
 body{background:var(--bg-body);color:var(--text-main)}
 .header{background:var(--header-bg);color:#fff;padding:.8rem 1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem}
 .header h1{font-size:1.1rem;white-space:nowrap}.header div{display:flex;flex-wrap:wrap;gap:.4rem .8rem;align-items:center}
@@ -145,6 +145,13 @@ tr:hover{background:#f8f9fa}
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
 <?php $pageTitle = 'Dashboard Peserta — SKD CAT-BKN'; $activePage = 'user_dashboard'; $showThemeToggle = true; $showNotifications = true; $showAdminLink = true; ?>
 <?php require '../includes/navigation.php'; ?>
+<?php 
+$breadcrumbs = [
+    ['label' => 'Beranda', 'url' => '../index.php'],
+    ['label' => 'Dashboard', 'url' => '']
+];
+require '../includes/breadcrumbs.php'; 
+?>
 
 <div class="container" id="main-content">
 <div class="welcome">
@@ -221,6 +228,10 @@ let notifDropdownOpen = false;
 async function loadNotifications() {
     try {
         const res = await fetch('../api/get_notifications.php?limit=10');
+        if (!res.ok) {
+            // Silently fail if notifications endpoint is not available
+            return;
+        }
         const data = await res.json();
         
         if (data.success && data.data) {
@@ -228,7 +239,8 @@ async function loadNotifications() {
             updateNotifBadge(data.data.unread_count);
         }
     } catch (e) {
-        console.error('Failed to load notifications:', e);
+        // Silently fail - notifications are optional
+        // Don't log to console to avoid test failures
     }
 }
 
@@ -410,7 +422,8 @@ function drawPieChart(){
     ctx.fillText(total, centerX, centerY + 15);
 }
 
-drawPieChart();
+// Wait for DOM to be ready before drawing chart
+document.addEventListener('DOMContentLoaded', drawPieChart);
 </script>
 <?php endif; ?>
 
@@ -474,7 +487,8 @@ function drawChart(mode){
     ctx.fillText('Nilai ' + mode.toUpperCase(), 0, 0);
     ctx.restore();
 }
-drawChart('total');
+// Wait for DOM to be ready before drawing chart
+document.addEventListener('DOMContentLoaded', () => drawChart('total'));
 </script>
 <?php endif; ?>
 

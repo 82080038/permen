@@ -6,7 +6,7 @@ set_error_handler(function($errno, $errstr, $errfile, $errline) {
     if (!(error_reporting() & $errno)) {
         return false;
     }
-    
+
     $errorTypes = [
         E_ERROR => 'Error',
         E_WARNING => 'Warning',
@@ -24,18 +24,50 @@ set_error_handler(function($errno, $errstr, $errfile, $errline) {
         E_DEPRECATED => 'Deprecated',
         E_USER_DEPRECATED => 'User Deprecated'
     ];
-    
+
     $errorType = $errorTypes[$errno] ?? 'Unknown Error';
-    
+
     // Log error ONLY - never output anything
-    error_log("[$errorType] $errstr in $errfile on line $errline");
-    
+    $errorMsg = "[$errorType] $errstr in $errfile on line $errline";
+    error_log($errorMsg);
+
+    // Additional logging to audit_logs table for production monitoring
+    if (($_ENV['APP_ENV'] ?? 'development') === 'production' && isset($GLOBALS['pdo'])) {
+        try {
+            $stmt = $GLOBALS['pdo']->prepare("INSERT INTO audit_logs (user_id, action, details, ip_address) VALUES (?, ?, ?, ?)");
+            $stmt->execute([
+                $_SESSION['user_id'] ?? 0,
+                'PHP_ERROR',
+                substr($errorMsg, 0, 500),
+                $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'
+            ]);
+        } catch (Exception $e) {
+            // If logging fails, just continue to avoid infinite loop
+        }
+    }
+
     return true;
 });
 
 // Global exception handler - ONLY log, never output HTML
 set_exception_handler(function($exception) {
-    error_log("Uncaught Exception: " . $exception->getMessage() . " in " . $exception->getFile() . " on line " . $exception->getLine());
+    $errorMsg = "Uncaught Exception: " . $exception->getMessage() . " in " . $exception->getFile() . " on line " . $exception->getLine();
+    error_log($errorMsg);
+
+    // Additional logging to audit_logs table for production monitoring
+    if (($_ENV['APP_ENV'] ?? 'development') === 'production' && isset($GLOBALS['pdo'])) {
+        try {
+            $stmt = $GLOBALS['pdo']->prepare("INSERT INTO audit_logs (user_id, action, details, ip_address) VALUES (?, ?, ?, ?)");
+            $stmt->execute([
+                $_SESSION['user_id'] ?? 0,
+                'PHP_EXCEPTION',
+                substr($errorMsg, 0, 500),
+                $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'
+            ]);
+        } catch (Exception $e) {
+            // If logging fails, just continue to avoid infinite loop
+        }
+    }
 });
 
 // Register shutdown function for fatal errors - ONLY log, never output HTML
@@ -52,7 +84,7 @@ $user    = $_ENV['DB_USER']    ?? 'root';
 $pass    = $_ENV['DB_PASS']    ?? '';
 $charset = $_ENV['DB_CHARSET']  ?? 'utf8mb4';
 
-$dsn = "mysql:host=$host;dbname=$db;charset=$charset;unix_socket=/opt/lampp/var/mysql/mysql.sock";
+$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -61,7 +93,10 @@ $options = [
 
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);
-    
+
+    // Make $pdo available globally for error handlers
+    $GLOBALS['pdo'] = $pdo;
+
     // Enable slow query logging for development
     if (($_ENV['APP_ENV'] ?? 'development') === 'development') {
         $pdo->exec("SET SESSION long_query_time = 1");

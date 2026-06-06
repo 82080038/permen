@@ -288,3 +288,488 @@ function generateTIU_PassageLogika(): array {
         'pembahasan' => $soalList[array_rand($soalList)]['pembahasan']
     ];
 }
+
+/**
+ * Generate verbal analogy question
+ * @return array Question data with options and explanation
+ */
+function generateAnalogi(): array {
+    $analogies = [
+        [
+            'soal' => 'DOKTER : OBAT = GURU : ...',
+            'pilihan' => ['Sekolah', 'Murid', 'Buku', 'Ilmu', 'Kelas'],
+            'benar' => 'Ilmu',
+            'pembahasan' => 'Dokter menggunakan obat untuk menyembuhkan. Guru menggunakan ilmu untuk mengajar. Hubungan: profesi - alat kerja.'
+        ],
+        [
+            'soal' => 'MATAHARI : CAHAYA = LAMPU : ...',
+            'pilihan' => ['Listrik', 'Cahaya', 'Bohlam', 'Gelap', 'Siang'],
+            'benar' => 'Cahaya',
+            'pembahasan' => 'Matahari menghasilkan cahaya. Lampu menghasilkan cahaya. Hubungan: sumber - output.'
+        ],
+        [
+            'soal' => 'BUKU : PENULIS = LAGU : ...',
+            'pilihan' => ['Penyanyi', 'Komposer', 'Musik', 'Album', 'Radio'],
+            'benar' => 'Komposer',
+            'pembahasan' => 'Buku ditulis oleh penulis. Lagu diciptakan oleh komposer. Hubungan: karya - pencipta.'
+        ],
+        [
+            'soal' => 'KULIT : JERUK = KULIT : ...',
+            'pilihan' => ['Apel', 'Air', 'Daging', 'Biji', 'Batang'],
+            'benar' => 'Apel',
+            'pembahasan' => 'Kulit jeruk adalah bagian luar buah. Kulit apel juga bagian luar buah. Hubungan: bagian - keseluruhan.'
+        ],
+        [
+            'soal' => 'KUNCI : PINTU = PASSWORD : ...',
+            'pilihan' => ['Komputer', 'Akun', 'Email', 'Internet', 'Data'],
+            'benar' => 'Akun',
+            'pembahasan' => 'Kunci membuka pintu. Password membuka akses akun. Hubungan: alat akses - objek.'
+        ],
+        [
+            'soal' => 'RODA : MOBIL = SAYAP : ...',
+            'pilihan' => ['Burung', 'Pesawat', 'Ikan', 'Kapal', 'Sepeda'],
+            'benar' => 'Pesawat',
+            'pembahasan' => 'Roda adalah komponen mobil. Sayap adalah komponen pesawat. Hubungan: komponen - kendaraan.'
+        ],
+        [
+            'soal' => 'AIR : MINUM = MAKANAN : ...',
+            'pilihan' => ['Lapar', 'Makan', 'Minum', 'Dahaga', 'Sehat'],
+            'benar' => 'Makan',
+            'pembahasan' => 'Air diminum untuk menghilangkan dahaga. Makanan dimakan untuk menghilangkan lapar. Hubungan: substansi - aksi.'
+        ],
+        [
+            'soal' => 'MATA : MELIHAT = TELINGA : ...',
+            'pilihan' => ['Mencium', 'Merasa', 'Mendengar', 'Meraba', 'Bicara'],
+            'benar' => 'Mendengar',
+            'pembahasan' => 'Mata berfungsi untuk melihat. Telinga berfungsi untuk mendengar. Hubungan: organ - fungsi.'
+        ],
+        [
+            'soal' => 'GARAM : LAUT = PASIR : ...',
+            'pilihan' => ['Air', 'Gurun', 'Gunung', 'Hutan', 'Sungai'],
+            'benar' => 'Gurun',
+            'pembahasan' => 'Garam ditemukan di laut. Pasir ditemukan di gurun. Hubungan: substansi - lokasi.'
+        ],
+        [
+            'soal' => 'PEN : TINTA = KUAS : ...',
+            'pilihan' => ['Kertas', 'Cat', 'Gambar', 'Warna', 'Kanvas'],
+            'benar' => 'Cat',
+            'pembahasan' => 'Pen menggunakan tinta untuk menulis. Kuas menggunakan cat untuk melukis. Hubungan: alat - bahan.'
+        ]
+    ];
+    
+    $a = $analogies[array_rand($analogies)];
+    $labels = ['A','B','C','D','E'];
+    $entries = [];
+    foreach ($a['pilihan'] as $v) $entries[] = ['val'=>$v];
+    shuffle($entries);
+    $options = [];
+    $correct = '';
+    foreach ($entries as $i=>$e) {
+        $lbl = $labels[$i];
+        $options[$lbl] = $e['val'];
+        if ($e['val'] == $a['benar']) $correct = $lbl;
+    }
+    
+    return [
+        'pertanyaan' => $a['soal'],
+        'pilihan_a' => $options['A'],
+        'pilihan_b' => $options['B'],
+        'pilihan_c' => $options['C'],
+        'pilihan_d' => $options['D'],
+        'pilihan_e' => $options['E'],
+        'jawaban_benar' => $correct,
+        'pembahasan' => $a['pembahasan']
+    ];
+}
+
+/**
+ * Generate syllogism question
+ * @return array Question data with options and explanation
+ */
+function generateSilogisme(): array {
+    $syllogisms = [
+        [
+            'premis1' => 'Semua mahasiswa Sekolah Kedinasan adalah calon PNS.',
+            'premis2' => 'Budi adalah mahasiswa Sekolah Kedinasan.',
+            'soal' => 'Kesimpulan yang benar adalah...',
+            'pilihan' => ['Budi belum tentu calon PNS', 'Budi adalah calon PNS', 'Budi bukan calon PNS', 'Tidak dapat disimpulkan', 'Budi adalah PNS'],
+            'benar' => 'Budi adalah calon PNS',
+            'pembahasan' => 'Dari premis: Semua A adalah B. C adalah A. Maka C adalah B. Budi adalah calon PNS.'
+        ],
+        [
+            'premis1' => 'Semua penari adalah atlet.',
+            'premis2' => 'Sebagian atlet adalah vegetarian.',
+            'soal' => 'Kesimpulan yang benar adalah...',
+            'pilihan' => ['Semua penari vegetarian', 'Sebagian penari vegetarian', 'Tidak ada penari vegetarian', 'Tidak dapat disimpulkan', 'Semua atlet vegetarian'],
+            'benar' => 'Tidak dapat disimpulkan',
+            'pembahasan' => 'Dari premis: Semua A adalah B. Sebagian B adalah C. Tidak dapat disimpulkan hubungan A dan C.'
+        ],
+        [
+            'premis1' => 'Tidak ada A yang B.',
+            'premis2' => 'Semua C adalah B.',
+            'soal' => 'Kesimpulan yang benar adalah...',
+            'pilihan' => ['Semua C adalah A', 'Sebagian C adalah A', 'Tidak ada C yang A', 'Semua A adalah C', 'Tidak dapat disimpulkan'],
+            'benar' => 'Tidak ada C yang A',
+            'pembahasan' => 'Dari premis: Tidak ada A yang B. Semua C adalah B. Maka tidak ada C yang A (himpunan terpisah).'
+        ],
+        [
+            'premis1' => 'Semua kucing adalah hewan.',
+            'premis2' => 'Sebagian hewan adalah mamalia.',
+            'soal' => 'Kesimpulan yang benar adalah...',
+            'pilihan' => ['Semua kucing mamalia', 'Sebagian kucing mamalia', 'Tidak ada kucing mamalia', 'Tidak dapat disimpulkan', 'Semua mamalia kucing'],
+            'benar' => 'Tidak dapat disimpulkan',
+            'pembahasan' => 'Dari premis: Semua A adalah B. Sebagian B adalah C. Tidak dapat disimpulkan hubungan A dan C.'
+        ],
+        [
+            'premis1' => 'Semua siswa yang rajin lulus ujian.',
+            'premis2' => 'Andi tidak lulus ujian.',
+            'soal' => 'Kesimpulan yang benar adalah...',
+            'pilihan' => ['Andi rajin', 'Andi tidak rajin', 'Andi tidak siswa', 'Tidak dapat disimpulkan', 'Semua siswa tidak lulus'],
+            'benar' => 'Andi tidak rajin',
+            'pembahasan' => 'Dari premis: Semua A (rajin) adalah B (lulus). C (Andi) bukan B. Maka C bukan A. Andi tidak rajin.'
+        ],
+        [
+            'premis1' => 'Sebagian pegawai negeri adalah korup.',
+            'premis2' => 'Budi adalah pegawai negeri.',
+            'soal' => 'Kesimpulan yang benar adalah...',
+            'pilihan' => ['Budi korup', 'Budi tidak korup', 'Budi pasti korup', 'Tidak dapat disimpulkan', 'Semua pegawai korup'],
+            'benar' => 'Tidak dapat disimpulkan',
+            'pembahasan' => 'Dari premis: Sebagian A adalah B. C adalah A. Tidak dapat disimpulkan apakah C termasuk sebagian yang B.'
+        ],
+        [
+            'premis1' => 'Semua dokter memiliki gelar sarjana.',
+            'premis2' => 'Citra memiliki gelar sarjana.',
+            'soal' => 'Kesimpulan yang benar adalah...',
+            'pilihan' => ['Citra dokter', 'Citra bukan dokter', 'Semua sarjana dokter', 'Tidak dapat disimpulkan', 'Citra tidak sarjana'],
+            'benar' => 'Tidak dapat disimpulkan',
+            'pembahasan' => 'Dari premis: Semua A adalah B. C adalah B. Tidak dapat disimpulkan C adalah A (bisa bukan dokter tapi sarjana).'
+        ],
+        [
+            'premis1' => 'Tidak ada politikus yang jujur.',
+            'premis2' => 'Joko jujur.',
+            'soal' => 'Kesimpulan yang benar adalah...',
+            'pilihan' => ['Joko politikus', 'Joko bukan politikus', 'Semua jujur politikus', 'Tidak dapat disimpulkan', 'Joko tidak jujur'],
+            'benar' => 'Joko bukan politikus',
+            'pembahasan' => 'Dari premis: Tidak ada A yang B. C adalah B. Maka C bukan A. Joko bukan politikus.'
+        ],
+        [
+            'premis1' => 'Semua buah yang manis enak.',
+            'premis2' => 'Apel ini enak.',
+            'soal' => 'Kesimpulan yang benar adalah...',
+            'pilihan' => ['Apel ini manis', 'Apel ini tidak manis', 'Semua enak manis', 'Tidak dapat disimpulkan', 'Apel bukan buah'],
+            'benar' => 'Tidak dapat disimpulkan',
+            'pembahasan' => 'Dari premis: Semua A adalah B. C adalah B. Tidak dapat disimpulkan C adalah A (bisa enak tapi tidak manis).'
+        ],
+        [
+            'premis1' => 'Sebagian mahasiswa bekerja part-time.',
+            'premis2' => 'Semua yang bekerja part-time dapat uang.',
+            'soal' => 'Kesimpulan yang benar adalah...',
+            'pilihan' => ['Semua mahasiswa dapat uang', 'Sebagian mahasiswa dapat uang', 'Tidak ada mahasiswa dapat uang', 'Tidak dapat disimpulkan', 'Semua part-time mahasiswa'],
+            'benar' => 'Sebagian mahasiswa dapat uang',
+            'pembahasan' => 'Dari premis: Sebagian A adalah B. Semua B adalah C. Maka sebagian A adalah C. Sebagian mahasiswa dapat uang.'
+        ]
+    ];
+    
+    $s = $syllogisms[array_rand($syllogisms)];
+    $labels = ['A','B','C','D','E'];
+    $entries = [];
+    foreach ($s['pilihan'] as $v) $entries[] = ['val'=>$v];
+    shuffle($entries);
+    $options = [];
+    $correct = '';
+    foreach ($entries as $i=>$e) {
+        $lbl = $labels[$i];
+        $options[$lbl] = $e['val'];
+        if ($e['val'] == $s['benar']) $correct = $lbl;
+    }
+    
+    return [
+        'pertanyaan' => $s['premis1'] . ' ' . $s['premis2'] . ' ' . $s['soal'],
+        'pilihan_a' => $options['A'],
+        'pilihan_b' => $options['B'],
+        'pilihan_c' => $options['C'],
+        'pilihan_d' => $options['D'],
+        'pilihan_e' => $options['E'],
+        'jawaban_benar' => $correct,
+        'pembahasan' => $s['pembahasan']
+    ];
+}
+
+/**
+ * Generate figural inequality question
+ * @return array Question data with options and explanation
+ */
+function generateKetidaksamaan(): array {
+    $scenarios = [
+        [
+            'soal' => 'Dari 5 gambar berikut, yang berbeda adalah...',
+            'pilihan' => ['4 segi empat, 1 segitiga', 'Semua sama', '4 lingkaran, 1 persegi', '3 segitiga, 2 persegi', 'Tidak ada yang berbeda'],
+            'benar' => '4 segi empat, 1 segitiga',
+            'pembahasan' => 'Gambar yang berbeda adalah segitiga karena satu-satunya yang tidak memiliki 4 sisi.'
+        ],
+        [
+            'soal' => 'Cari gambar yang polanya berbeda dari yang lain...',
+            'pilihan' => ['4 simetris, 1 tidak simetris', 'Semua simetris', '3 arsir, 2 kosong', 'Semua sama', '2 besar, 3 kecil'],
+            'benar' => '4 simetris, 1 tidak simetris',
+            'pembahasan' => 'Gambar yang berbeda adalah yang tidak simetris karena yang lain semuanya simetris.'
+        ],
+        [
+            'soal' => 'Dari 5 bentuk, yang berbeda adalah...',
+            'pilihan' => ['4 memiliki sudut, 1 melengkung', 'Semua sama', '3 tertutup, 2 terbuka', 'Semua berbeda', '2 warna sama, 3 beda'],
+            'benar' => '4 memiliki sudut, 1 melengkung',
+            'pembahasan' => 'Bentuk yang berbeda adalah yang melengkung karena yang lain memiliki sudut.'
+        ],
+        [
+            'soal' => 'Identifikasi gambar yang tidak mengikuti pola...',
+            'pilihan' => ['1 putus-putus, 4 kontinu', 'Semua kontinu', '2 garis tebal, 3 tipis', 'Semua sama', '3 vertikal, 2 horizontal'],
+            'benar' => '1 putus-putus, 4 kontinu',
+            'pembahasan' => 'Gambar yang berbeda adalah yang putus-putus karena yang lain kontinu.'
+        ],
+        [
+            'soal' => 'Dari 5 pola, yang berbeda adalah...',
+            'pilihan' => ['4 berulang, 1 unik', 'Semua unik', '3 geometris, 2 abstrak', 'Semua sama', '2 kompleks, 3 sederhana'],
+            'benar' => '4 berulang, 1 unik',
+            'pembahasan' => 'Pola yang berbeda adalah yang unik karena yang lain berulang.'
+        ],
+        [
+            'soal' => 'Cari gambar dengan orientasi berbeda...',
+            'pilihan' => ['4 horizontal, 1 vertikal', 'Semua horizontal', '3 kanan, 2 kiri', 'Semua sama', '2 atas, 3 bawah'],
+            'benar' => '4 horizontal, 1 vertikal',
+            'pembahasan' => 'Gambar yang berbeda adalah yang vertikal karena yang lain horizontal.'
+        ],
+        [
+            'soal' => 'Dari 5 gambar, yang berbeda adalah...',
+            'pilihan' => ['4 memiliki bayangan, 1 tidak', 'Semua memiliki bayangan', '3 gelap, 2 terang', 'Semua sama', '2 berwarna, 3 hitam putih'],
+            'benar' => '4 memiliki bayangan, 1 tidak',
+            'pembahasan' => 'Gambar yang berbeda adalah yang tidak memiliki bayangan.'
+        ],
+        [
+            'soal' => 'Identifikasi gambar dengan jumlah elemen berbeda...',
+            'pilihan' => ['4 memiliki 3 elemen, 1 memiliki 5', 'Semua sama jumlah', '3 genap, 2 ganjil', 'Semua berbeda', '2 tunggal, 3 ganda'],
+            'benar' => '4 memiliki 3 elemen, 1 memiliki 5',
+            'pembahasan' => 'Gambar yang berbeda adalah yang memiliki 5 elemen karena yang lain 3 elemen.'
+        ],
+        [
+            'soal' => 'Dari 5 bentuk, yang berbeda adalah...',
+            'pilihan' => ['4 solid, 1 transparan', 'Semua solid', '3 cembung, 2 cekung', 'Semua sama', '2 reguler, 3 irregular'],
+            'benar' => '4 solid, 1 transparan',
+            'pembahasan' => 'Bentuk yang berbeda adalah yang transparan karena yang lain solid.'
+        ],
+        [
+            'soal' => 'Cari gambar dengan tekstur berbeda...',
+            'pilihan' => ['4 halus, 1 kasar', 'Semua halus', '3 bergaris, 2 polos', 'Semua sama', '2 matte, 3 glossy'],
+            'benar' => '4 halus, 1 kasar',
+            'pembahasan' => 'Gambar yang berbeda adalah yang kasar karena yang lain halus.'
+        ]
+    ];
+    
+    $s = $scenarios[array_rand($scenarios)];
+    $labels = ['A','B','C','D','E'];
+    $entries = [];
+    foreach ($s['pilihan'] as $v) $entries[] = ['val'=>$v];
+    shuffle($entries);
+    $options = [];
+    $correct = '';
+    foreach ($entries as $i=>$e) {
+        $lbl = $labels[$i];
+        $options[$lbl] = $e['val'];
+        if ($e['val'] == $s['benar']) $correct = $lbl;
+    }
+    
+    return [
+        'pertanyaan' => $s['soal'],
+        'pilihan_a' => $options['A'],
+        'pilihan_b' => $options['B'],
+        'pilihan_c' => $options['C'],
+        'pilihan_d' => $options['D'],
+        'pilihan_e' => $options['E'],
+        'jawaban_benar' => $correct,
+        'pembahasan' => $s['pembahasan']
+    ];
+}
+
+/**
+ * Generate figural serial question
+ * @return array Question data with options and explanation
+ */
+function generateSerial(): array {
+    $serials = [
+        [
+            'soal' => 'Urutan: ○ → ◐ → ● → ?',
+            'pilihan' => ['○', '◐', '●', '◑', '◒'],
+            'benar' => '◑',
+            'pembahasan' => 'Pola: kosong → setengah kanan → penuh → setengah kiri → kosong. Jawaban: ◑'
+        ],
+        [
+            'soal' => 'Urutan: 1 titik → 2 titik → 3 titik → ?',
+            'pilihan' => ['1 titik', '2 titik', '3 titik', '4 titik', '5 titik'],
+            'benar' => '4 titik',
+            'pembahasan' => 'Pola: jumlah titik bertambah 1 setiap langkah. Jawaban: 4 titik'
+        ],
+        [
+            'soal' => 'Urutan: kecil → sedang → besar → ?',
+            'pilihan' => ['kecil', 'sedang', 'besar', 'lebih besar', 'sama'],
+            'benar' => 'lebih besar',
+            'pembahasan' => 'Pola: ukuran bertambah bertahap. Jawaban: lebih besar'
+        ],
+        [
+            'soal' => 'Urutan: △ → □ → ○ → ?',
+            'pilihan' => ['△', '□', '○', '☆', '◇'],
+            'benar' => '☆',
+            'pembahasan' => 'Pola: segitiga → persegi → lingkaran → bintang. Jawaban: ☆'
+        ],
+        [
+            'soal' => 'Urutan: 2 → 4 → 8 → ?',
+            'pilihan' => ['10', '12', '14', '16', '20'],
+            'benar' => '16',
+            'pembahasan' => 'Pola: dikali 2 setiap langkah. 2×2=4, 4×2=8, 8×2=16. Jawaban: 16'
+        ],
+        [
+            'soal' => 'Urutan: A → C → E → ?',
+            'pilihan' => ['F', 'G', 'H', 'I', 'J'],
+            'benar' => 'G',
+            'pembahasan' => 'Pola: loncat 1 huruf. A(+2)=C, C(+2)=E, E(+2)=G. Jawaban: G'
+        ],
+        [
+            'soal' => 'Urutan: ↑ → → → ↓ → ?',
+            'pilihan' => ['↑', '→', '↓', '←', '↗'],
+            'benar' => '←',
+            'pembahasan' => 'Pola: putar 90° searah jarum jam. Atas → Kanan → Bawah → Kiri. Jawaban: ←'
+        ],
+        [
+            'soal' => 'Urutan: 1 → 1 → 2 → 3 → 5 → ?',
+            'pilihan' => ['6', '7', '8', '9', '10'],
+            'benar' => '8',
+            'pembahasan' => 'Pola: Fibonacci. 1+1=2, 1+2=3, 2+3=5, 3+5=8. Jawaban: 8'
+        ],
+        [
+            'soal' => 'Urutan: merah → kuning → hijau → ?',
+            'pilihan' => ['biru', 'ungu', 'coklat', 'hitam', 'putih'],
+            'benar' => 'biru',
+            'pembahasan' => 'Pola: warna pelangi. Merah → Kuning → Hijau → Biru. Jawaban: biru'
+        ],
+        [
+            'soal' => 'Urutan: 1 → 4 → 9 → ?',
+            'pilihan' => ['12', '14', '16', '18', '25'],
+            'benar' => '16',
+            'pembahasan' => 'Pola: kuadrat. 1²=1, 2²=4, 3²=9, 4²=16. Jawaban: 16'
+        ]
+    ];
+    
+    $s = $serials[array_rand($serials)];
+    $labels = ['A','B','C','D','E'];
+    $entries = [];
+    foreach ($s['pilihan'] as $v) $entries[] = ['val'=>$v];
+    shuffle($entries);
+    $options = [];
+    $correct = '';
+    foreach ($entries as $i=>$e) {
+        $lbl = $labels[$i];
+        $options[$lbl] = $e['val'];
+        if ($e['val'] == $s['benar']) $correct = $lbl;
+    }
+    
+    return [
+        'pertanyaan' => $s['soal'],
+        'pilihan_a' => $options['A'],
+        'pilihan_b' => $options['B'],
+        'pilihan_c' => $options['C'],
+        'pilihan_d' => $options['D'],
+        'pilihan_e' => $options['E'],
+        'jawaban_benar' => $correct,
+        'pembahasan' => $s['pembahasan']
+    ];
+}
+
+/**
+ * Generate verbal analytical question
+ * @return array Question data with options and explanation
+ */
+function generateAnalitis(): array {
+    $analytics = [
+        [
+            'soal' => 'Andi > Budi. Budi > Candra. Dedi > Andi. Siapa yang paling tinggi?',
+            'pilihan' => ['Andi', 'Budi', 'Candra', 'Dedi', 'Tidak dapat ditentukan'],
+            'benar' => 'Dedi',
+            'pembahasan' => 'Urutan: Dedi > Andi > Budi > Candra. Paling tinggi: Dedi.'
+        ],
+        [
+            'soal' => 'Andi di kiri Budi, Candra di kanan Budi. Andi paling kiri. Dedi di kanan Candra. Siapa di tengah?',
+            'pilihan' => ['Andi', 'Budi', 'Candra', 'Dedi', 'Tidak dapat ditentukan'],
+            'benar' => 'Budi',
+            'pembahasan' => 'Posisi: Andi - Budi - Candra - Dedi. Tengah: Budi.'
+        ],
+        [
+            'soal' => 'Jika hari Senin tidak A, maka Selasa B. Hari Senin tidak A. Hari apa?',
+            'pilihan' => ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Tidak dapat ditentukan'],
+            'benar' => 'Selasa',
+            'pembahasan' => 'Dari premis: Senin tidak A → Selasa B. Faktanya Senin tidak A. Maka Selasa B.'
+        ],
+        [
+            'soal' => 'A lebih tua dari B. C lebih muda dari B. D lebih tua dari A. Siapa paling tua?',
+            'pilihan' => ['A', 'B', 'C', 'D', 'Tidak dapat ditentukan'],
+            'benar' => 'D',
+            'pembahasan' => 'Urutan: D > A > B > C. Paling tua: D.'
+        ],
+        [
+            'soal' => 'Jika hujan, maka jalan licin. Jalan tidak licin. Kesimpulan?',
+            'pilihan' => ['Hujan', 'Tidak hujan', 'Mungkin hujan', 'Tidak dapat disimpulkan', 'Jalan basah'],
+            'benar' => 'Tidak hujan',
+            'pembahasan' => 'Dari premis: A → B. Tidak B → Tidak A (kontraposisi). Jalan tidak licin → Tidak hujan.'
+        ],
+        [
+            'soal' => 'Semua kucing suka ikan. Tom suka ikan. Kesimpulan?',
+            'pilihan' => ['Tom kucing', 'Tom bukan kucing', 'Semua suka ikan kucing', 'Tidak dapat disimpulkan', 'Tom tidak suka ikan'],
+            'benar' => 'Tidak dapat disimpulkan',
+            'pembahasan' => 'Dari premis: Semua A adalah B. C adalah B. Tidak dapat disimpulkan C adalah A.'
+        ],
+        [
+            'soal' => 'Buku A lebih tebal dari B. B lebih tebal dari C. D lebih tipis dari C. Urutan dari paling tebal?',
+            'pilihan' => ['A-B-C-D', 'A-B-D-C', 'D-C-B-A', 'A-C-B-D', 'Tidak dapat ditentukan'],
+            'benar' => 'A-B-C-D',
+            'pembahasan' => 'Urutan: A > B > C > D. Paling tebal: A.'
+        ],
+        [
+            'soal' => 'Jika belajar, maka lulus. Tidak lulus. Kesimpulan?',
+            'pilihan' => ['Belajar', 'Tidak belajar', 'Mungkin belajar', 'Tidak dapat disimpulkan', 'Pasti lulus'],
+            'benar' => 'Tidak belajar',
+            'pembahasan' => 'Dari premis: A → B. Tidak B → Tidak A. Tidak lulus → Tidak belajar.'
+        ],
+        [
+            'soal' => 'X lebih berat dari Y. Z lebih ringan dari Y. W lebih berat dari X. Urutan dari paling ringan?',
+            'pilihan' => ['Z-Y-X-W', 'W-X-Y-Z', 'X-Y-Z-W', 'Z-W-X-Y', 'Tidak dapat ditentukan'],
+            'benar' => 'Z-Y-X-W',
+            'pembahasan' => 'Urutan: W > X > Y > Z. Paling ringan: Z.'
+        ],
+        [
+            'soal' => 'Semua yang rajin sukses. Budi sukses. Kesimpulan?',
+            'pilihan' => ['Budi rajin', 'Budi tidak rajin', 'Semua sukses rajin', 'Tidak dapat disimpulkan', 'Budi tidak sukses'],
+            'benar' => 'Tidak dapat disimpulkan',
+            'pembahasan' => 'Dari premis: Semua A adalah B. C adalah B. Tidak dapat disimpulkan C adalah A.'
+        ]
+    ];
+    
+    $a = $analytics[array_rand($analytics)];
+    $labels = ['A','B','C','D','E'];
+    $entries = [];
+    foreach ($a['pilihan'] as $v) $entries[] = ['val'=>$v];
+    shuffle($entries);
+    $options = [];
+    $correct = '';
+    foreach ($entries as $i=>$e) {
+        $lbl = $labels[$i];
+        $options[$lbl] = $e['val'];
+        if ($e['val'] == $a['benar']) $correct = $lbl;
+    }
+    
+    return [
+        'pertanyaan' => $a['soal'],
+        'pilihan_a' => $options['A'],
+        'pilihan_b' => $options['B'],
+        'pilihan_c' => $options['C'],
+        'pilihan_d' => $options['D'],
+        'pilihan_e' => $options['E'],
+        'jawaban_benar' => $correct,
+        'pembahasan' => $a['pembahasan']
+    ];
+}

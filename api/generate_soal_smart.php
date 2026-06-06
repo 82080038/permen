@@ -19,6 +19,7 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/generators/helpers.php';
 require_once __DIR__ . '/generators/tiu_generator.php';
 require_once __DIR__ . '/generators/twk_generator.php';
+require_once __DIR__ . '/generators/tkp_generator.php';
 
 // Guard: admin only
 if (empty($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'admin') {

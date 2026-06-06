@@ -360,8 +360,8 @@ test.describe('PRODUCTION ANALYSIS - Deep Testing Suite', () => {
     console.log('\n[TEST] Loading tryout page...');
     await page.goto(`${BASE}/pages/tryout.php`);
     
-    // Wait for page to fully load
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    // Wait for page to load (use domcontentloaded instead of networkidle to avoid timeout)
+    await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
     await page.waitForTimeout(3000); // Wait for JS execution
     
     // Check tryout elements
@@ -404,7 +404,8 @@ test.describe('PRODUCTION ANALYSIS - Deep Testing Suite', () => {
     
     console.log('\n[TEST] Starting tryout simulation...');
     await page.goto(`${BASE}/pages/tryout.php`);
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
+    // Use domcontentloaded instead of networkidle to avoid timeout
+    await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
     await page.waitForTimeout(3000);
     
     // Check if we're in an active session

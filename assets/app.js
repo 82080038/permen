@@ -103,6 +103,10 @@ function showToast(message, type = 'info', duration = 3000) {
                 from { transform: translateX(0); opacity: 1; }
                 to { transform: translateX(100%); opacity: 0; }
             }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-5px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
         `;
         document.head.appendChild(styleSheet);
     }
@@ -111,7 +115,7 @@ function showToast(message, type = 'info', duration = 3000) {
 
     // Auto-remove after duration
     setTimeout(() => {
-        toast.style.animation = 'slideOut 0.3s ease-out';
+        toast.style.animation = 'slideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
         setTimeout(() => toast.remove(), 300);
     }, duration);
 }
@@ -265,7 +269,7 @@ function confirmDialog(message, title = 'Konfirmasi') {
             max-width: 400px;
             width: 90%;
             box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            animation: slideUp 0.2s ease-out;
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         `;
 
         dialog.innerHTML = `
@@ -650,6 +654,26 @@ function showProgress(message, progress = 0) {
 }
 
 /**
+ * Show button loading state
+ * @param {HTMLElement} button - Button element
+ * @param {string} originalText - Original button text
+ * @param {boolean} isLoading - Loading state
+ */
+function setButtonLoading(button, originalText, isLoading = true) {
+    if (isLoading) {
+        button.disabled = true;
+        button.dataset.originalText = originalText;
+        button.innerHTML = `
+            <span style="display:inline-block;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:0.5rem;vertical-align:middle;"></span>
+            <span style="vertical-align:middle;">Memuat...</span>
+        `;
+    } else {
+        button.disabled = false;
+        button.textContent = originalText;
+    }
+}
+
+/**
  * Retry function for transient errors
  * @param {Function} fn - Function to retry
  * @param {number} maxRetries - Maximum number of retries (default: 3)
@@ -691,6 +715,9 @@ async function retry(fn, maxRetries = 3, delay = 1000) {
  * @returns {Promise} - Fetch response
  */
 async function fetchWithRetry(url, options = {}, maxRetries = 3) {
+    // Show loading indicator
+    const loadingIndicator = showLoading('Memuat data...');
+    
     return retry(async () => {
         const response = await fetch(url, options);
 
@@ -701,7 +728,72 @@ async function fetchWithRetry(url, options = {}, maxRetries = 3) {
         }
 
         return response;
-    }, maxRetries);
+    }, maxRetries).finally(() => {
+        // Hide loading indicator
+        loadingIndicator.close();
+    });
+}
+
+/**
+ * Show loading spinner
+ * @param {string} message - Loading message
+ * @returns {object} - Object with close method
+ */
+function showLoading(message = 'Memuat...') {
+    // Remove existing loading
+    const existingLoading = document.querySelector('.loading-indicator');
+    if (existingLoading) existingLoading.remove();
+
+    // Create loading indicator
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'loading-indicator';
+    loadingDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 255, 255, 0.95);
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        z-index: 10003;
+        text-align: center;
+        min-width: 200px;
+    `;
+
+    loadingDiv.innerHTML = `
+        <div style="
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2980b9;
+            border-radius: 50%;
+            animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            margin: 0 auto 1rem auto;
+        "></div>
+        <div style="color: #555; font-size: 0.9rem;">${escapeHtml(message)}</div>
+    `;
+
+    // Add animation keyframes if not exists
+    if (!document.querySelector('#loading-animations')) {
+        const styleSheet = document.createElement('style');
+        styleSheet.id = 'loading-animations';
+        styleSheet.textContent = `
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+    }
+
+    document.body.appendChild(loadingDiv);
+
+    return {
+        close: () => {
+            loadingDiv.remove();
+        }
+    };
 }
 
 /**

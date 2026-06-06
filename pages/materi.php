@@ -125,14 +125,16 @@ const topikBySubtes = {
     'TKP': ['Pelayanan Publik','Jejaring Kerja','Sosial Budaya','Teknologi Informasi','Profesionalisme']
 };
 
-// Populate topik dropdown
-const subtes = '<?= $subtes ?>';
-const sel = document.getElementById('latihTopik');
-topikBySubtes[subtes].forEach((t, idx) => {
-    const opt = document.createElement('option');
-    opt.value = t; opt.textContent = t;
-    if (idx === 0) opt.selected = true; // Auto-select first topik
-    sel.appendChild(opt);
+// Wait for DOM to be ready before populating dropdown
+document.addEventListener('DOMContentLoaded', () => {
+    const subtes = '<?= $subtes ?>';
+    const sel = document.getElementById('latihTopik');
+    topikBySubtes[subtes].forEach((t, idx) => {
+        const opt = document.createElement('option');
+        opt.value = t; opt.textContent = t;
+        if (idx === 0) opt.selected = true; // Auto-select first topik
+        sel.appendChild(opt);
+    });
 });
 
 async function generateLatihan(){

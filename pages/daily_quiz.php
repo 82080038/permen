@@ -4,7 +4,7 @@ require '../helpers.php';
 
 // Guard: user harus login
 if (empty($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: ../pages/login.php');
     exit;
 }
 
@@ -376,7 +376,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Load quiz
-loadQuiz();
+document.addEventListener('DOMContentLoaded', loadQuiz);
 <?php endif; ?>
 </script>
 

@@ -2,7 +2,7 @@
 require '../config.php';
 require '../helpers.php';
 if (empty($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: ../pages/login.php');
     exit;
 }
 $userId = (int)$_SESSION['user_id'];
@@ -100,7 +100,7 @@ $timerS = str_pad($remainingSeconds % 60, 2, '0', STR_PAD_LEFT);
 <title>Try Out SKD — CAT BKN</title>
 <style>
 :root{--bg-body:#f0f2f5;--bg-sidebar:#fff;--bg-content:#fff;--bg-passage:#f0f7ff;--bg-pembahasan:#fffbea;--bg-question:#fafafa;--bg-option-hover:#eaf2f8;--bg-option-selected:#d4edda;--bg-number:#f8f9fa;--text-main:#222;--text-muted:#555;--text-passage:#333;--text-heading:#1a5276;--text-info:#555;--img-bg:#fff;--img-border:#ddd;--border-light:#ddd;--border-passage:#b8d4f0;--header-bg:#1a5276;--nav-bg:#2980b9;--timer-bg:#e74c3c}
-[data-theme="dark"]{--bg-body:#1a1a2e;--bg-sidebar:#16213e;--bg-content:#16213e;--bg-passage:#1a1a3e;--bg-pembahasan:#2a2a4e;--bg-question:#1e1e3f;--bg-option-hover:#1a5276;--bg-option-selected:#27ae60;--bg-number:#16213e;--text-main:#f0f0f0;--text-muted:#b0b0b0;--text-passage:#e0e0e0;--text-heading:#74b9ff;--text-info:#b0b0b0;--img-bg:#1a1a2e;--img-border:#555;--border-light:#555;--border-passage:#555;--header-bg:#0f3460;--nav-bg:#1a5276;--timer-bg:#c0392b}
+[data-theme="dark"]{--bg-body:#1a1a2e;--bg-sidebar:#16213e;--bg-content:#16213e;--bg-passage:#1a1a3e;--bg-pembahasan:#2a2a4e;--bg-question:#1e1e3f;--bg-option-hover:#1a5276;--bg-option-selected:#27ae60;--bg-number:#16213e;--text-main:#e8e8e8;--text-muted:#d0d0d0;--text-passage:#e8e8e8;--text-heading:#74b9ff;--text-info:#d0d0d0;--img-bg:#1a1a2e;--img-border:#555;--border-light:#555;--border-passage:#555;--header-bg:#0f3460;--nav-bg:#1a5276;--timer-bg:#c0392b}
 *{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-body);color:var(--text-main);-webkit-text-size-adjust:100%;transition:background .2s,color .2s}
 .topbar{background:var(--header-bg);color:#fff;padding:.5rem 1rem;font-size:.8rem;display:flex;flex-wrap:wrap;gap:.4rem .6rem;align-items:center}
 .topbar a{color:#fff;text-decoration:none;margin-right:.6rem;min-height:44px;display:flex;align-items:center;font-size:.8rem}
@@ -167,6 +167,17 @@ $timerS = str_pad($remainingSeconds % 60, 2, '0', STR_PAD_LEFT);
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
 <?php $pageTitle = 'Try Out SKD CAT-BKN'; $activePage = 'tryout'; $showThemeToggle = true; ?>
 <?php require '../includes/navigation.php'; ?>
+<?php 
+$breadcrumbs = [
+    ['label' => 'Beranda', 'url' => '../index.php'],
+    ['label' => 'Try Out', 'url' => '']
+];
+require '../includes/breadcrumbs.php'; 
+?>
+<div class="header">
+<h1>Try Out SKD CAT-BKN</h1>
+<div class="timer" id="timer"><?= $timerM ?>:<?= $timerS ?></div>
+</div>
 <div class="nav">
 <span id="subtes-info">Memuat soal...</span>
 </div>
@@ -260,7 +271,7 @@ async function loadSoal(){
 
         if (res.status === 401 || res.status === 403) {
             alert('Sesi Anda telah berakhir. Silakan login kembali.');
-            window.location.href = 'login.php';
+            window.location.href = '/permen/pages/login.php';
             return;
         }
 
@@ -292,7 +303,10 @@ async function loadSoal(){
         passages = responseData.passages || {};
         // Restore answers from localStorage if available
         restoreLocalAnswers();
-        document.getElementById('loadingIndicator').style.display = 'none';
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
         renderNumberGrid();
         renderSoal(0);
         startTimer();
@@ -521,7 +535,7 @@ function pilihJawaban(answerId, opt, el){
     }).then(r=>{
         if(r.status === 401 || r.status === 403){
             alert('Sesi Anda telah berakhir. Silakan login kembali.');
-            window.location.href = 'login.php';
+            window.location.href = '/permen/pages/login.php';
         }
     }).catch(e=>{
         console.error('Error submitting answer:', e);
@@ -715,7 +729,7 @@ async function toggleBookmark(){
 
         if (res.status === 401 || res.status === 403) {
             showToast('Sesi telah berakhir. Silakan login kembali.', 'error');
-            setTimeout(() => window.location.href = 'login.php', 2000);
+            setTimeout(() => window.location.href = '/permen/pages/login.php', 2000);
             return;
         }
 
@@ -893,7 +907,8 @@ function closeZoom(){
     document.getElementById('imgZoomModal').classList.remove('show');
 }
 
-loadSoal();
+// Wait for DOM to be ready before loading questions
+document.addEventListener('DOMContentLoaded', loadSoal);
 </script>
 </body>
 </html>

@@ -4,7 +4,7 @@ require '../helpers.php';
 
 // Guard: only admin
 if (empty($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'admin') {
-    header('Location: login.php');
+    header('Location: ../pages/login.php');
     exit;
 }
 
@@ -332,7 +332,7 @@ Halaman <?= $usersCurrentPage ?> dari <?= $usersTotalPages ?>
 <div id="panel-tryouts" class="section" style="display:none">
 <h2>Riwayat Tryout</h2>
 <p style="font-size:.85rem;color:#666;margin-bottom:.5rem">Total: <?= $tryoutsTotal ?> tryout</p>
-<a href="../api/export_csv.php?type=tryouts" class="btn success" style="margin-bottom:1rem">Export CSV</a>
+<a href="/permen/api/export_csv.php?type=tryouts" class="btn success" style="margin-bottom:1rem">Export CSV</a>
 <div class="table-wrap">
 <table>
 <thead><tr><th>ID</th><th>Nama</th><th>Peserta</th><th>Total Nilai</th><th>Status</th><th>Waktu Mulai</th></tr></thead>
@@ -371,7 +371,7 @@ Halaman <?= $tryoutsCurrentPage ?> dari <?= $tryoutsTotalPages ?>
 <h2>Kelola Soal</h2>
 <p>Total soal: <?= $stats['total_soal'] ?> (TWK: <?= $soalPerSubtes['TWK'] ?? 0 ?>, TIU: <?= $soalPerSubtes['TIU'] ?? 0 ?>, TKP: <?= $soalPerSubtes['TKP'] ?? 0 ?>)</p>
 <div style="margin-bottom:1rem">
-<a href="../api/generate_soal_smart.php?subtes=TIU&tipe=numerik&topik=Deret+Angka&jumlah=5" target="_blank" class="btn success">+ Generate Soal (Smart)</a>
+<a href="/permen/api/generate_soal_smart.php?subtes=TIU&tipe=numerik&topik=Deret+Angka&jumlah=5" target="_blank" class="btn success">+ Generate Soal (Smart)</a>
 </div>
 
 <!-- Upload Gambar -->
@@ -754,7 +754,7 @@ async function runGenerator(){
 }
 
 // Init topik dropdown
-updateGenTopik();
+document.addEventListener('DOMContentLoaded', updateGenTopik);
 
 // --- UPLOAD GAMBAR ---
 async function uploadGambar(){
@@ -798,7 +798,7 @@ async function loadSoalList(){
             html += '</div>';
             html += '<div style="font-size:.85rem;margin-bottom:.4rem;max-height:60px;overflow:hidden">' + escapeHtml(s.pertanyaan.substring(0,120)) + '...</div>';
             if(s.image_url){
-                html += '<img src="' + escapeHtml(s.image_url) + '" style="max-width:100%;max-height:100px;border:1px solid #ddd;border-radius:4px;margin-bottom:.4rem">';
+                html += '<img src="' + escapeHtml(s.image_url) + '" alt="Gambar soal" style="max-width:100%;max-height:100px;border:1px solid #ddd;border-radius:4px;margin-bottom:.4rem">';
             }
             html += '<div style="font-size:.8rem;color:#555">Kunci: <strong>' + s.jawaban_benar + '</strong></div>';
             // Revision & visibility badges
@@ -911,7 +911,7 @@ async function openEditModal(id){
     document.getElementById('editPembahasan').value = s.pembahasan || '';
     const imgDiv = document.getElementById('editCurrentImg');
     if(s.image_url){
-        imgDiv.innerHTML = '<img src="' + escapeHtml(s.image_url) + '" style="max-width:150px;max-height:100px;border:1px solid #ddd;border-radius:4px"><div style="font-size:.75rem;color:#666">' + escapeHtml(s.image_url) + '</div>';
+        imgDiv.innerHTML = '<img src="' + escapeHtml(s.image_url) + '" alt="Preview gambar soal" style="max-width:150px;max-height:100px;border:1px solid #ddd;border-radius:4px"><div style="font-size:.75rem;color:#666">' + escapeHtml(s.image_url) + '</div>';
     } else {
         imgDiv.innerHTML = '<em style="color:#999;font-size:.8rem">Tidak ada gambar</em>';
     }
