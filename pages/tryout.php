@@ -9,7 +9,10 @@ $userId = (int)$_SESSION['user_id'];
 
 // Cek session aktif user, jika tidak ada buat baru
 // Jika session_id dari GET (mode latihan), gunakan session tersebut
+// Jika scheduled dari GET, buat session dari scheduled tryout
 $sessionId = 0;
+$scheduledTryoutId = 0;
+
 if (!empty($_GET['session_id'])) {
     $sessionId = (int)$_GET['session_id'];
     // Validasi kepemilikan
@@ -17,6 +20,33 @@ if (!empty($_GET['session_id'])) {
     $stmt->execute([$sessionId, $userId]);
     if (!$stmt->fetchColumn()) {
         $sessionId = 0; // invalid, buat baru
+    }
+} elseif (!empty($_GET['scheduled'])) {
+    // Create session from scheduled tryout
+    $scheduledTryoutId = (int)$_GET['scheduled'];
+    $stmt = $pdo->prepare("SELECT s.*, r.id as registration_id FROM scheduled_tryouts s 
+        JOIN scheduled_tryout_registrations r ON s.id = r.scheduled_tryout_id 
+        WHERE s.id = ? AND r.user_id = ? AND r.status = 'registered' AND s.waktu_mulai <= NOW()");
+    $stmt->execute([$scheduledTryoutId, $userId]);
+    $scheduledTryout = $stmt->fetch();
+    
+    if ($scheduledTryout) {
+        // Create tryout session from scheduled tryout
+        $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai, strict_mode) VALUES (?, ?, NOW(), 0)");
+        $stmt->execute([$userId, $scheduledTryout['nama']]);
+        $sessionId = $pdo->lastInsertId();
+        
+        // Insert session_subtes from scheduled tryout duration
+        $cfg = $pdo->query("SELECT subtes, durasi_menit, jumlah_soal, passing_grade, urutan FROM subtes_config WHERE aktif = 1 ORDER BY urutan");
+        $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade, urutan) VALUES (?,?,?,?,?,?)");
+        foreach ($cfg as $c) {
+            // Use scheduled tryout duration divided by 3 for each subtest
+            $duration = floor($scheduledTryout['durasi_menit'] / 3);
+            $ins->execute([$sessionId, $c['subtes'], $duration, $c['jumlah_soal'], $c['passing_grade'], $c['urutan']]);
+        }
+        
+        // Update registration status
+        $pdo->prepare("UPDATE scheduled_tryout_registrations SET status='joined' WHERE id=?")->execute([$scheduledTryout['registration_id']]);
     }
 }
 
@@ -34,14 +64,38 @@ if (!$sessionId) {
             $strictMode = (int)$_POST['strict_mode'];
         }
 
-        $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai, strict_mode) VALUES (?, 'Try Out SKD', NOW(), ?)");
-        $stmt->execute([$userId, $strictMode]);
+        // Check for package_id parameter from POST
+        $packageId = 0;
+        $packageName = 'Try Out SKD';
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['package_id'])) {
+            $packageId = (int)$_POST['package_id'];
+            // Get package details
+            $stmt = $pdo->prepare("SELECT * FROM tryout_packages WHERE id=? AND aktif=1");
+            $stmt->execute([$packageId]);
+            $package = $stmt->fetch();
+            if ($package) {
+                $packageName = $package['nama'];
+            }
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai, strict_mode, package_id) VALUES (?, ?, NOW(), ?, ?)");
+        $stmt->execute([$userId, $packageName, $strictMode, $packageId > 0 ? $packageId : null]);
         $sessionId = $pdo->lastInsertId();
-        // Insert ke tabel normalisasi session_subtes dari konfigurasi global
-        $cfg = $pdo->query("SELECT subtes, durasi_menit, jumlah_soal, passing_grade, urutan FROM subtes_config WHERE aktif = 1 ORDER BY urutan");
-        $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade, urutan) VALUES (?,?,?,?,?,?)");
-        foreach ($cfg as $c) {
-            $ins->execute([$sessionId, $c['subtes'], $c['durasi_menit'], $c['jumlah_soal'], $c['passing_grade'], $c['urutan']]);
+        
+        // Insert ke tabel normalisasi session_subtes dari package atau konfigurasi global
+        if ($packageId > 0 && isset($package)) {
+            // Use package configuration
+            $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade, urutan) VALUES (?,?,?,?,?,?)");
+            $ins->execute([$sessionId, 'TWK', $package['durasi_twk'], $package['jumlah_soal_twk'], $package['passing_grade_twk'], 1]);
+            $ins->execute([$sessionId, 'TIU', $package['durasi_tiu'], $package['jumlah_soal_tiu'], $package['passing_grade_tiu'], 2]);
+            $ins->execute([$sessionId, 'TKP', $package['durasi_tkp'], $package['jumlah_soal_tkp'], $package['passing_grade_tkp'], 3]);
+        } else {
+            // Use global configuration
+            $cfg = $pdo->query("SELECT subtes, durasi_menit, jumlah_soal, passing_grade, urutan FROM subtes_config WHERE aktif = 1 ORDER BY urutan");
+            $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade, urutan) VALUES (?,?,?,?,?,?)");
+            foreach ($cfg as $c) {
+                $ins->execute([$sessionId, $c['subtes'], $c['durasi_menit'], $c['jumlah_soal'], $c['passing_grade'], $c['urutan']]);
+            }
         }
     }
 }
@@ -239,10 +293,14 @@ require '../includes/breadcrumbs.php';
 <button class="btn" id="btnNext" onclick="nextSoal()" aria-label="Soal selanjutnya">Selanjutnya</button>
 <button class="btn" style="background:#f1c40f;color:#333" id="btnMark" onclick="toggleMark()" aria-label="Tandai ragu-ragu">Ragu (M)</button>
 <button class="btn" style="background:#9b59b6;color:#fff" id="btnBookmark" onclick="toggleBookmark()" aria-label="Simpan ke favorit">⭐ Favorit</button>
+<button class="btn" style="background:#e67e22;color:#fff" id="btnPause" onclick="togglePause()" aria-label="Pause/Resume tryout">⏸ Pause</button>
 <button class="btn finish" onclick="finishTryout()" aria-label="Selesaikan tryout">Selesai</button>
 </div>
 <div id="strictModeIndicator" style="display:none;text-align:center;padding:.5rem;background:#e74c3c;color:#fff;font-size:.9rem;margin-top:.5rem;border-radius:4px">
 ⚠️ Strict Mode Aktif: Tidak bisa kembali ke soal sebelumnya
+</div>
+<div id="pauseIndicator" style="display:none;text-align:center;padding:.5rem;background:#e67e22;color:#fff;font-size:.9rem;margin-top:.5rem;border-radius:4px">
+⏸ Tryout Dipause - Klik Resume untuk melanjutkan
 </div>
 <div class="pembahasan" id="pembahasanBox"></div>
 </div>
@@ -259,6 +317,7 @@ let marked = {};  // answer_id => boolean (ragu-ragu)
 let bookmarked = {}; // question_id => boolean (favorit)
 let totalSeconds = <?= json_encode($remainingSeconds) ?>; // sisa waktu total dari server
 let timerInterval;
+let isPaused = false;
 const LS_KEY = 'cat_answers_' + sessionId;
 
 // Per-subtes timer data from server (PHP renders this as JSON)
@@ -348,10 +407,14 @@ async function loadSoal(){
  * Runs every second. Decrements both total time and per-subtes time.
  * Auto-finishes when time runs out or auto-advances subtes.
  * FIXED: Added session expiry warning 5 minutes before expiry
+ * FIXED: Added pause/resume support
  */
 function startTimer(){
     let warningShown = false;
     timerInterval = setInterval(()=>{
+        // Don't decrement if paused
+        if (isPaused) return;
+        
         // Update per-subtes timer
         if (currentSubtes && subtesRemaining[currentSubtes] > 0) {
             subtesRemaining[currentSubtes]--;
@@ -527,9 +590,9 @@ function renderSoal(idx){
     const scrollClass = (s.pertanyaan.length > 300) ? 'question-scrollable' : '';
     let html = '<div class="question ' + scrollClass + '"><strong>' + (idx+1) + '.</strong> ' + qText + '</div>';
 
-    // Show image if present (tap to zoom)
+    // Show image if present (tap to zoom with lazy loading)
     if (s.image_url) {
-        html += '<img src="' + escapeHtml(s.image_url) + '" class="question-image" alt="Gambar soal" onerror="this.style.display=\'none\'" onclick="openZoom(this.src)" style="cursor:zoom-in">';
+        html += '<img src="' + escapeHtml(s.image_url) + '" class="question-image" alt="Gambar soal" loading="lazy" onerror="this.style.display=\'none\'" onclick="openZoom(this.src)" style="cursor:zoom-in">';
     }
 
     html += '<div class="options">';
@@ -761,6 +824,80 @@ function filterUnanswered(){
 function showAll(){
     currentFilter = 'all';
     renderNumberGrid();
+}
+
+// --- PAUSE/RESUME FUNCTION ---
+async function togglePause(){
+    const btn = document.getElementById('btnPause');
+    const indicator = document.getElementById('pauseIndicator');
+    
+    if (!isPaused) {
+        // Pause the tryout
+        try {
+            const res = await fetch('/permen/api/pause_tryout.php',{
+                method:'POST',
+                headers:{
+                    'Content-Type':'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body:JSON.stringify({session_id:sessionId})
+            });
+            
+            if (res.status === 401 || res.status === 403) {
+                alert('Sesi Anda telah berakhir. Silakan login kembali.');
+                window.location.href = '/permen/pages/login.php';
+                return;
+            }
+            
+            const data = await res.json();
+            if (data.success) {
+                isPaused = true;
+                btn.textContent = '▶ Resume';
+                btn.style.background = '#27ae60';
+                indicator.style.display = 'block';
+                alert('Tryout dipause. Timer dihentikan sementara. Klik Resume untuk melanjutkan.');
+            } else {
+                alert('Gagal pause: ' + (data.error || 'Unknown error'));
+            }
+        } catch (e) {
+            console.error('Error pausing tryout:', e);
+            alert('Gagal pause tryout. Silakan coba lagi.');
+        }
+    } else {
+        // Resume the tryout
+        try {
+            const res = await fetch('/permen/api/resume_tryout.php',{
+                method:'POST',
+                headers:{
+                    'Content-Type':'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body:JSON.stringify({session_id:sessionId})
+            });
+            
+            if (res.status === 401 || res.status === 403) {
+                alert('Sesi Anda telah berakhir. Silakan login kembali.');
+                window.location.href = '/permen/pages/login.php';
+                return;
+            }
+            
+            const data = await res.json();
+            if (data.success) {
+                isPaused = false;
+                btn.textContent = '⏸ Pause';
+                btn.style.background = '#e67e22';
+                indicator.style.display = 'none';
+                // Adjust timer based on pause duration
+                totalSeconds += data.pause_duration;
+                alert('Tryout dilanjutkan. Timer disesuaikan dengan durasi pause.');
+            } else {
+                alert('Gagal resume: ' + (data.error || 'Unknown error'));
+            }
+        } catch (e) {
+            console.error('Error resuming tryout:', e);
+            alert('Gagal resume tryout. Silakan coba lagi.');
+        }
+    }
 }
 
 // --- BOOKMARK/FAVORIT ---

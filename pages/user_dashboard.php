@@ -207,26 +207,50 @@ require '../includes/breadcrumbs.php';
 <div style="font-size:3rem;margin-bottom:1rem">📊</div>
 <h3 style="color:#555;margin-bottom:.5rem">Belum ada data tryout</h3>
 <p style="color:#777;font-size:.9rem;margin-bottom:1.5rem">Mulai tryout pertama Anda untuk melihat grafik progress dan analisis performa.</p>
+
+<?php
+// Fetch available packages
+$packages = $pdo->query("SELECT * FROM tryout_packages WHERE aktif = 1 ORDER BY FIELD(tingkat_kesulitan, 'mudah', 'sedang', 'sulit')")->fetchAll();
+?>
+<div style="margin-bottom:1.5rem">
+    <label style="display:block;margin-bottom:.5rem;font-weight:bold">Pilih Paket Soal:</label>
+    <select id="packageSelect" style="padding:.5rem;border:1px solid #ddd;border-radius:4px;width:100%;max-width:300px;margin:0 auto">
+        <option value="0">Default (Sedang)</option>
+        <?php foreach ($packages as $pkg): ?>
+        <option value="<?= $pkg['id'] ?>"><?= e($pkg['nama']) ?> - Passing: TWK <?= $pkg['passing_grade_twk'] ?>, TIU <?= $pkg['passing_grade_tiu'] ?>, TKP <?= $pkg['passing_grade_tkp'] ?></option>
+        <?php endforeach; ?>
+    </select>
+</div>
+
 <div style="margin-bottom:1.5rem">
     <label style="display:flex;align-items:center;justify-content:center;gap:.5rem;cursor:pointer">
         <input type="checkbox" id="strictModeCheck" style="width:18px;height:18px">
         <span style="font-size:.9rem;color:#555">Aktifkan Strict Mode (tidak bisa kembali ke soal sebelumnya)</span>
     </label>
 </div>
-<a href="tryout.php" class="btn" style="background:#2980b9;color:#fff;text-decoration:none;padding:.75rem 1.5rem;border-radius:5px;display:inline-block" onclick="startTryoutWithStrictMode(event)">Mulai Try Out</a>
+<a href="tryout.php" class="btn" style="background:#2980b9;color:#fff;text-decoration:none;padding:.75rem 1.5rem;border-radius:5px;display:inline-block" onclick="startTryoutWithOptions(event)">Mulai Try Out</a>
 </div>
 <script>
-function startTryoutWithStrictMode(e) {
+function startTryoutWithOptions(e) {
     e.preventDefault();
     const strictMode = document.getElementById('strictModeCheck').checked ? 1 : 0;
+    const packageId = document.getElementById('packageSelect').value;
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = 'tryout.php';
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'strict_mode';
-    input.value = strictMode;
-    form.appendChild(input);
+    
+    const strictInput = document.createElement('input');
+    strictInput.type = 'hidden';
+    strictInput.name = 'strict_mode';
+    strictInput.value = strictMode;
+    form.appendChild(strictInput);
+    
+    const packageInput = document.createElement('input');
+    packageInput.type = 'hidden';
+    packageInput.name = 'package_id';
+    packageInput.value = packageId;
+    form.appendChild(packageInput);
+    
     document.body.appendChild(form);
     form.submit();
 }
