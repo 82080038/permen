@@ -207,8 +207,30 @@ require '../includes/breadcrumbs.php';
 <div style="font-size:3rem;margin-bottom:1rem">📊</div>
 <h3 style="color:#555;margin-bottom:.5rem">Belum ada data tryout</h3>
 <p style="color:#777;font-size:.9rem;margin-bottom:1.5rem">Mulai tryout pertama Anda untuk melihat grafik progress dan analisis performa.</p>
-<a href="tryout.php" class="btn" style="background:#2980b9;color:#fff;text-decoration:none;padding:.75rem 1.5rem;border-radius:5px;display:inline-block">Mulai Try Out</a>
+<div style="margin-bottom:1.5rem">
+    <label style="display:flex;align-items:center;justify-content:center;gap:.5rem;cursor:pointer">
+        <input type="checkbox" id="strictModeCheck" style="width:18px;height:18px">
+        <span style="font-size:.9rem;color:#555">Aktifkan Strict Mode (tidak bisa kembali ke soal sebelumnya)</span>
+    </label>
 </div>
+<a href="tryout.php" class="btn" style="background:#2980b9;color:#fff;text-decoration:none;padding:.75rem 1.5rem;border-radius:5px;display:inline-block" onclick="startTryoutWithStrictMode(event)">Mulai Try Out</a>
+</div>
+<script>
+function startTryoutWithStrictMode(e) {
+    e.preventDefault();
+    const strictMode = document.getElementById('strictModeCheck').checked ? 1 : 0;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'tryout.php';
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'strict_mode';
+    input.value = strictMode;
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
 <?php else: ?>
 <!-- Progress Chart -->
 <div class="section">

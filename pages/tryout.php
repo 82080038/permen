@@ -28,8 +28,14 @@ if (!$sessionId) {
     if ($existing) {
         $sessionId = $existing;
     } else {
-        $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai) VALUES (?, 'Try Out SKD', NOW())");
-        $stmt->execute([$userId]);
+        // Check for strict_mode parameter from POST (when starting new tryout)
+        $strictMode = 0;
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['strict_mode'])) {
+            $strictMode = (int)$_POST['strict_mode'];
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai, strict_mode) VALUES (?, 'Try Out SKD', NOW(), ?)");
+        $stmt->execute([$userId, $strictMode]);
         $sessionId = $pdo->lastInsertId();
         // Insert ke tabel normalisasi session_subtes dari konfigurasi global
         $cfg = $pdo->query("SELECT subtes, durasi_menit, jumlah_soal, passing_grade, urutan FROM subtes_config WHERE aktif = 1 ORDER BY urutan");
@@ -89,6 +95,11 @@ foreach ($subtesTimers as $sub => $t) {
 }
 $timerM = str_pad(floor($remainingSeconds / 60), 2, '0', STR_PAD_LEFT);
 $timerS = str_pad($remainingSeconds % 60, 2, '0', STR_PAD_LEFT);
+
+// Get strict_mode setting for this session
+$stmt = $pdo->prepare("SELECT strict_mode FROM tryout_sessions WHERE id = ?");
+$stmt->execute([$sessionId]);
+$strictMode = (int)($stmt->fetchColumn() ?? 0);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -230,12 +241,16 @@ require '../includes/breadcrumbs.php';
 <button class="btn" style="background:#9b59b6;color:#fff" id="btnBookmark" onclick="toggleBookmark()" aria-label="Simpan ke favorit">⭐ Favorit</button>
 <button class="btn finish" onclick="finishTryout()" aria-label="Selesaikan tryout">Selesai</button>
 </div>
+<div id="strictModeIndicator" style="display:none;text-align:center;padding:.5rem;background:#e74c3c;color:#fff;font-size:.9rem;margin-top:.5rem;border-radius:4px">
+⚠️ Strict Mode Aktif: Tidak bisa kembali ke soal sebelumnya
+</div>
 <div class="pembahasan" id="pembahasanBox"></div>
 </div>
 </div>
 <script>
 const sessionId = <?= json_encode($sessionId) ?>;
 const csrfToken = <?= json_encode(getCsrfTokenForApi()) ?>;
+const strictMode = <?= json_encode($strictMode) ?>; // 1 = no back navigation, 0 = normal
 let soal = [];
 let passages = {}; // passage_id => {judul, bacaan}
 let currentIdx = 0;
@@ -315,6 +330,14 @@ async function loadSoal(){
         renderNumberGrid();
         renderSoal(0);
         startTimer();
+        // Show strict mode indicator if active
+        if (strictMode) {
+            document.getElementById('strictModeIndicator').style.display = 'block';
+            // Disable prev button in strict mode
+            document.getElementById('btnPrev').disabled = true;
+            document.getElementById('btnPrev').style.opacity = '0.5';
+            document.getElementById('btnPrev').style.cursor = 'not-allowed';
+        }
     } catch (e) {
         alert('Gagal memuat soal: ' + e.message + '. Silakan refresh halaman atau periksa koneksi internet Anda.');
     }
@@ -601,7 +624,14 @@ function pilihJawaban(answerId, opt, el){
 }
 
 /** Navigate to previous question */
-function prevSoal(){if(currentIdx>0)renderSoal(currentIdx-1);}
+function prevSoal(){
+    // Block back navigation in strict mode
+    if (strictMode) {
+        alert('Strict Mode aktif: Anda tidak bisa kembali ke soal sebelumnya.');
+        return;
+    }
+    if(currentIdx>0)renderSoal(currentIdx-1);
+}
 /** Navigate to next question (with subtes change confirmation if applicable) */
 function nextSoal(){
     if(currentIdx>=soal.length-1) return;
