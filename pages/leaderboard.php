@@ -2,8 +2,12 @@
 require '../config.php';
 require '../helpers.php';
 
+// Ambil daftar instansi aktif untuk dropdown
+$instansiList = $pdo->query("SELECT id, kode, nama FROM instansi WHERE aktif = 1 ORDER BY urutan, nama")->fetchAll();
+
 $period = $_GET['period'] ?? 'all'; // all, week, month
 $subtes = $_GET['subtes'] ?? '';   // TWK, TIU, TKP (optional filter)
+$instansiFilter = $_GET['instansi'] ?? ''; // instansi filter
 
 $where = "ts.status = 'selesai'";
 $params = [];
@@ -12,6 +16,12 @@ if ($period === 'week') {
     $where .= " AND ts.waktu_mulai >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
 } elseif ($period === 'month') {
     $where .= " AND ts.waktu_mulai >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+}
+
+if ($instansiFilter) {
+    $where .= " AND (u.instansi = ? OR u.instansi_id = (SELECT id FROM instansi WHERE kode = ? LIMIT 1))";
+    $params[] = $instansiFilter;
+    $params[] = $instansiFilter;
 }
 
 // Get top 20 by total score
@@ -35,15 +45,24 @@ $topTotal = $totalStmt->fetchAll();
 $topSubtes = [];
 foreach (['TWK','TIU','TKP'] as $s) {
     $col = "nilai_" . strtolower($s);
+    $whereSubtes = "ts.status = 'selesai' AND ts.$col > 0";
+    $paramsSubtes = [];
+    
+    if ($instansiFilter) {
+        $whereSubtes .= " AND (u.instansi = ? OR u.instansi_id = (SELECT id FROM instansi WHERE kode = ? LIMIT 1))";
+        $paramsSubtes[] = $instansiFilter;
+        $paramsSubtes[] = $instansiFilter;
+    }
+    
     $stmt = $pdo->prepare("
         SELECT u.nama, u.instansi, ts.$col as nilai, ts.waktu_mulai
         FROM tryout_sessions ts
         JOIN users u ON ts.user_id = u.id
-        WHERE ts.status = 'selesai' AND ts.$col > 0
+        WHERE $whereSubtes
         ORDER BY ts.$col DESC
         LIMIT 10
     ");
-    $stmt->execute();
+    $stmt->execute($paramsSubtes);
     $topSubtes[$s] = $stmt->fetchAll();
 }
 ?>
@@ -84,9 +103,14 @@ foreach (['TWK','TIU','TKP'] as $s) {
 
 <div class="container" id="main-content">
 <div class="filter-bar">
-    <a href="?period=all" class="<?= $period==='all'?'active':'' ?>">Semua Waktu</a>
-    <a href="?period=month" class="<?= $period==='month'?'active':'' ?>">30 Hari</a>
-    <a href="?period=week" class="<?= $period==='week'?'active':'' ?>">7 Hari</a>
+    <a href="?period=<?= $period ?>&instansi=" class="<?= !$instansiFilter?'active':'' ?>">Semua Instansi</a>
+    <?php foreach ($instansiList as $i): ?>
+    <a href="?period=<?= $period ?>&instansi=<?= $i['kode'] ?>" class="<?= $instansiFilter===$i['kode']?'active':'' ?>"><?= e($i['kode']) ?></a>
+    <?php endforeach; ?>
+    <span style="border-left:1px solid #ccc;margin:0 .5rem"></span>
+    <a href="?period=all&instansi=<?= $instansiFilter ?>" class="<?= $period==='all'?'active':'' ?>">Semua Waktu</a>
+    <a href="?period=month&instansi=<?= $instansiFilter ?>" class="<?= $period==='month'?'active':'' ?>">30 Hari</a>
+    <a href="?period=week&instansi=<?= $instansiFilter ?>" class="<?= $period==='week'?'active':'' ?>">7 Hari</a>
 </div>
 
 <!-- Top Total -->

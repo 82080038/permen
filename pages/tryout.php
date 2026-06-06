@@ -261,7 +261,7 @@ subtesOrder.forEach(sub => {
  */
 async function loadSoal(){
     try {
-        const res = await fetch('../api/get_soal.php?session_id='+sessionId, {
+        const res = await fetch('/permen/api/get_soal.php?session_id='+sessionId, {
             credentials: 'include',
             headers: {
                 'Accept': 'application/json',
@@ -405,7 +405,7 @@ function advanceToNextSubtes(){
     const currentSub = subtesOrder[activeSubtesIdx];
 
     // Call API to record subtes transition
-    fetch('../api/next_subtes.php',{
+    fetch('..next_subtes.php',{
         method:'POST',
         headers:{
             'Content-Type':'application/json',
@@ -453,7 +453,7 @@ function renderSoal(idx){
                 return;
             }
             // Call API to record transition
-            fetch('../api/next_subtes.php',{
+            fetch('...ext_subtes.php',{
                 method:'POST',
                 headers:{
                     'Content-Type':'application/json',
@@ -525,7 +525,7 @@ function pilihJawaban(answerId, opt, el){
     // save to localStorage
     saveLocalAnswers();
     // submit ke server
-    fetch('../api/submit_jawaban.php',{
+    fetch('/permen/api/submit_jawaban.php',{
         method:'POST',
         headers:{
             'Content-Type':'application/json',
@@ -574,7 +574,7 @@ function pilihJawaban(answerId, opt, el){
                         'Waktu ' + currentSub + ' yang tersisa tidak bisa digunakan untuk subtes lain.\n\n' +
                         'Yakin ingin lanjut?';
             if (!confirm(msg)) return;
-            fetch('../api/next_subtes.php',{
+            fetch('...ext_subtes.php',{
                 method:'POST',
                 headers:{
                     'Content-Type':'application/json',
@@ -607,7 +607,7 @@ function nextSoal(){
                     'Yakin ingin lanjut?';
         if (!confirm(msg)) return;
         // Record transition via API
-        fetch('../api/next_subtes.php',{
+        fetch('..next_subtes.php',{
             method:'POST',
             headers:{
                 'Content-Type':'application/json',
@@ -694,7 +694,7 @@ function toggleMark(){
         btn.title = 'Tandai ragu-ragu';
     }
     // Send revision flag to server
-    fetch('../api/mark_revision.php',{
+    fetch('/permen/api/mark_revision.php',{
         method:'POST',
         headers:{
             'Content-Type':'application/json',
@@ -719,7 +719,7 @@ async function toggleBookmark(){
     formData.append('action', action);
 
     try {
-        const res = await fetch('../api/bookmark_question.php', {
+        const res = await fetch('/permen/api/bookmark_question.php', {
             method: 'POST',
             headers: {
                 'X-CSRF-Token': csrfToken
@@ -841,7 +841,7 @@ function finishTryout(){
     if(!confirm(msg)) return;
     clearInterval(timerInterval);
     clearLocalAnswers();
-    fetch('../api/finish_tryout.php',{
+    fetch('/permen/api/finish_tryout.php',{
         method:'POST',
         headers:{
             'Content-Type':'application/json',
@@ -863,7 +863,8 @@ function finishTryout(){
     <div class="zoom-hint">Ketuk gambar atau di luar area untuk menutup</div>
 </div>
 
-<script src="../assets/app.js"></script>
+<base href="/permen/">
+<script src="assets/app.js"></script>
 <script>
 /**
  * ================================

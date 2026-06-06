@@ -56,14 +56,20 @@ ini_set('session.gc_maxlifetime', 3600);
 ini_set('session.cookie_httponly', 1);
 ini_set('session.cookie_samesite', 'Lax');
 ini_set('session.use_strict_mode', 1);
+
+// Set secure flag based on environment (HTTPS required for production)
+$isProduction = ($_ENV['APP_ENV'] ?? 'development') === 'production';
+$secureCookie = $isProduction && (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+
 session_set_cookie_params([
     'lifetime' => 3600,
     'path' => '/',
     'domain' => '',
-    'secure' => false,
+    'secure' => $secureCookie,
     'httponly' => true,
     'samesite' => 'Lax'
 ]);
+
 session_start();
 
 // Load helpers (but skip config.php to avoid HTML error handlers)
@@ -230,9 +236,13 @@ try {
                             
                             $newId = $pdo->lastInsertId();
                             $allQuestionIds[] = $newId;
-                            error_log("get_soal.php: Auto-generated question ID $newId for $sub");
+                            if (($_ENV['APP_ENV'] ?? 'development') === 'development') {
+                                error_log("get_soal.php: Auto-generated question ID $newId for $sub");
+                            }
                         } catch (Exception $e) {
-                            error_log("get_soal.php: Error auto-generating question: " . $e->getMessage());
+                            if (($_ENV['APP_ENV'] ?? 'development') === 'development') {
+                                error_log("get_soal.php: Error auto-generating question: " . $e->getMessage());
+                            }
                             continue;
                         }
                     }

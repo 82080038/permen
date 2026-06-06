@@ -222,7 +222,7 @@ async function sendEmailResult(){
     formData.append('session_id', <?= $sessionId ?>);
     
     try {
-        const res = await fetch('../api/send_result_notification.php', {
+        const res = await fetch('/permen/api/send_result_notification.php', {
             method: 'POST',
             body: formData
         });
@@ -253,7 +253,7 @@ async function sendEmailResult(){
 const reviewSessionId = <?= (int)$sessionId ?>;
 
 async function loadReview(){
-    const res = await fetch('../api/get_review.php?session_id='+reviewSessionId);
+    const res = await fetch('/permen/api/get_review.php?session_id='+reviewSessionId);
     const data = await res.json();
     if(data.error){document.getElementById('reviewContainer').innerHTML='<p style="color:#e74c3c">'+data.error+'</p>';return;}
 

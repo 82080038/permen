@@ -112,11 +112,16 @@ ini_set('session.gc_maxlifetime', 3600); // 1 hour
 ini_set('session.cookie_httponly', 1); // Prevent JavaScript access to session cookie
 ini_set('session.cookie_samesite', 'Lax'); // CSRF protection (Lax allows same-site AJAX)
 ini_set('session.use_strict_mode', 1); // Prevent session fixation
+
+// Set secure flag based on environment (HTTPS required for production)
+$isProduction = ($_ENV['APP_ENV'] ?? 'development') === 'production';
+$secureCookie = $isProduction && (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+
 session_set_cookie_params([
     'lifetime' => 3600,
     'path' => '/',
     'domain' => '',
-    'secure' => false,
+    'secure' => $secureCookie,
     'httponly' => true,
     'samesite' => 'Lax'
 ]);

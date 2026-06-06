@@ -135,6 +135,10 @@ try {
     $pdo->beginTransaction();
     $stmt = $pdo->prepare("UPDATE answers SET jawaban_user = ?, skor = ? WHERE id = ?");
     $stmt->execute([$jawaban, $skor, $answerId]);
+    
+    // Log answer submission for audit trail
+    logUserAction($userId, 'submit_answer', "answer_id=$answerId, session_id={$soal['session_id']}, jawaban=$jawaban, skor=$skor");
+    
     $pdo->commit();
     echo json_encode(['success' => true, 'skor' => $skor]);
 } catch (Exception $e) {

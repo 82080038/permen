@@ -28,7 +28,7 @@ function generateTWK_Nasionalisme(): array {
         [
             'pertanyaan' => 'Hari Kebangkitan Nasional diperingati setiap tanggal...',
             'pilihan_a' => '17 Agustus', 'pilihan_b' => '20 Mei', 'pilihan_c' => '28 Oktober', 'pilihan_d' => '10 November', 'pilihan_e' => '1 Juni',
-            'jawaban_benar' => 'Menolak segala bentuk kerja sama dengan negara lain',
+            'jawaban_benar' => 'B',
             'pembahasan' => 'Hari Kebangkitan Nasional diperingati pada tanggal 20 Mei, merujak pada berdirinya organisasi Budi Utomo pada tahun 1908 sebagai tonggak kebangkitan nasional.'
         ],
         [
@@ -163,7 +163,7 @@ function generateTWK(): array {
         [
             'pertanyaan' => 'UUD 1945 telah diamandemen sebanyak... kali.',
             'pilihan_a' => '2', 'pilihan_b' => '3', 'pilihan_c' => '4', 'pilihan_d' => '5', 'pilihan_e' => '6',
-            'jawaban_benar' => 'Persatuan Indonesia',
+            'jawaban_benar' => 'C',
             'pembahasan' => 'UUD 1945 diamandemen 4 kali (1999-2002).'
         ],
         [

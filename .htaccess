@@ -35,6 +35,20 @@ Options -Indexes
     
     # API versioning - redirect /api/ to /api/v1/ (optional, for future use)
     # RewriteRule ^api/(?!v1/)(.*)$ api/v1/$1 [R=301,L]
+    
+    # Redirect common pages to pages/ folder
+    RewriteRule ^(login|register|profile|forgot_password)\.php$ pages/$1.php [L]
+    RewriteRule ^(user_dashboard|admin_dashboard|tryout|latihan|daily_quiz|hasil|materi|riwayat_soal|leaderboard|feedback)\.php$ pages/$1.php [L]
+    
+    # Redirect all other .php files to pages/ if they exist there
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{DOCUMENT_ROOT}/pages/$1.php -f
+    RewriteRule ^([^/]+)\.php$ pages/$1.php [L]
+    
+    # Redirect api/ to permen/api/ if accessed from root
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{DOCUMENT_ROOT}/permen/api/$1 -f
+    RewriteRule ^api/(.*)$ permen/api/$1 [L]
 </IfModule>
 
 # Security Headers

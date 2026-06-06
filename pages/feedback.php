@@ -17,8 +17,9 @@ $userName = e($_SESSION['user_nama'] ?? 'User');
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
 <title>Feedback — SKD CAT-BKN</title>
-<link rel="stylesheet" href="../assets/form.css">
-<link rel="stylesheet" href="../assets/style.css">
+<base href="/permen/">
+<link rel="stylesheet" href="assets/form.css">
+<link rel="stylesheet" href="assets/style.css">
 <style>
 .feedback-container{max-width:600px;margin:2rem auto;padding:0 1rem}
 .category-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:.5rem;margin-bottom:1rem}
@@ -80,7 +81,8 @@ textarea{min-height:120px;resize:vertical}
 </div>
 </div>
 
-<script src="../assets/app.js"></script>
+<base href="/permen/">
+<script src="assets/app.js"></script>
 <script>
 let selectedCategory = 'lainnya';
 
@@ -104,7 +106,7 @@ async function submitFeedback(e) {
     formData.append('message', document.getElementById('message').value);
     
     try {
-        const res = await fetch('../api/submit_feedback.php', {
+        const res = await fetch('/permen/api/submit_feedback.php', {
             method: 'POST',
             body: formData
         });
@@ -132,7 +134,7 @@ async function submitFeedback(e) {
 
 async function loadFeedbackHistory() {
     try {
-        const res = await fetch('../api/get_my_feedback.php');
+        const res = await fetch('/permen/api/get_my_feedback.php');
         const data = await res.json();
         
         if (data.success) {

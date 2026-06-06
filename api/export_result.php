@@ -11,6 +11,13 @@
 require '../config.php';
 require '../helpers.php';
 
+$userId = (int)($_SESSION['user_id'] ?? 0);
+if (!$userId) {
+    header('HTTP/1.0 401 Unauthorized');
+    echo 'Autentikasi diperlukan';
+    exit;
+}
+
 $sessionId = (int)($_GET['session_id'] ?? 0);
 $format = $_GET['format'] ?? 'csv';
 
@@ -20,14 +27,14 @@ if (!$sessionId) {
     exit;
 }
 
-// Get session data
-$stmt = $pdo->prepare("SELECT * FROM tryout_sessions WHERE id = ?");
-$stmt->execute([$sessionId]);
+// Get session data and verify ownership
+$stmt = $pdo->prepare("SELECT * FROM tryout_sessions WHERE id = ? AND user_id = ?");
+$stmt->execute([$sessionId, $userId]);
 $session = $stmt->fetch();
 
 if (!$session) {
     header('HTTP/1.0 404 Not Found');
-    echo 'Sesi tidak ditemukan';
+    echo 'Sesi tidak ditemukan atau bukan milik Anda';
     exit;
 }
 

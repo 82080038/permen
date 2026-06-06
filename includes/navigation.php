@@ -17,7 +17,7 @@ $userRole = $_SESSION['role'] ?? '';
 
 // Detect if navigation is included from pages/ directory or root
 $basePath = (basename(dirname($_SERVER['SCRIPT_NAME'])) === 'pages') ? '../' : '';
-$apiPath = (basename(dirname($_SERVER['SCRIPT_NAME'])) === 'pages') ? '../api/' : 'api/';
+$apiPath = '/permen/api/'; // Use absolute path for API calls
 
 // Helper untuk menentukan apakah menu aktif
 function isActive($page, $active) {

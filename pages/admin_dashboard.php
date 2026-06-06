@@ -547,7 +547,7 @@ async function loadFeedback(){
     if(category) params.append('category', category);
     
     try {
-        const res = await fetch('../api/get_feedback.php?' + params.toString());
+        const res = await fetch('/permen/api/get_feedback.php?' + params.toString());
         const data = await res.json();
         
         if(data.success){
@@ -830,7 +830,7 @@ async function loadRevisionList(){
     const container = document.getElementById('soalList');
     container.innerHTML = '<p style="color:#666">Memuat soal perlu revisi...</p>';
     try {
-        const res = await fetch('../api/list_soal.php?needs_revision=1&limit=50');
+        const res = await fetch('/permen/api/list_soal.php?needs_revision=1&limit=50');
         const data = await res.json();
         if(data.error){ container.innerHTML='<p style="color:#e74c3c">'+data.error+'</p>'; return; }
         if(!data.soal || data.soal.length===0){ container.innerHTML='<p style="color:#666">Tidak ada soal yang perlu direvisi. Bagus!</p>'; return; }
@@ -859,7 +859,7 @@ async function loadRevisionList(){
 async function markRevised(id){
     if(!confirm('Tandai soal ini sudah direvisi?')) return;
     try {
-        const res = await fetch('../api/update_revision.php', {
+        const res = await fetch('/permen/api/update_revision.php', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
             body:JSON.stringify({question_id:id, action:'mark_revised'})
@@ -937,7 +937,7 @@ async function saveSoalEdit(){
     form.append('pembahasan', document.getElementById('editPembahasan').value);
     if(fileInput.files[0]) form.append('gambar', fileInput.files[0]);
 
-    const res = await fetch('../api/update_soal.php', {method:'POST', body:form});
+    const res = await fetch('/permen/api/update_soal.php', {method:'POST', body:form});
     const data = await res.json();
     if(data.success){
         alert('Soal berhasil diperbarui!');
@@ -962,7 +962,7 @@ async function resetUserPassword(userId, userName){
         const formData = new FormData();
         formData.append('user_id', userId);
         
-        const res = await fetch('../api/reset_user_password.php', {
+        const res = await fetch('/permen/api/reset_user_password.php', {
             method: 'POST',
             body: formData
         });

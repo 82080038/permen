@@ -20,6 +20,14 @@ Format ini mengikuti [Keep a Changelog](https://keepachangelog.com/) dan [Semant
   - `api/finish_daily_quiz.php` — Hitung hasil dan simpan ke history
   - `sql/daily_quiz.sql` — Tabel `daily_quiz_sessions`, `daily_quiz_questions`, `daily_quiz_answers`
 - **Daily Quiz Dashboard** — Section riwayat daily quiz di user dashboard dengan statistik benar/salah/kosong
+- **Password Change Feature** — Fitur ganti password di halaman profil user
+  - `pages/profile.php` — Form ganti password dengan validasi strength dan konfirmasi
+  - Validasi password saat ini sebelum mengubah
+  - Menggunakan bcrypt untuk hashing password baru
+- **Leaderboard Instansi Filter** — Filter leaderboard per instansi
+  - `pages/leaderboard.php` — Dropdown filter instansi di filter bar
+  - Filter berlaku untuk ranking total dan per subtes
+  - Mendukung kombinasi filter instansi + periode waktu
 
 ### Removed
 - **AI Generator (Gemini)** — Dihapus karena tidak jadi digunakan

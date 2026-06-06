@@ -47,17 +47,17 @@ Dokumen ini dirancang untuk **diperbarui secara berkala**. Setiap kali ada fitur
 
 ---
 
-### M2 — Sistem Autentikasi & User Management (v1.1.0) 🔄 IN PROGRESS
+### M2 — Sistem Autentikasi & User Management (v1.1.0) ✅ SELESAI
 **Target**: User bisa daftar, login, dan melihat riwayat
 
 | Fitur | Status | Notes |
 |-------|--------|-------|
 | Register user (nama, email, password, instansi) | ✅ | `pages/register.php`, Hash bcrypt |
 | Login & logout | ✅ | `pages/login.php`, `api/logout.php`, bcrypt, quick login demo |
-| Lupa password (reset via email) | ⬜ | PHPMailer |
-| Profil user (edit data, ganti password) | ⬜ | |
+| Lupa password (reset via admin notification) | ✅ | `pages/forgot_password.php`, admin notification system |
+| Profil user (edit data, ganti password) | ✅ | `pages/profile.php`, password change with validation |
 | Riwayat tryout per user | ✅ | `pages/user_dashboard.php` |
-| Grafik perkembangan nilai | ⬜ | Chart.js |
+| Grafik perkembangan nilai | ✅ | Canvas-based chart (no external library) |
 | Admin dashboard (stats, peserta, riwayat) | ✅ | `pages/admin_dashboard.php` |
 | Konfigurasi subtes CRUD | ✅ | Edit durasi, jumlah soal, passing grade di admin_dashboard |
 | Export hasil tryout ke CSV | ✅ | `api/export_csv.php` |
@@ -94,13 +94,13 @@ Dokumen ini dirancang untuk **diperbarui secara berkala**. Setiap kali ada fitur
 
 ---
 
-### M5 — Ranking & Komunitas (v1.4.0) 🔄 PLANNED
+### M5 — Ranking & Komunitas (v1.4.0) 🔄 IN PROGRESS
 **Target**: Kompetisi dan belajar bersama
 
 | Fitur | Status | Notes |
 |-------|--------|-------|
-| Leaderboard global per tryout | ⬜ | Ranking nilai total |
-| Leaderboard per instansi (STAN, STIS, dll) | ⬜ | Filter instansi |
+| Leaderboard global per tryout | ✅ | Ranking nilai total |
+| Leaderboard per instansi (STAN, STIS, dll) | ✅ | Filter instansi di `pages/leaderboard.php` |
 | Share hasil ke media sosial | ⬜ | Card image generator |
 | Forum diskusi per subtes / topik | ⬜ | Minimal CRUD komentar |
 | Grup belajar | ⬜ | Invite link |

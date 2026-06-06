@@ -81,8 +81,9 @@ if (!empty($_SESSION['user_id'])) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
+<base href="/permen/">
 <title>Login — SKD CAT-BKN</title>
-<link rel="stylesheet" href="../assets/login.css">
+<link rel="stylesheet" href="assets/login.css">
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
@@ -103,12 +104,11 @@ if (!empty($_SESSION['user_id'])) {
 <div class="form-group">
 <label for="password">Password</label>
 <input type="password" id="password" name="password" placeholder="Password" required aria-required="true" aria-describedby="password-help" aria-label="Password">
-<small id="password-help" style="color:#777;font-size:.8rem">Minimal 8 karakter, 1 huruf besar, 1 huruf kecil, 1 angka, 1 karakter spesial</small>
+<small id="password-help" style="color:#777;font-size:.8rem">Minimal 8 karakter, 1 huruf besar, 1 huruf kecil, 1 angka</small>
 </div>
 <button type="submit" class="btn" aria-label="Masuk ke akun">Masuk</button>
 </form>
 
-<!-- TODO: HAPUS QUICK LOGIN SAAT PRODUCTION -->
 <?php if (($_ENV['APP_ENV'] ?? 'development') === 'development'): ?>
 <div style="margin-top:1.5rem;padding:1rem;background:#fff3cd;border:1px solid #ffeeba;border-radius:6px;text-align:center">
 <p style="color:#856404;font-size:.85rem;margin-bottom:.5rem"><strong>⚠️ Development Mode - Quick Login</strong></p>
@@ -126,12 +126,11 @@ function quickLogin(noHp, password) {
 }
 </script>
 <?php endif; ?>
-<!-- END TODO: HAPUS QUICK LOGIN SAAT PRODUCTION -->
 
 <div class="footer">
-<a href="/permen/index.php">Kembali ke Beranda</a> &middot; <a href="register.php">Daftar Akun Baru</a>
+<a href="index.php">Kembali ke Beranda</a> &middot; <a href="register.php">Daftar Akun Baru</a>
 </div>
 </div>
-<script src="../assets/app.js"></script>
+<script src="assets/app.js"></script>
 </body>
 </html>

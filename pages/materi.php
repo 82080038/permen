@@ -117,7 +117,8 @@ function filterMateri() {
     </div>
 </div>
 
-<script src="../assets/app.js"></script>
+<base href="/permen/">
+<script src="assets/app.js"></script>
 <script>
 const topikBySubtes = {
     'TWK': ['Nasionalisme','Integritas','Bela Negara','Pilar Negara','Bahasa Indonesia'],
@@ -125,9 +126,11 @@ const topikBySubtes = {
     'TKP': ['Pelayanan Publik','Jejaring Kerja','Sosial Budaya','Teknologi Informasi','Profesionalisme']
 };
 
+// Make subtes available globally for generateLatihan function
+const subtes = '<?= $subtes ?>';
+
 // Wait for DOM to be ready before populating dropdown
 document.addEventListener('DOMContentLoaded', () => {
-    const subtes = '<?= $subtes ?>';
     const sel = document.getElementById('latihTopik');
     topikBySubtes[subtes].forEach((t, idx) => {
         const opt = document.createElement('option');
@@ -147,7 +150,7 @@ async function generateLatihan(){
     container.innerHTML = '<p style="color:#666">Generating soal...</p>';
 
     try {
-        const res = await fetch('../api/generate_user_soal.php?subtes=' + encodeURIComponent(subtes)
+        const res = await fetch('/permen/api/generate_user_soal.php?subtes=' + encodeURIComponent(subtes)
             + '&topik=' + encodeURIComponent(topik)
             + '&jumlah=' + encodeURIComponent(jumlah));
         const data = await res.json();

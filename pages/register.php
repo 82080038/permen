@@ -59,9 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
+<base href="/permen/">
 <title>Register — SKD CAT-BKN</title>
-<link rel="stylesheet" href="../assets/form.css">
-<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="assets/form.css">
+<link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
@@ -120,6 +121,6 @@ Sudah punya akun? <a href="login.php" class="link">Login di sini</a>
 </div>
 </div>
 <div class="footer">SKD CAT-BKN Try Out & Bimbel</div>
-<script src="../assets/app.js"></script>
+<script src="assets/app.js"></script>
 </body>
 </html>

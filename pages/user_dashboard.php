@@ -30,6 +30,19 @@ $rataNilai = 0;
 $bestScore = 0;
 $subtesTerlemah = '-';
 
+// Get latest completed tryout
+$latestScore = null;
+if (!empty($selesai)) {
+    // Re-index array to ensure reset() works correctly
+    $selesai = array_values($selesai);
+    $latestScore = $selesai[0] ?? null;
+    // Debug: check if latestScore is set
+    if (!$latestScore) {
+        // Try to get the first element directly
+        $latestScore = reset($selesai);
+    }
+}
+
 if (count($selesai) > 0) {
     $totalNilai = array_sum(array_column($selesai, 'total_nilai'));
     $rataNilai = round($totalNilai / count($selesai));
@@ -75,7 +88,7 @@ $akurasiTopik = $pdo->prepare("
     LIMIT 10
 ");
 $akurasiTopik->execute([$userId]);
-$topikStats = $akurasiTopik->fetchAll();
+$topikStats = $akurasiTopik->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -213,12 +226,25 @@ require '../includes/breadcrumbs.php';
 <!-- Subtes Distribution Pie Chart -->
 <div class="section">
 <h2>Distribusi Skor Subtes (Tryout Terakhir)</h2>
+<?php if (!empty($latestScore) && ($latestScore['nilai_twk'] > 0 || $latestScore['nilai_tiu'] > 0 || $latestScore['nilai_tkp'] > 0)): ?>
 <canvas id="pieChart" width="400" height="400" style="max-width:100%;height:auto;margin:0 auto;display:block"></canvas>
 <div style="display:flex;justify-content:center;gap:1.5rem;margin-top:1rem;flex-wrap:wrap">
-    <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:16px;height:16px;background:#2980b9;border-radius:3px"></span><span style="font-size:.9rem">TWK</span></div>
-    <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:16px;height:16px;background:#e67e22;border-radius:3px"></span><span style="font-size:.9rem">TIU</span></div>
-    <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:16px;height:16px;background:#27ae60;border-radius:3px"></span><span style="font-size:.9rem">TKP</span></div>
+    <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:16px;height:16px;background:#2980b9;border-radius:3px"></span><span style="font-size:.9rem">TWK: <?= $latestScore['nilai_twk'] ?></span></div>
+    <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:16px;height:16px;background:#e67e22;border-radius:3px"></span><span style="font-size:.9rem">TIU: <?= $latestScore['nilai_tiu'] ?></span></div>
+    <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:16px;height:16px;background:#27ae60;border-radius:3px"></span><span style="font-size:.9rem">TKP: <?= $latestScore['nilai_tkp'] ?></span></div>
 </div>
+<?php else: ?>
+<div style="text-align:center;padding:2rem;color:#777">
+<p>Data skor tryout terakhir tidak tersedia atau bernilai 0.</p>
+<p style="font-size:.85rem">User ID: <?= $userId ?> | Selesai count: <?= count($selesai) ?> | Latest: <?= $latestScore ? 'exists' : 'null' ?></p>
+<?php if ($latestScore): ?>
+<p style="font-size:.85rem">Latest scores - TWK: <?= $latestScore['nilai_twk'] ?>, TIU: <?= $latestScore['nilai_tiu'] ?>, TKP: <?= $latestScore['nilai_tkp'] ?></p>
+<?php else: ?>
+<p style="font-size:.85rem">Debug: selesai array count = <?= count($selesai) ?>, first element exists = <?= isset($selesai[0]) ? 'yes' : 'no' ?></p>
+<?php endif; ?>
+<p style="font-size:.85rem">Silakan selesaikan tryout untuk melihat distribusi skor.</p>
+</div>
+<?php endif; ?>
 </div>
 
 <script>
@@ -227,7 +253,7 @@ let notifDropdownOpen = false;
 
 async function loadNotifications() {
     try {
-        const res = await fetch('../api/get_notifications.php?limit=10');
+        const res = await fetch('/permen/api/get_notifications.php?limit=10');
         if (!res.ok) {
             // Silently fail if notifications endpoint is not available
             return;
@@ -318,14 +344,14 @@ async function openNotification(id, link) {
 
 async function markAllRead() {
     try {
-        const res = await fetch('../api/get_notifications.php?unread_only=true');
+        const res = await fetch('/permen/api/get_notifications.php?unread_only=true');
         const data = await res.json();
         
         if (data.success && data.data && data.data.notifications.length > 0) {
             for (const n of data.data.notifications) {
                 const formData = new FormData();
                 formData.append('notification_id', n.id);
-                await fetch('../api/mark_notification_read.php', { method: 'POST', body: formData });
+                await fetch('/permenermen/api/mark_notification_read.php', { method: 'POST', body: formData });
             }
             loadNotifications();
         }
@@ -353,7 +379,7 @@ document.addEventListener('DOMContentLoaded', loadNotifications);
 
 // Pie Chart
 <?php
-$latestScore = !empty($selesai) ? reset($selesai) : null;
+// $latestScore is already set above after array_values re-index
 ?>
 const pieData = {
     twk: <?= (int)($latestScore['nilai_twk'] ?? 0) ?>,

@@ -24,7 +24,8 @@ $hasCompleted = $session && $session['status'] === 'selesai';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Daily Quiz - SKD CAT-BKN</title>
-<link rel="stylesheet" href="../assets/style.css">
+<base href="/permen/">
+<link rel="stylesheet" href="assets/style.css">
 <style>
 .quiz-container{max-width:900px;margin:2rem auto;padding:0 1rem}
 .quiz-header{background:linear-gradient(135deg,#1a5276,#2980b9);color:#fff;padding:1.5rem;border-radius:8px;margin-bottom:1.5rem;text-align:center}
@@ -166,7 +167,7 @@ let startTime = Date.now();
 // Load soal saat halaman dimuat
 async function loadQuiz() {
     try {
-        const res = await fetch('../api/get_daily_quiz.php');
+        const res = await fetch('/permen/api/get_daily_quiz.php');
         const data = await res.json();
         
         if (!data.success) {
@@ -263,7 +264,7 @@ function selectJawaban(opt) {
 
 async function submitAnswer(qid, jawab, ragu) {
     try {
-        await fetch('../api/submit_daily_answer.php', {
+        await fetch('/permen/api/submit_daily_answer.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -326,7 +327,7 @@ async function finishQuiz() {
     if (!confirm('Yakin ingin menyelesaikan Daily Quiz?')) return;
     
     try {
-        const res = await fetch('../api/finish_daily_quiz.php', {
+        const res = await fetch('/permen/api/finish_daily_quiz.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: sessionId })
