@@ -11,6 +11,38 @@ if (empty($_SESSION['user_id'])) {
 $userId = (int)$_SESSION['user_id'];
 $userName = e($_SESSION['user_nama'] ?? 'Peserta');
 
+// Fetch user streak info
+$stmt = $pdo->prepare("SELECT * FROM daily_quiz_streaks WHERE user_id = ?");
+$stmt->execute([$userId]);
+$streakInfo = $stmt->fetch();
+if (!$streakInfo) {
+    $streakInfo = ['current_streak' => 0, 'longest_streak' => 0, 'total_quizzes' => 0];
+}
+
+// Fetch user achievements
+$stmt = $pdo->prepare("SELECT achievement_type, achievement_name FROM user_achievements WHERE user_id = ? ORDER BY achieved_at DESC");
+$stmt->execute([$userId]);
+$achievements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch user's current difficulty
+$stmt = $pdo->prepare("SELECT current_difficulty, consecutive_high_scores, consecutive_low_scores FROM user_quiz_difficulty WHERE user_id = ?");
+$stmt->execute([$userId]);
+$userDifficulty = $stmt->fetch();
+if (!$userDifficulty) {
+    $userDifficulty = ['current_difficulty' => 'sedang', 'consecutive_high_scores' => 0, 'consecutive_low_scores' => 0];
+}
+
+// Fetch today's scheduled topic
+$dayOfWeek = (int)date('w');
+$stmt = $pdo->prepare("SELECT * FROM daily_quiz_topic_schedule WHERE day_of_week = ?");
+$stmt->execute([$dayOfWeek]);
+$todaySchedule = $stmt->fetch();
+
+// Fetch full weekly schedule
+$weeklySchedule = $pdo->query("SELECT * FROM daily_quiz_topic_schedule ORDER BY day_of_week")->fetchAll(PDO::FETCH_ASSOC);
+
+$dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
 // Cek apakah sudah ada sesi hari ini
 $today = date('Y-m-d');
 $stmt = $pdo->prepare("SELECT * FROM daily_quiz_sessions WHERE user_id = ? AND quiz_date = ?");
@@ -84,12 +116,40 @@ $hasCompleted = $session && $session['status'] === 'selesai';
 
 <div class="quiz-header">
 <h1>Daily Quiz Hari Ini</h1>
+<?php if ($todaySchedule): ?>
+<p>📅 Topik Hari Ini: <strong><?= e($todaySchedule['subtes']) ?> — <?= e($todaySchedule['topik']) ?></strong></p>
+<p style="font-size:.85rem;opacity:.8"><?= e($todaySchedule['description']) ?></p>
+<?php else: ?>
 <p>10 soal pilihan ganda (4 TWK, 3 TIU, 3 TKP)</p>
+<?php endif; ?>
 <div class="quiz-info">
 <span id="timerDisplay" class="timer">--:--</span>
 <span>Soal <strong id="currentNum">1</strong>/10</span>
 <span id="progressText">0/10 dijawab</span>
 </div>
+<div style="margin-top:1rem;display:flex;justify-content:center;gap:1rem;flex-wrap:wrap">
+    <span style="background:rgba(255,255,255,.2);padding:.5rem 1rem;border-radius:20px;font-size:.85rem">
+        🔥 Streak: <strong><?= $streakInfo['current_streak'] ?></strong> hari
+    </span>
+    <span style="background:rgba(255,255,255,.2);padding:.5rem 1rem;border-radius:20px;font-size:.85rem">
+        🏆 Terbaik: <strong><?= $streakInfo['longest_streak'] ?></strong> hari
+    </span>
+    <span style="background:rgba(255,255,255,.2);padding:.5rem 1rem;border-radius:20px;font-size:.85rem">
+        📊 Total: <strong><?= $streakInfo['total_quizzes'] ?></strong> quiz
+    </span>
+    <span style="background:rgba(255,255,255,.2);padding:.5rem 1rem;border-radius:20px;font-size:.85rem">
+        ⚡ Tingkat: <strong><?= ucfirst($userDifficulty['current_difficulty']) ?></strong>
+    </span>
+</div>
+<?php if ($userDifficulty['consecutive_high_scores'] > 0 || $userDifficulty['consecutive_low_scores'] > 0): ?>
+<div style="margin-top:.5rem;text-align:center;font-size:.75rem;color:rgba(255,255,255,.7)">
+    <?php if ($userDifficulty['consecutive_high_scores'] > 0): ?>
+    <?= $userDifficulty['consecutive_high_scores'] ?>x skor tinggi berturut-turut → Tingkat akan naik
+    <?php elseif ($userDifficulty['consecutive_low_scores'] > 0): ?>
+    <?= $userDifficulty['consecutive_low_scores'] ?>x skor rendah berturut-turut → Tingkat akan turun
+    <?php endif; ?>
+</div>
+<?php endif; ?>
 </div>
 
 <div class="quiz-container">
@@ -114,6 +174,20 @@ $hasCompleted = $session && $session['status'] === 'selesai';
 <div class="stat-value" style="color:#95a5a6"><?= (int)$session['kosong'] ?></div>
 </div>
 </div>
+
+<?php if (!empty($achievements)): ?>
+<div style="margin-top:1.5rem">
+<h3 style="color:#1a5276;margin-bottom:.8rem;text-align:center">🏅 Achievement Anda</h3>
+<div style="display:flex;justify-content:center;gap:.5rem;flex-wrap:wrap">
+    <?php foreach ($achievements as $ach): ?>
+    <span style="background:#fff3cd;padding:.5rem 1rem;border-radius:20px;font-size:.85rem;border:1px solid #f39c12">
+        <?= e($ach['achievement_name']) ?>
+    </span>
+    <?php endforeach; ?>
+</div>
+</div>
+<?php endif; ?>
+
 <a href="user_dashboard.php" class="btn">Kembali ke Dashboard</a>
 </div>
 
@@ -153,6 +227,37 @@ $hasCompleted = $session && $session['status'] === 'selesai';
 </div>
 </div>
 <?php endif; ?>
+
+<!-- Daily Quiz Leaderboard -->
+<div style="margin-top:2rem;background:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:1.5rem">
+    <h3 style="color:#1a5276;margin-bottom:1rem;text-align:center">🏆 Leaderboard Daily Quiz</h3>
+    <div style="display:flex;gap:1rem;justify-content:center;margin-bottom:1rem">
+        <button onclick="loadLeaderboard('streak')" id="btnStreak" style="background:#2980b9;color:#fff;border:none;padding:.5rem 1rem;border-radius:4px;cursor:pointer;font-size:.85rem">Streak Tertinggi</button>
+        <button onclick="loadLeaderboard('total')" id="btnTotal" style="background:#95a5a6;color:#fff;border:none;padding:.5rem 1rem;border-radius:4px;cursor:pointer;font-size:.85rem">Total Quiz Terbanyak</button>
+    </div>
+    <div id="leaderboardContent" style="overflow-x:auto">
+        <p style="text-align:center;color:#666;font-size:.9rem">Memuat leaderboard...</p>
+    </div>
+</div>
+
+<!-- Weekly Topic Schedule -->
+<div style="margin-top:2rem;background:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:1.5rem">
+    <h3 style="color:#1a5276;margin-bottom:1rem;text-align:center">📅 Jadwal Topik Mingguan</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem">
+        <?php foreach ($weeklySchedule as $schedule): ?>
+        <div style="padding:1rem;background:#f8f9fa;border-radius:6px;border-left:4px solid <?= $schedule['day_of_week'] === $dayOfWeek ? '#27ae60' : '#95a5a6' ?>">
+            <div style="font-weight:bold;color:#1a5276"><?= $dayNames[$schedule['day_of_week']] ?></div>
+            <div style="font-size:.9rem;margin-top:.3rem">
+                <strong><?= e($schedule['subtes']) ?></strong> — <?= e($schedule['topik']) ?>
+            </div>
+            <div style="font-size:.8rem;color:#666;margin-top:.2rem"><?= e($schedule['description']) ?></div>
+            <?php if ($schedule['day_of_week'] === $dayOfWeek): ?>
+            <div style="margin-top:.5rem;color:#27ae60;font-size:.8rem;font-weight:bold">📍 Hari Ini</div>
+            <?php endif; ?>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
 
 </div>
 
@@ -379,6 +484,79 @@ document.addEventListener('keydown', (e) => {
 // Load quiz
 document.addEventListener('DOMContentLoaded', loadQuiz);
 <?php endif; ?>
+
+// Load leaderboard (always available)
+document.addEventListener('DOMContentLoaded', loadLeaderboard('streak'));
+
+async function loadLeaderboard(type) {
+    const container = document.getElementById('leaderboardContent');
+    const btnStreak = document.getElementById('btnStreak');
+    const btnTotal = document.getElementById('btnTotal');
+    
+    // Update button styles
+    if (type === 'streak') {
+        btnStreak.style.background = '#2980b9';
+        btnTotal.style.background = '#95a5a6';
+    } else {
+        btnStreak.style.background = '#95a5a6';
+        btnTotal.style.background = '#2980b9';
+    }
+    
+    container.innerHTML = '<p style="text-align:center;color:#666;font-size:.9rem">Memuat leaderboard...</p>';
+    
+    try {
+        const res = await fetch('/permen/api/get_daily_quiz_leaderboard.php');
+        const data = await res.json();
+        
+        if (!data.success) {
+            container.innerHTML = '<p style="text-align:center;color:#e74c3c;font-size:.9rem">Gagal memuat leaderboard</p>';
+            return;
+        }
+        
+        const leaderboard = type === 'streak' ? data.data.streak_leaderboard : data.data.total_leaderboard;
+        const userRank = data.data.user_rank;
+        
+        let html = '<table style="width:100%;border-collapse:collapse;font-size:.85rem">';
+        html += '<thead><tr style="background:#f8f9fa">';
+        html += '<th style="padding:.5rem;text-align:center">#</th>';
+        html += '<th style="padding:.5rem;text-align:left">Nama</th>';
+        html += '<th style="padding:.5rem;text-align:center">Streak</th>';
+        html += '<th style="padding:.5rem;text-align:center">Terbaik</th>';
+        html += '<th style="padding:.5rem;text-align:center">Total Quiz</th>';
+        html += '</tr></thead>';
+        html += '<tbody>';
+        
+        leaderboard.forEach((user, i) => {
+            const rank = i + 1;
+            const rankStyle = rank === 1 ? 'background:#fff3cd;font-weight:bold' : (rank === 2 ? 'background:#e9ecef;font-weight:bold' : (rank === 3 ? 'background:#dee2e6;font-weight:bold' : ''));
+            html += '<tr style="' + rankStyle + '">';
+            html += '<td style="padding:.5rem;text-align:center">' + rank + '</td>';
+            html += '<td style="padding:.5rem">' + escapeHtml(user.nama) + '</td>';
+            html += '<td style="padding:.5rem;text-align:center">🔥 ' + user.current_streak + '</td>';
+            html += '<td style="padding:.5rem;text-align:center">🏆 ' + user.longest_streak + '</td>';
+            html += '<td style="padding:.5rem;text-align:center">📊 ' + user.total_quizzes + '</td>';
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table>';
+        
+        if (userRank) {
+            html += '<div style="margin-top:1rem;padding:.8rem;background:#eaf2f8;border-radius:4px;text-align:center;font-size:.85rem">';
+            html += '<strong>Peringkat Anda:</strong> #' + userRank;
+            html += '</div>';
+        }
+        
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = '<p style="text-align:center;color:#e74c3c;font-size:.9rem">Error: ' + e.message + '</p>';
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 </script>
 
 </body>

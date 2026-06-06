@@ -89,6 +89,28 @@ $akurasiTopik = $pdo->prepare("
 ");
 $akurasiTopik->execute([$userId]);
 $topikStats = $akurasiTopik->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch user's bookmarked materials with progress
+$bookmarksStmt = $pdo->prepare("
+    SELECT mb.materi_id, mb.created_at, mp.progress_percent, mp.last_read_at
+    FROM materi_bookmarks mb
+    LEFT JOIN materi_progress mp ON mb.user_id = mp.user_id AND mb.materi_id = mp.materi_id
+    WHERE mb.user_id = ?
+    ORDER BY mb.created_at DESC
+    LIMIT 10
+");
+$bookmarksStmt->execute([$userId]);
+$bookmarks = $bookmarksStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch latest performance report
+$stmt = $pdo->prepare("
+    SELECT * FROM performance_reports 
+    WHERE user_id = ? 
+    ORDER BY created_at DESC 
+    LIMIT 1
+");
+$stmt->execute([$userId]);
+$performanceReport = $stmt->fetch();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -201,6 +223,40 @@ require '../includes/breadcrumbs.php';
 <div class="stat"><div class="num" style="color:#e74c3c"><?= $subtesTerlemah ?></div><div class="label">Subtes Terlemah</div></div>
 </div>
 
+<!-- Performance Report -->
+<?php if ($performanceReport): ?>
+<div class="section">
+<h2>📊 Laporan Performa (<?= ucfirst($performanceReport['report_type']) ?>)</h2>
+<p style="font-size:.85rem;color:#666;margin-bottom:1rem">Periode: <?= date('d M Y', strtotime($performanceReport['period_start'])) ?> - <?= date('d M Y', strtotime($performanceReport['period_end'])) ?></p>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:1rem">
+    <div style="background:#f8f9fa;padding:1rem;border-radius:6px;text-align:center">
+        <div style="font-size:.8rem;color:#666">Tryout</div>
+        <div style="font-size:1.3rem;font-weight:bold;color:#2980b9"><?= $performanceReport['total_tryouts'] ?></div>
+        <div style="font-size:.75rem;color:#777">Rata: <?= round($performanceReport['avg_tryout_score']) ?></div>
+    </div>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:6px;text-align:center">
+        <div style="font-size:.8rem;color:#666">Daily Quiz</div>
+        <div style="font-size:1.3rem;font-weight:bold;color:#e74c3c"><?= $performanceReport['total_daily_quizzes'] ?></div>
+        <div style="font-size:.75rem;color:#777">Rata: <?= round($performanceReport['avg_daily_quiz_score']) ?></div>
+    </div>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:6px;text-align:center">
+        <div style="font-size:.8rem;color:#666">Streak</div>
+        <div style="font-size:1.3rem;font-weight:bold;color:#f39c12">🔥 <?= $performanceReport['current_streak'] ?></div>
+        <div style="font-size:.75rem;color:#777">Hari</div>
+    </div>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:6px;text-align:center">
+        <div style="font-size:.8rem;color:#666">Latihan</div>
+        <div style="font-size:1.3rem;font-weight:bold;color:#27ae60"><?= $performanceReport['total_practice_sessions'] ?></div>
+        <div style="font-size:.75rem;color:#777">Sesi</div>
+    </div>
+</div>
+<div style="background:#fff3cd;border-left:4px solid #f1c40f;padding:1rem;border-radius:4px">
+    <div style="font-weight:bold;color:#856404;font-size:.9rem;margin-bottom:.3rem">💡 Rekomendasi:</div>
+    <div style="font-size:.85rem;color:#555"><?= e($performanceReport['recommendations']) ?></div>
+</div>
+</div>
+<?php endif; ?>
+
 <?php if (empty($selesai)): ?>
 <!-- Empty State -->
 <div class="section" style="text-align:center;padding:3rem 1rem">
@@ -256,16 +312,80 @@ function startTryoutWithOptions(e) {
 }
 </script>
 <?php else: ?>
-<!-- Progress Chart -->
+<!-- Enhanced Progress Chart -->
 <div class="section">
-<h2>Grafik Progress</h2>
+<h2>Grafik Perkembangan Nilai per Subtes</h2>
 <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
-    <button class="btn" style="font-size:.8rem" onclick="drawChart('total')" aria-label="Tampilkan grafik total skor">Total</button>
-    <button class="btn" style="font-size:.8rem" onclick="drawChart('tkp')" aria-label="Tampilkan grafik skor TKP">TKP</button>
-    <button class="btn" style="font-size:.8rem" onclick="drawChart('tiu')" aria-label="Tampilkan grafik skor TIU">TIU</button>
-    <button class="btn" style="font-size:.8rem" onclick="drawChart('twk')" aria-label="Tampilkan grafik skor TWK">TWK</button>
+    <button class="btn" style="font-size:.8rem" onclick="updateLineChart('total')" aria-label="Tampilkan grafik total skor">Total</button>
+    <button class="btn" style="font-size:.8rem" onclick="updateLineChart('tkp')" aria-label="Tampilkan grafik skor TKP">TKP</button>
+    <button class="btn" style="font-size:.8rem" onclick="updateLineChart('tiu')" aria-label="Tampilkan grafik skor TIU">TIU</button>
+    <button class="btn" style="font-size:.8rem" onclick="updateLineChart('twk')" aria-label="Tampilkan grafik skor TWK">TWK</button>
 </div>
-<canvas id="progressChart" width="900" height="300" style="max-width:100%;height:auto"></canvas>
+<div style="position:relative;height:350px">
+    <canvas id="progressChart"></canvas>
+</div>
+</div>
+
+<!-- National Average Comparison -->
+<div class="section">
+<h2>Perbandingan dengan Rata-rata Nasional</h2>
+<div style="position:relative;height:300px">
+    <canvas id="comparisonChart"></canvas>
+</div>
+</div>
+
+<!-- Learning Activity Heatmap -->
+<div class="section">
+<h2>Heatmap Aktivitas Belajar (30 Hari Terakhir)</h2>
+<p style="font-size:.9rem;color:#555;margin-bottom:1rem">Intensitas belajar Anda dalam 30 hari terakhir</p>
+<div id="activityHeatmap" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-bottom:1rem"></div>
+<div style="display:flex;justify-content:center;gap:1rem;font-size:.8rem;color:#777">
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#ebedf0;border-radius:2px"></span> Tidak aktif</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#9be9a8;border-radius:2px"></span> Rendah</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#40c463;border-radius:2px"></span> Sedang</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#30a14e;border-radius:2px"></span> Tinggi</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#216e39;border-radius:2px"></span> Sangat Tinggi</span>
+</div>
+</div>
+
+<!-- Personal Recommendations -->
+<div class="section">
+<h2>Rekomendasi Personal Berdasarkan Performa</h2>
+<div id="personalRecommendations"></div>
+</div>
+
+<!-- Bookmarked Materials -->
+<div class="section">
+<h2>📚 Materi yang Disimpan</h2>
+<?php if (empty($bookmarks)): ?>
+<p style="color:#777;font-size:.9rem">Belum ada materi yang disimpan. Buka halaman materi untuk bookmark materi yang ingin dipelajari lagi.</p>
+<?php else: ?>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem">
+    <?php foreach ($bookmarks as $bookmark): 
+        $materiId = $bookmark['materi_id'];
+        $progress = $bookmark['progress_percent'] ?? 0;
+        $subtes = 'TWK';
+        if ($materiId > 20) $subtes = 'TIU';
+        if ($materiId > 40) $subtes = 'TKP';
+    ?>
+    <div style="background:#f8f9fa;border-radius:6px;padding:1rem;border-left:4px solid #2980b9">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+            <span style="font-size:.75rem;background:#2980b9;color:#fff;padding:.2rem .5rem;border-radius:3px"><?= $subtes ?></span>
+            <span style="font-size:.75rem;color:#777">Materi #<?= $materiId ?></span>
+        </div>
+        <div style="margin-bottom:.5rem">
+            <div style="height:4px;background:#e9ecef;border-radius:2px;overflow:hidden">
+                <div style="height:100%;background:#27ae60;width:<?= $progress ?>%"></div>
+            </div>
+            <div style="font-size:.75rem;color:#777;margin-top:.2rem">Progress: <?= $progress ?>%</div>
+        </div>
+        <a href="materi.php?subtes=<?= $subtes ?>" style="font-size:.85rem;color:#2980b9;text-decoration:none;font-weight:600">
+            Lanjut Baca →
+        </a>
+    </div>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
 </div>
 
 <?php if (!empty($selesai)): ?>
@@ -561,6 +681,252 @@ function drawChart(mode){
 }
 // Wait for DOM to be ready before drawing chart
 document.addEventListener('DOMContentLoaded', () => drawChart('total'));
+
+// Enhanced Analytics with Chart.js
+let progressChart = null;
+let comparisonChart = null;
+
+async function loadAnalytics() {
+    try {
+        const response = await fetch('/permen/api/get_dashboard_analytics.php');
+        const data = await response.json();
+        
+        if (data.success) {
+            initLineChart(data.data.score_progress);
+            initComparisonChart(data.data.user_average, data.data.national_average);
+            initHeatmap(data.data.learning_activity);
+            initRecommendations(data.data.weak_topics);
+        }
+    } catch (error) {
+        console.error('Failed to load analytics:', error);
+    }
+}
+
+function initLineChart(scoreData) {
+    const ctx = document.getElementById('progressChart');
+    if (!ctx) return;
+    
+    const labels = scoreData.map(d => {
+        const date = new Date(d.date);
+        return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+    });
+    
+    const datasets = [
+        {
+            label: 'Total',
+            data: scoreData.map(d => d.total_nilai),
+            borderColor: '#2980b9',
+            backgroundColor: 'rgba(41, 128, 185, 0.1)',
+            tension: 0.3,
+            fill: true
+        },
+        {
+            label: 'TKP',
+            data: scoreData.map(d => d.nilai_tkp),
+            borderColor: '#27ae60',
+            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+            tension: 0.3,
+            fill: true,
+            hidden: true
+        },
+        {
+            label: 'TIU',
+            data: scoreData.map(d => d.nilai_tiu),
+            borderColor: '#e67e22',
+            backgroundColor: 'rgba(230, 126, 34, 0.1)',
+            tension: 0.3,
+            fill: true,
+            hidden: true
+        },
+        {
+            label: 'TWK',
+            data: scoreData.map(d => d.nilai_twk),
+            borderColor: '#8e44ad',
+            backgroundColor: 'rgba(142, 68, 173, 0.1)',
+            tension: 0.3,
+            fill: true,
+            hidden: true
+        }
+    ];
+    
+    progressChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { font: { size: 12 } }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 350,
+                    title: { display: true, text: 'Nilai' }
+                },
+                x: {
+                    title: { display: true, text: 'Tanggal' }
+                }
+            }
+        }
+    });
+}
+
+function updateLineChart(mode) {
+    if (!progressChart) return;
+    
+    const modeMap = { 'total': 0, 'tkp': 1, 'tiu': 2, 'twk': 3 };
+    const index = modeMap[mode];
+    
+    progressChart.data.datasets.forEach((ds, i) => {
+        ds.hidden = i !== index;
+    });
+    
+    progressChart.update();
+}
+
+function initComparisonChart(userAvg, nationalAvg) {
+    const ctx = document.getElementById('comparisonChart');
+    if (!ctx) return;
+    
+    comparisonChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['TKP', 'TIU', 'TWK', 'Total'],
+            datasets: [
+                {
+                    label: 'Nilai Anda',
+                    data: [userAvg.tkp, userAvg.tiu, userAvg.twk, userAvg.total],
+                    backgroundColor: 'rgba(41, 128, 185, 0.8)',
+                    borderColor: '#2980b9',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Rata-rata Nasional',
+                    data: [nationalAvg.tkp, nationalAvg.tiu, nationalAvg.twk, nationalAvg.total],
+                    backgroundColor: 'rgba(230, 126, 34, 0.8)',
+                    borderColor: '#e67e22',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { font: { size: 12 } }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 350,
+                    title: { display: true, text: 'Nilai' }
+                }
+            }
+        }
+    });
+}
+
+function initHeatmap(activityData) {
+    const container = document.getElementById('activityHeatmap');
+    if (!container) return;
+    
+    // Create activity map for last 30 days
+    const activityMap = {};
+    activityData.forEach(d => {
+        activityMap[d.activity_date] = d.session_count;
+    });
+    
+    const heatmap = document.createElement('div');
+    heatmap.style.display = 'grid';
+    heatmap.style.gridTemplateColumns = 'repeat(7, 1fr)';
+    heatmap.style.gap = '4px';
+    heatmap.style.maxWidth = '400px';
+    heatmap.style.margin = '0 auto';
+    
+    for (let i = 29; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        const sessions = activityMap[dateStr] || 0;
+        
+        const cell = document.createElement('div');
+        cell.style.width = '40px';
+        cell.style.height = '40px';
+        cell.style.borderRadius = '4px';
+        cell.style.display = 'flex';
+        cell.style.alignItems = 'center';
+        cell.style.justifyContent = 'center';
+        cell.style.fontSize = '10px';
+        cell.style.color = '#fff';
+        cell.style.fontWeight = 'bold';
+        
+        // Color based on activity level
+        if (sessions === 0) {
+            cell.style.background = '#ebedf0';
+            cell.style.color = '#777';
+        } else if (sessions === 1) {
+            cell.style.background = '#9be9a8';
+        } else if (sessions === 2) {
+            cell.style.background = '#40c463';
+        } else if (sessions === 3) {
+            cell.style.background = '#30a14e';
+        } else {
+            cell.style.background = '#216e39';
+        }
+        
+        cell.title = `${dateStr}: ${sessions} sesi`;
+        if (sessions > 0) {
+            cell.textContent = sessions;
+        }
+        
+        heatmap.appendChild(cell);
+    }
+    
+    container.appendChild(heatmap);
+}
+
+function initRecommendations(weakTopics) {
+    const container = document.getElementById('personalRecommendations');
+    if (!container) return;
+    
+    if (weakTopics.length === 0) {
+        container.innerHTML = '<p style="color:#777;font-size:.9rem">Belum cukup data untuk memberikan rekomendasi. Selesaikan lebih banyak tryout!</p>';
+        return;
+    }
+    
+    let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem">';
+    
+    weakTopics.forEach(topic => {
+        const accuracyColor = topic.accuracy < 40 ? '#e74c3c' : (topic.accuracy < 70 ? '#f39c12' : '#27ae60');
+        const urgency = topic.accuracy < 40 ? 'Sangat Lemah' : (topic.accuracy < 70 ? 'Perlu Perhatian' : 'Cukup Baik');
+        
+        html += `
+        <div style="background:#f8f9fa;border-left:4px solid ${accuracyColor};border-radius:6px;padding:1rem">
+            <div style="font-weight:bold;color:#1a5276;margin-bottom:.3rem">${topic.subtes} — ${topic.topik}</div>
+            <div style="font-size:.9rem;color:#555;margin-bottom:.5rem">
+                Akurasi: <span style="color:${accuracyColor};font-weight:bold">${topic.accuracy}%</span> (${topic.correct}/${topic.total} soal)
+            </div>
+            <div style="font-size:.8rem;color:#777;margin-bottom:.5rem">Status: ${urgency}</div>
+            <a href="materi.php?subtes=${topic.subtes}" style="font-size:.85rem;color:#2980b9;text-decoration:none;font-weight:600">
+                Pelajari Materi Ini →
+            </a>
+        </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Load analytics on page load
+document.addEventListener('DOMContentLoaded', loadAnalytics);
 </script>
 <?php endif; ?>
 

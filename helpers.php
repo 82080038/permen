@@ -713,3 +713,45 @@ function logError(string $message, array $context = []): void {
     $entry .= str_repeat('-', 80) . "\n";
     file_put_contents($logFile, $entry, FILE_APPEND);
 }
+
+/**
+ * Apply user settings (theme, font size) globally
+ * This function should be called after session start in config.php
+ */
+function applyUserSettings(): void {
+    global $pdo;
+    
+    // Only apply if user is logged in
+    if (empty($_SESSION['user_id'])) {
+        return;
+    }
+    
+    try {
+        $userId = (int)$_SESSION['user_id'];
+        $stmt = $pdo->prepare("SELECT theme, font_size FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $settings = $stmt->fetch();
+        
+        if ($settings) {
+            // Apply theme
+            if (!empty($settings['theme']) && $settings['theme'] === 'dark') {
+                // Check if user has explicitly set dark mode preference
+                // Don't override if already set via localStorage
+                if (!isset($_SESSION['theme_applied'])) {
+                    echo '<script>document.documentElement.setAttribute("data-theme", "dark");</script>';
+                    $_SESSION['theme_applied'] = true;
+                }
+            }
+            
+            // Apply font size
+            if (!empty($settings['font_size'])) {
+                $fontSizeClass = 'font-' . $settings['font_size'];
+                echo '<script>document.body.classList.add("' . $fontSizeClass . '");</script>';
+            }
+        }
+    } catch (Exception $e) {
+        // Silently fail - settings are optional
+        error_log("Failed to apply user settings: " . $e->getMessage());
+    }
+}
+

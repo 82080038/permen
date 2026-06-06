@@ -57,6 +57,50 @@ if ($isLatihan) {
     elseif (($subData['TIU']['jumlah_soal']??0) > 0 && ($subData['TWK']['jumlah_soal']??0) == 0 && ($subData['TKP']['jumlah_soal']??0) == 0) $latihanSubtes = 'TIU';
     elseif (($subData['TKP']['jumlah_soal']??0) > 0 && ($subData['TWK']['jumlah_soal']??0) == 0 && ($subData['TIU']['jumlah_soal']??0) == 0) $latihanSubtes = 'TKP';
 }
+
+// Fetch previous tryout for comparison (only for full tryout)
+$previousSession = null;
+$comparisonData = null;
+if (!$isLatihan && !empty($_SESSION['user_id'])) {
+    $stmt = $pdo->prepare("
+        SELECT * FROM tryout_sessions 
+        WHERE user_id = ? AND id < ? AND status = 'selesai'
+        ORDER BY id DESC LIMIT 1
+    ");
+    $stmt->execute([$_SESSION['user_id'], $sessionId]);
+    $previousSession = $stmt->fetch();
+    
+    if ($previousSession) {
+        // Get previous subtes data
+        $stmt = $pdo->prepare("SELECT subtes, nilai FROM session_subtes WHERE session_id = ?");
+        $stmt->execute([$previousSession['id']]);
+        $prevSubData = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $prevSubData[$row['subtes']] = $row['nilai'];
+        }
+        
+        // Calculate differences
+        $comparisonData = [
+            'total_diff' => $totalNilai - ($previousSession['total_nilai'] ?? 0),
+            'tkp_diff' => $nilaiTkp - ($prevSubData['TKP'] ?? 0),
+            'tiu_diff' => $nilaiTiu - ($prevSubData['TIU'] ?? 0),
+            'twk_diff' => $nilaiTwk - ($prevSubData['TWK'] ?? 0),
+            'previous_date' => $previousSession['created_at']
+        ];
+    }
+    
+    // Fetch institution average for comparison
+    $stmt = $pdo->prepare("
+        SELECT AVG(total_nilai) as avg_total, 
+               AVG((SELECT nilai FROM session_subtes ss WHERE ss.session_id = ts.id AND ss.subtes = 'TKP')) as avg_tkp,
+               AVG((SELECT nilai FROM session_subtes ss WHERE ss.session_id = ts.id AND ss.subtes = 'TIU')) as avg_tiu,
+               AVG((SELECT nilai FROM session_subtes ss WHERE ss.session_id = ts.id AND ss.subtes = 'TWK')) as avg_twk
+        FROM tryout_sessions ts
+        WHERE ts.status = 'selesai' AND ts.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    ");
+    $stmt->execute();
+    $instansiAvg = $stmt->fetch();
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -196,6 +240,82 @@ Sumber: BKN (Badan Kepegawaian Negara) - Seleksi Sekolah Kedinasan 2024
 </p>
 </div>
 
+<!-- COMPARISON ANALYSIS (Full Tryout Only) -->
+<?php if (!$isLatihan && ($comparisonData || $instansiAvg)): ?>
+<div class="card" style="text-align:left">
+<h2>📊 Analisis Perbandingan</h2>
+
+<?php if ($comparisonData): ?>
+<div style="background:#f8f9fa;border-radius:6px;padding:1rem;margin-bottom:1rem">
+    <h3 style="color:#1a5276;font-size:.95rem;margin-bottom:.8rem">Perbandingan dengan Tryout Sebelumnya</h3>
+    <p style="font-size:.8rem;color:#666;margin-bottom:.5rem">Tanggal: <?= date('d M Y', strtotime($comparisonData['previous_date'])) ?></p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.5rem">
+        <div style="background:#fff;padding:.6rem;border-radius:4px;text-align:center">
+            <div style="font-size:.75rem;color:#666">Total</div>
+            <div style="font-weight:bold;font-size:1.1rem;color:<?= $comparisonData['total_diff'] >= 0 ? '#27ae60' : '#e74c3c' ?>">
+                <?= $comparisonData['total_diff'] >= 0 ? '+' : '' ?><?= $comparisonData['total_diff'] ?>
+            </div>
+        </div>
+        <div style="background:#fff;padding:.6rem;border-radius:4px;text-align:center">
+            <div style="font-size:.75rem;color:#666">TKP</div>
+            <div style="font-weight:bold;font-size:1.1rem;color:<?= $comparisonData['tkp_diff'] >= 0 ? '#27ae60' : '#e74c3c' ?>">
+                <?= $comparisonData['tkp_diff'] >= 0 ? '+' : '' ?><?= $comparisonData['tkp_diff'] ?>
+            </div>
+        </div>
+        <div style="background:#fff;padding:.6rem;border-radius:4px;text-align:center">
+            <div style="font-size:.75rem;color:#666">TIU</div>
+            <div style="font-weight:bold;font-size:1.1rem;color:<?= $comparisonData['tiu_diff'] >= 0 ? '#27ae60' : '#e74c3c' ?>">
+                <?= $comparisonData['tiu_diff'] >= 0 ? '+' : '' ?><?= $comparisonData['tiu_diff'] ?>
+            </div>
+        </div>
+        <div style="background:#fff;padding:.6rem;border-radius:4px;text-align:center">
+            <div style="font-size:.75rem;color:#666">TWK</div>
+            <div style="font-weight:bold;font-size:1.1rem;color:<?= $comparisonData['twk_diff'] >= 0 ? '#27ae60' : '#e74c3c' ?>">
+                <?= $comparisonData['twk_diff'] >= 0 ? '+' : '' ?><?= $comparisonData['twk_diff'] ?>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($instansiAvg): ?>
+<div style="background:#f8f9fa;border-radius:6px;padding:1rem">
+    <h3 style="color:#1a5276;font-size:.95rem;margin-bottom:.8rem">Perbandingan dengan Rata-rata (30 hari terakhir)</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.5rem">
+        <div style="background:#fff;padding:.6rem;border-radius:4px;text-align:center">
+            <div style="font-size:.75rem;color:#666">Total</div>
+            <div style="font-weight:bold;font-size:1.1rem">
+                <?= round($instansiAvg['avg_total'] ?? 0) ?>
+            </div>
+            <div style="font-size:.7rem;color:#666">Anda: <?= $totalNilai ?></div>
+        </div>
+        <div style="background:#fff;padding:.6rem;border-radius:4px;text-align:center">
+            <div style="font-size:.75rem;color:#666">TKP</div>
+            <div style="font-weight:bold;font-size:1.1rem">
+                <?= round($instansiAvg['avg_tkp'] ?? 0) ?>
+            </div>
+            <div style="font-size:.7rem;color:#666">Anda: <?= $nilaiTkp ?></div>
+        </div>
+        <div style="background:#fff;padding:.6rem;border-radius:4px;text-align:center">
+            <div style="font-size:.75rem;color:#666">TIU</div>
+            <div style="font-weight:bold;font-size:1.1rem">
+                <?= round($instansiAvg['avg_tiu'] ?? 0) ?>
+            </div>
+            <div style="font-size:.7rem;color:#666">Anda: <?= $nilaiTiu ?></div>
+        </div>
+        <div style="background:#fff;padding:.6rem;border-radius:4px;text-align:center">
+            <div style="font-size:.75rem;color:#666">TWK</div>
+            <div style="font-weight:bold;font-size:1.1rem">
+                <?= round($instansiAvg['avg_twk'] ?? 0) ?>
+            </div>
+            <div style="font-size:.7rem;color:#666">Anda: <?= $nilaiTwk ?></div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+</div>
+<?php endif; ?>
+
 <!-- REKOMENDASI LATIHAN -->
 <div class="card no-print" style="text-align:left;display:none" id="rekomendasiCard">
 <h2>Rekomendasi Latihan</h2>
@@ -244,6 +364,32 @@ async function sendEmailResult(){
 <div class="card" style="text-align:left">
 <h2>Review Soal</h2>
 <div id="reviewStats" style="margin-bottom:1rem;font-size:.9rem"></div>
+
+<!-- Filter Options -->
+<div style="margin-bottom:1rem;padding:.8rem;background:#f8f9fa;border-radius:6px">
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+        <span style="font-weight:bold;font-size:.85rem">Filter:</span>
+        <select id="filterSubtes" onchange="applyFilters()" style="padding:.4rem;border-radius:4px;border:1px solid #ddd;font-size:.85rem">
+            <option value="">Semua Subtes</option>
+            <option value="TWK">TWK</option>
+            <option value="TIU">TIU</option>
+            <option value="TKP">TKP</option>
+        </select>
+        <select id="filterStatus" onchange="applyFilters()" style="padding:.4rem;border-radius:4px;border:1px solid #ddd;font-size:.85rem">
+            <option value="">Semua Status</option>
+            <option value="benar">Benar</option>
+            <option value="salah">Salah</option>
+            <option value="kosong">Kosong</option>
+        </select>
+        <select id="filterRagu" onchange="applyFilters()" style="padding:.4rem;border-radius:4px;border:1px solid #ddd;font-size:.85rem">
+            <option value="">Semua</option>
+            <option value="ragu">Ragu-ragu</option>
+            <option value="tidak_ragu">Tidak Ragu</option>
+        </select>
+        <button onclick="resetFilters()" style="padding:.4rem .8rem;background:#95a5a6;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:.85rem">Reset</button>
+    </div>
+</div>
+
 <div id="reviewContainer" style="max-height:500px;overflow-y:auto;border:1px solid #ddd;border-radius:6px;padding:.8rem">
 <p style="color:#666">Memuat review soal...</p>
 </div>
@@ -251,12 +397,15 @@ async function sendEmailResult(){
 
 <script>
 const reviewSessionId = <?= (int)$sessionId ?>;
+let allQuestions = [];
 
 async function loadReview(){
     const res = await fetch('/permen/api/get_review.php?session_id='+reviewSessionId);
     const data = await res.json();
     if(data.error){document.getElementById('reviewContainer').innerHTML='<p style="color:#e74c3c">'+data.error+'</p>';return;}
 
+    allQuestions = data.soal || [];
+    
     // Stats
     let statsHtml = '';
     for(const sub of ['TWK','TIU','TKP']){
@@ -294,10 +443,52 @@ async function loadReview(){
         document.getElementById('rekomendasiList').innerHTML = recHtml;
     }
 
-    // Questions
+    // Render questions with filters
+    renderQuestions(allQuestions);
+}
+
+function applyFilters() {
+    const subtesFilter = document.getElementById('filterSubtes').value;
+    const statusFilter = document.getElementById('filterStatus').value;
+    const raguFilter = document.getElementById('filterRagu').value;
+
+    const filtered = allQuestions.filter(q => {
+        if (subtesFilter && q.subtes !== subtesFilter) return false;
+        
+        const isCorrect = q.jawaban_user === q.jawaban_benar;
+        const isEmpty = !q.jawaban_user;
+        
+        if (statusFilter === 'benar' && !isCorrect) return false;
+        if (statusFilter === 'salah' && (isEmpty || isCorrect)) return false;
+        if (statusFilter === 'kosong' && !isEmpty) return false;
+        
+        if (raguFilter === 'ragu' && !q.is_ragu) return false;
+        if (raguFilter === 'tidak_ragu' && q.is_ragu) return false;
+        
+        return true;
+    });
+
+    renderQuestions(filtered);
+}
+
+function resetFilters() {
+    document.getElementById('filterSubtes').value = '';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterRagu').value = '';
+    renderQuestions(allQuestions);
+}
+
+function renderQuestions(questions) {
     let html = '';
     let currentPassage = null;
-    (data.soal || []).forEach((q,i)=>{
+    
+    if (questions.length === 0) {
+        html = '<p style="color:#666;text-align:center">Tidak ada soal yang sesuai dengan filter.</p>';
+        document.getElementById('reviewContainer').innerHTML = html;
+        return;
+    }
+
+    questions.forEach((q,i)=>{
         const isCorrect = q.jawaban_user === q.jawaban_benar;
         const isEmpty = !q.jawaban_user;
         const statusColor = isEmpty ? '#999' : (isCorrect ? '#27ae60' : '#e74c3c');
@@ -306,7 +497,7 @@ async function loadReview(){
         // Show passage if changed
         if(q.passage_id && q.passage_id !== currentPassage){
             currentPassage = q.passage_id;
-            const p = data.passages[q.passage_id];
+            const p = allQuestions.find(sq => sq.passage_id === currentPassage);
             if(p){
                 html += '<div style="background:#f0f7ff;border:1px solid #b8d4f0;border-radius:6px;padding:.6rem;margin-bottom:.6rem">';
                 html += '<div style="font-weight:bold;color:#1a5276;font-size:.9rem">'+escapeHtml(p.judul)+'</div>';
@@ -319,6 +510,7 @@ async function loadReview(){
         html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">';
         html += '<strong>Soal '+(i+1)+' ['+q.subtes+']</strong>';
         html += '<span style="font-size:.8rem;font-weight:bold;color:'+statusColor+'">'+statusText+'</span>';
+        if(q.is_ragu) html += '<span style="font-size:.75rem;color:#f39c12;margin-left:.5rem">⚠️ Ragu</span>';
         html += '</div>';
         html += '<div style="font-size:.9rem;margin-bottom:.5rem">'+escapeHtml(q.pertanyaan)+'</div>';
         if(q.image_url){

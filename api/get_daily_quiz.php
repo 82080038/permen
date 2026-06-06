@@ -11,6 +11,17 @@
 require '../config.php';
 header('Content-Type: application/json; charset=utf-8');
 
+function getDifficultyFilter($difficulty) {
+    switch ($difficulty) {
+        case 'mudah':
+            return "AND kesulitan IN ('mudah', 'sedang')";
+        case 'sulit':
+            return "AND kesulitan IN ('sedang', 'sulit')";
+        default:
+            return ""; // sedang: all questions
+    }
+}
+
 // Guard: user harus login
 if (empty($_SESSION['user_id'])) {
     http_response_code(401);
@@ -27,30 +38,79 @@ $stmt->execute([$userId, $today]);
 $session = $stmt->fetch();
 
 if (!$session) {
+    // Get user's current difficulty
+    $stmt = $pdo->prepare("SELECT * FROM user_quiz_difficulty WHERE user_id = ?");
+    $stmt->execute([$userId]);
+    $userDifficulty = $stmt->fetch();
+    
+    if (!$userDifficulty) {
+        // Create default difficulty entry
+        $stmt = $pdo->prepare("INSERT INTO user_quiz_difficulty (user_id, current_difficulty) VALUES (?, 'sedang')");
+        $stmt->execute([$userId]);
+        $currentDifficulty = 'sedang';
+    } else {
+        $currentDifficulty = $userDifficulty['current_difficulty'];
+    }
+    
+    // Get today's scheduled topic
+    $dayOfWeek = (int)date('w'); // 0=Sunday, 1=Monday, ..., 6=Saturday
+    $stmt = $pdo->prepare("SELECT * FROM daily_quiz_topic_schedule WHERE day_of_week = ?");
+    $stmt->execute([$dayOfWeek]);
+    $schedule = $stmt->fetch();
+    
     // Buat sesi baru
-    $stmt = $pdo->prepare("INSERT INTO daily_quiz_sessions (user_id, quiz_date, total_soal) VALUES (?, ?, 10)");
-    $stmt->execute([$userId, $today]);
+    $stmt = $pdo->prepare("INSERT INTO daily_quiz_sessions (user_id, quiz_date, total_soal, scheduled_subtes, scheduled_topik, difficulty) VALUES (?, ?, 10, ?, ?, ?)");
+    $scheduledSubtes = $schedule['subtes'] ?? 'Mixed';
+    $scheduledTopik = $schedule['topik'] ?? 'Campuran';
+    $stmt->execute([$userId, $today, $scheduledSubtes, $scheduledTopik, $currentDifficulty]);
     $sessionId = $pdo->lastInsertId();
     
-    // Ambil soal random: 4 TWK, 3 TIU, 3 TKP
-    $soalTWK = $pdo->query("SELECT id FROM questions WHERE subtes = 'TWK' AND is_active = 1 ORDER BY RAND() LIMIT 4")->fetchAll(PDO::FETCH_COLUMN);
-    $soalTIU = $pdo->query("SELECT id FROM questions WHERE subtes = 'TIU' AND is_active = 1 ORDER BY RAND() LIMIT 3")->fetchAll(PDO::FETCH_COLUMN);
-    $soalTKP = $pdo->query("SELECT id FROM questions WHERE subtes = 'TKP' AND is_active = 1 ORDER BY RAND() LIMIT 3")->fetchAll(PDO::FETCH_COLUMN);
-    
-    $allSoal = array_merge($soalTWK, $soalTIU, $soalTKP);
+    // Ambil soal berdasarkan schedule dan difficulty
+    if ($schedule && $schedule['subtes'] !== 'Mixed') {
+        // Fokus pada subtes dan topik tertentu dengan difficulty filter
+        $topikFilter = $schedule['topik'] ? "AND topik = " . $pdo->quote($schedule['topik']) : "";
+        $difficultyFilter = getDifficultyFilter($currentDifficulty);
+        $soal = $pdo->query("SELECT id, subtes FROM questions WHERE subtes = '{$schedule['subtes']}' AND is_active = 1 $topikFilter $difficultyFilter ORDER BY RAND() LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Jika tidak cukup soal dengan filter, ambil tanpa difficulty filter
+        if (count($soal) < 10) {
+            $soal = $pdo->query("SELECT id, subtes FROM questions WHERE subtes = '{$schedule['subtes']}' AND is_active = 1 $topikFilter ORDER BY RAND() LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
+        }
+        // Masih kurang, ambil dari subtes saja
+        if (count($soal) < 10) {
+            $soal = $pdo->query("SELECT id, subtes FROM questions WHERE subtes = '{$schedule['subtes']}' AND is_active = 1 ORDER BY RAND() LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
+        }
+    } else {
+        // Mixed mode: 4 TWK, 3 TIU, 3 TKP with difficulty filter
+        $difficultyFilter = getDifficultyFilter($currentDifficulty);
+        $soalTWK = $pdo->query("SELECT id, 'TWK' as subtes FROM questions WHERE subtes = 'TWK' AND is_active = 1 $difficultyFilter ORDER BY RAND() LIMIT 4")->fetchAll(PDO::FETCH_ASSOC);
+        $soalTIU = $pdo->query("SELECT id, 'TIU' as subtes FROM questions WHERE subtes = 'TIU' AND is_active = 1 $difficultyFilter ORDER BY RAND() LIMIT 3")->fetchAll(PDO::FETCH_ASSOC);
+        $soalTKP = $pdo->query("SELECT id, 'TKP' as subtes FROM questions WHERE subtes = 'TKP' AND is_active = 1 $difficultyFilter ORDER BY RAND() LIMIT 3")->fetchAll(PDO::FETCH_ASSOC);
+        $soal = array_merge($soalTWK, $soalTIU, $soalTKP);
+        
+        // Fallback if not enough questions with difficulty filter
+        if (count($soal) < 10) {
+            $soalTWK = $pdo->query("SELECT id, 'TWK' as subtes FROM questions WHERE subtes = 'TWK' AND is_active = 1 ORDER BY RAND() LIMIT 4")->fetchAll(PDO::FETCH_ASSOC);
+            $soalTIU = $pdo->query("SELECT id, 'TIU' as subtes FROM questions WHERE subtes = 'TIU' AND is_active = 1 ORDER BY RAND() LIMIT 3")->fetchAll(PDO::FETCH_ASSOC);
+            $soalTKP = $pdo->query("SELECT id, 'TKP' as subtes FROM questions WHERE subtes = 'TKP' AND is_active = 1 ORDER BY RAND() LIMIT 3")->fetchAll(PDO::FETCH_ASSOC);
+            $soal = array_merge($soalTWK, $soalTIU, $soalTKP);
+        }
+    }
     
     // Insert ke daily_quiz_questions
     $stmtInsert = $pdo->prepare("INSERT INTO daily_quiz_questions (session_id, question_id, subtes, urutan) VALUES (?, ?, ?, ?)");
-    foreach ($allSoal as $i => $qid) {
-        $subtes = ($i < 4) ? 'TWK' : (($i < 7) ? 'TIU' : 'TKP');
-        $stmtInsert->execute([$sessionId, $qid, $subtes, $i + 1]);
+    foreach ($soal as $i => $q) {
+        $stmtInsert->execute([$sessionId, $q['id'], $q['subtes'], $i + 1]);
     }
     
     $session = [
         'id' => $sessionId,
         'quiz_date' => $today,
         'status' => 'berjalan',
-        'total_soal' => 10
+        'total_soal' => 10,
+        'scheduled_subtes' => $scheduledSubtes,
+        'scheduled_topik' => $scheduledTopik,
+        'difficulty' => $currentDifficulty
     ];
 } else {
     $sessionId = $session['id'];

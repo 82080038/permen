@@ -9,10 +9,10 @@
 ## FLOW 1: Landing Page & Onboarding
 
 ### 1.1 Landing Page Enhancement
-- [ ] "Buat landing page yang lebih modern dengan hero section yang menarik, menampilkan statistik aplikasi (jumlah user, tryout selesai, soal tersedia), testimonial user, dan CTA yang jelas untuk register/login. Gunakan desain yang mobile-friendly dengan animasi smooth."
+- [x] "Buat landing page yang lebih modern dengan hero section yang menarik, menampilkan statistik aplikasi (jumlah user, tryout selesai, soal tersedia), testimonial user, dan CTA yang jelas untuk register/login. Gunakan desain yang mobile-friendly dengan animasi smooth."
 
 ### 1.2 Onboarding Flow
-- [ ] "Buat flow onboarding untuk user baru: setelah register, tampilkan modal/slide yang menjelaskan cara menggunakan aplikasi (materi, tryout, daily quiz, leaderboard). Tambahkan opsi 'skip' dan simpan status onboarding_seen di database."
+- [x] "Buat flow onboarding untuk user baru: setelah register, tampilkan modal/slide yang menjelaskan cara menggunakan aplikasi (materi, tryout, daily quiz, leaderboard). Tambahkan opsi 'skip' dan simpan status onboarding_seen di database."
 
 ---
 
@@ -22,33 +22,33 @@
 - [ ] "Hapus tombol quick login demo dari halaman login.php untuk production. Tambahkan fitur 'Remember Me' dengan cookie yang aman (encrypted). Tambahkan validasi email format yang lebih strict."
 
 ### 2.2 Password Reset (Admin-Only)
-- [ ] "Password reset dilakukan melalui admin: user request reset via form forgot_password.php → admin menerima notifikasi → admin reset password manual dan beritahu user. Simpan request di tabel password_reset_requests dengan tracking status."
+- [x] "Password reset dilakukan melalui admin: user request reset via form forgot_password.php → admin menerima notifikasi → admin reset password manual dan beritahu user. Simpan request di tabel password_reset_requests dengan tracking status."
 
 ---
 
 ## FLOW 3: User Dashboard & Profile
 
 ### 3.1 Dashboard Analytics
-- [ ] "Enhance user dashboard dengan lebih banyak analytics: grafik perkembangan nilai per subtes (line chart), heatmap aktivitas belajar (hari/jam), comparison dengan rata-rata nasional, dan rekomendasi personal berdasarkan performa lemah."
+- [x] "Enhance user dashboard dengan lebih banyak analytics: grafik perkembangan nilai per subtes (line chart), heatmap aktivitas belajar (hari/jam), comparison dengan rata-rata nasional, dan rekomendasi personal berdasarkan performa lemah."
 
 ### 3.2 Profile Enhancement
-- [ ] "Tambahkan upload foto profil dengan validasi (jpg/png, max 2MB, resize otomatis). Tambahkan field tambahan: tanggal lahir, jenis kelamin, alamat lengkap. Tambahkan privacy settings untuk menampilkan/sembunyikan profil di leaderboard."
+- [x] "Tambahkan upload foto profil dengan validasi (jpg/png, max 2MB, resize otomatis). Tambahkan field tambahan: tanggal lahir, jenis kelamin, alamat lengkap. Tambahkan privacy settings untuk menampilkan/sembunyikan profil di leaderboard."
 
 ### 3.3 User Settings
-- [ ] "Buat halaman settings user: preferensi notifikasi (push/browser), language (ID/EN), tema default (light/dark), default font size. Simpan di tabel user_settings atau kolom tambahan di users."
+- [x] "Buat halaman settings user: preferensi notifikasi (push/browser), language (ID/EN), tema default (light/dark), default font size. Simpan di tabel user_settings atau kolom tambahan di users."
 
 ---
 
 ## FLOW 4: Materi Pembelajaran
 
 ### 4.1 Materi Enhancement
-- [ ] "Tambahkan fitur bookmark materi: user bisa bookmark materi yang ingin dipelajari lagi. Tampilkan list bookmark di dashboard. Tambahkan progress tracking per materi (persentase dibaca)."
+- [x] "Tambahkan fitur bookmark materi: user bisa bookmark materi yang ingin dipelajari lagi. Tampilkan list bookmark di dashboard. Tambahkan progress tracking per materi (persentase dibaca)."
 
 ### 4.2 Video Content
 - [ ] "Integrasikan video pembelajaran: embed YouTube video per topik materi, atau self-host video dengan player HTML5. Tambahkan transkrip video untuk aksesibilitas. Implementasikan video progress tracking."
 
 ### 4.3 Interactive Quiz in Materi
-- [ ] "Tambahkan mini-quiz di setiap akhir topik materi: 3-5 soal latihan yang langsung bisa dikerjakan untuk menguji pemahaman. Hasil langsung ditampilkan dengan pembahasan singkat."
+- [x] "Tambahkan mini-quiz di setiap akhir topik materi: 3-5 soal latihan yang langsung bisa dikerjakan untuk menguji pemahaman. Hasil langsung ditampilkan dengan pembahasan singkat."
 
 ---
 
@@ -77,39 +77,39 @@
 ## FLOW 6: Latihan Per Subtes
 
 ### 6.1 Latihan Personal Enhancement
-- [ ] "Enhance latihan personal: user bisa memilih topik spesifik, jumlah soal (5-50), dan tingkat kesulitan. Simpan riwayat latihan personal di tabel personal_practice_sessions dengan tracking progress."
+- [x] "Enhance latihan personal: user bisa memilih topik spesifik, jumlah soal (5-50), dan tingkat kesulitan. Simpan riwayat latihan personal di tabel personal_practice_sessions dengan tracking progress."
 
 ### 6.2 Adaptive Learning
-- [ ] "Implementasikan adaptive learning: sistem merekomendasikan soal latihan berdasarkan performa user sebelumnya. Jika user lemah di topik X, prioritaskan soal dari topik tersebut."
+- [x] "Implementasikan adaptive learning: sistem merekomendasikan soal latihan berdasarkan performa user sebelumnya. Jika user lemah di topik X, prioritaskan soal dari topik tersebut."
 
 ### 6.3 Timed Practice
-- [ ] "Tambahkan opsi timed practice: user bisa set timer per soal (misal: 60 detik) atau total timer untuk latihan. Timer server-side validation seperti tryout penuh."
+- [x] "Tambahkan opsi timed practice: user bisa set timer per soal (misal: 60 detik) atau total timer untuk latihan. Timer server-side validation seperti tryout penuh."
 
 ---
 
 ## FLOW 7: Daily Quiz
 
 ### 7.1 Daily Quiz Enhancement
-- [ ] "Enhance daily quiz: tambahkan streak tracking (berapa hari berturut-turut user mengerjakan), leaderboard daily quiz, dan badge/achievement untuk streak tertentu (7 hari, 30 hari, dll)."
+- [x] "Enhance daily quiz: tambahkan streak tracking (berapa hari berturut-turut user mengerjakan), leaderboard daily quiz, dan badge/achievement untuk streak tertentu (7 hari, 30 hari, dll)."
 
 ### 7.2 Daily Quiz Topics
-- [ ] "Tambahkan daily quiz tematik: setiap hari fokus ke topik tertentu (misal: Senin = TWK Nasionalisme, Selasa = TIU Verbal, dll). Tampilkan jadwal topik di halaman daily quiz."
+- [x] "Tambahkan daily quiz tematik: setiap hari fokus ke topik tertentu (misal: Senin = TWK Nasionalisme, Selasa = TIU Verbal, dll). Tampilkan jadwal topik di halaman daily quiz."
 
 ### 7.3 Daily Quiz Difficulty
-- [ ] "Implementasikan difficulty progression: daily quiz menjadi lebih sulit secara bertahap berdasarkan performa user. Jika user consistently high score, tingkatkan difficulty."
+- [x] "Implementasikan difficulty progression: daily quiz menjadi lebih sulit secara bertahap berdasarkan performa user. Jika user consistently high score, tingkatkan difficulty."
 
 ---
 
 ## FLOW 8: Hasil & Review
 
 ### 8.1 Detailed Review Enhancement
-- [ ] "Enhance halaman hasil: tambahkan filter review berdasarkan subtes, topik, benar/salah/kosong, ragu-ragu. Tambahkan export review ke PDF dengan format yang rapi."
+- [x] "Enhance halaman hasil: tambahkan filter review berdasarkan subtes, topik, benar/salah/kosong, ragu-ragu. Tambahkan export review ke PDF dengan format yang rapi."
 
 ### 8.2 Comparison Analysis
-- [ ] "Tambahkan fitur comparison: user bisa membandingkan hasil tryout dengan tryout sebelumnya (improvement/degradation), atau bandingkan dengan rata-rata instansi pilihan."
+- [x] "Tambahkan fitur comparison: user bisa membandingkan hasil tryout dengan tryout sebelumnya (improvement/degradation), atau bandingkan dengan rata-rata instansi pilihan."
 
 ### 8.3 Performance Report
-- [ ] "Buat laporan performa mingguan/bulanan yang tersedia di dashboard user: ringkasan tryout, daily quiz, latihan, dan rekomendasi belajar. Implementasikan cron job untuk generate laporan otomatis."
+- [x] "Buat laporan performa mingguan/bulanan yang tersedia di dashboard user: ringkasan tryout, daily quiz, latihan, dan rekomendasi belajar. Implementasikan cron job untuk generate laporan otomatis."
 
 ---
 
@@ -122,65 +122,65 @@
 - [ ] "Tambahkan lebih banyak filter leaderboard: filter by instansi (sudah ada), filter by region (provinsi), filter by tryout package, filter by time range (custom date range)."
 
 ### 9.3 Leaderboard Badges
-- [ ] "Tambahkan badge/achievement di leaderboard: Top 1 minggu ini, Most Improved, Highest Streak, dll. Badge ditampilkan di profil user."
+- [x] "Tambahkan badge/achievement di leaderboard: Top 1 minggu ini, Most Improved, Highest Streak, dll. Badge ditampilkan di profil user."
 
 ---
 
 ## FLOW 10: Admin Dashboard
 
 ### 10.1 Admin Analytics
-- [ ] "Enhance admin dashboard dengan lebih banyak analytics: grafik registrasi user per hari, grafik tryout completion rate, heatmap aktivitas user, top materi yang diakses, top soal yang salah dijawab."
+- [x] "Enhance admin dashboard dengan lebih banyak analytics: grafik registrasi user per hari, grafik tryout completion rate, heatmap aktivitas user, top materi yang diakses, top soal yang salah dijawab."
 
 ### 10.2 User Management
-- [ ] "Implementasikan full user management: admin bisa edit user data, reset password, suspend/ban user, delete user, view user activity log. Tambahkan bulk action (suspend multiple users)."
+- [x] "Implementasikan full user management: admin bisa edit user data, reset password, suspend/ban user, delete user, view user activity log. Tambahkan bulk action (suspend multiple users)."
 
 ### 10.3 Tryout Management
-- [ ] "Tambahkan manajemen tryout per-event: admin bisa create tryout event dengan nama, tanggal, paket soal, passing grade khusus. User register ke event. Admin bisa view hasil per event."
+- [x] "Tambahkan manajemen tryout per-event: admin bisa create tryout event dengan nama, tanggal, paket soal, passing grade khusus. User register ke event. Admin bisa view hasil per event."
 
 ### 10.4 Content Moderation
-- [ ] "Implementasikan content moderation: admin bisa review flagged content (soal yang dilaporkan user, komentar di forum jika ada), approve/reject dengan reason."
+- [x] "Implementasikan content moderation: admin bisa review flagged content (soal yang dilaporkan user, komentar di forum jika ada), approve/reject dengan reason."
 
 ---
 
 ## FLOW 11: Admin Panel - CRUD Soal
 
 ### 11.1 Full CRUD Soal
-- [ ] "Implementasikan full CRUD soal: tambah soal baru dengan form yang lengkap (pertanyaan, pilihan A-E, jawaban benar, pembahasan, tips, related links, materi, gambar, bobot TKP). Edit soal existing. Hapus soal (soft delete dengan is_active=0)."
+- [x] "Implementasikan full CRUD soal: tambah soal baru dengan form yang lengkap (pertanyaan, pilihan A-E, jawaban benar, pembahasan, tips, related links, materi, gambar, bobot TKP). Edit soal existing. Hapus soal (soft delete dengan is_active=0)."
 
 ### 11.2 Bulk Import Soal
-- [ ] "Tambahkan bulk import soal dari Excel/CSV: template dengan kolom yang jelas, validasi data sebelum import, preview sebelum konfirmasi, error reporting yang jelas."
+- [x] "Tambahkan bulk import soal dari Excel/CSV: template dengan kolom yang jelas, validasi data sebelum import, preview sebelum konfirmasi, error reporting yang jelas."
 
 ### 11.3 Soal Versioning
-- [ ] "Implementasikan versioning untuk soal: setiap edit soal menyimpan versi sebelumnya di tabel soal_versions. Admin bisa restore ke versi sebelumnya. Tracking who edited what and when."
+- [x] "Implementasikan versioning untuk soal: setiap edit soal menyimpan versi sebelumnya di tabel soal_versions. Admin bisa restore ke versi sebelumnya. Tracking who edited what and when."
 
 ### 11.4 Soal Tagging
-- [ ] "Tambahkan sistem tagging untuk soal: tag seperti 'sulit', 'populer', 'baru', 'figural', dll. Filter soal berdasarkan tag di admin panel dan user practice."
+- [x] "Tambahkan sistem tagging untuk soal: tag seperti 'sulit', 'populer', 'baru', 'figural', dll. Filter soal berdasarkan tag di admin panel dan user practice."
 
 ---
 
 ## FLOW 12: Admin Panel - CRUD Materi & Tips
 
 ### 12.1 CRUD Materi
-- [ ] "Implementasikan full CRUD materi: admin bisa tambah materi baru dengan WYSIWYG editor (CKEditor atau TinyMCE), edit materi existing, hapus materi, reorder materi (drag & drop urutan)."
+- [x] "Implementasikan full CRUD materi: admin bisa tambah materi baru dengan WYSIWYG editor (CKEditor atau TinyMCE), edit materi existing, hapus materi, reorder materi (drag & drop urutan)."
 
 ### 12.2 CRUD Tips
-- [ ] "Implementasikan full CRUD tips: admin bisa tambah tips baru dengan contoh soal dan penerapan, edit tips existing, hapus tips, kategorikan tips per subtes/topik."
+- [x] "Implementasikan full CRUD tips: admin bisa tambah tips baru dengan contoh soal dan penerapan, edit tips existing, hapus tips, kategorikan tips per subtes/topik."
 
 ### 12.3 Media Library
-- [ ] "Buat media library untuk admin: upload dan manage gambar/video yang digunakan di materi dan soal. Organize dalam folder, search, filter, delete unused media."
+- [x] "Buat media library untuk admin: upload dan manage gambar/video yang digunakan di materi dan soal. Organize dalam folder, search, filter, delete unused media."
 
 ---
 
 ## FLOW 13: Admin Panel - Revision Workflow
 
 ### 13.1 Revision Queue
-- [ ] "Enhance revision workflow: buat queue revision yang menampilkan soal yang ditandai perlu revisi oleh user. Admin bisa assign revision ke editor lain, set priority, add comment."
+- [x] "Enhance revision workflow: buat queue revision yang menampilkan soal yang ditandai perlu revisi oleh user. Admin bisa assign revision ke editor lain, set priority, add comment."
 
 ### 13.2 Revision History
-- [ ] "Tambahkan revision history: tracking semua perubahan pada soal (who, when, what changed). View history per soal dengan diff view."
+- [x] "Tambahkan revision history: tracking semua perubahan pada soal (who, when, what changed). View history per soal dengan diff view."
 
 ### 13.3 Auto-Revision Detection
-- [ ] "Implementasikan auto-detection untuk soal yang mungkin perlu revisi: soal dengan answer rate < 20% (mungkin ambiguous), soal dengan banyak flag ragu-ragu, soal dengan lama tidak di-revisi (> 6 bulan)."
+- [x] "Implementasikan auto-detection untuk soal yang mungkin perlu revisi: soal dengan answer rate < 20% (mungkin ambiguous), soal dengan banyak flag ragu-ragu, soal dengan lama tidak di-revisi (> 6 bulan)."
 
 ---
 
@@ -229,10 +229,10 @@
 ## FLOW 17: Mobile & PWA Enhancement
 
 ### 17.1 PWA Enhancement
-- [ ] "Enhance PWA: tambahkan offline caching untuk materi dan soal agar bisa diakses tanpa internet. Implementasikan background sync untuk jawaban yang tersimpan saat offline. Tambahkan install prompt yang lebih user-friendly."
+- [x] "Enhance PWA: tambahkan offline caching untuk materi dan soal agar bisa diakses tanpa internet. Implementasikan background sync untuk jawaban yang tersimpan saat offline. Tambahkan install prompt yang lebih user-friendly."
 
 ### 17.2 Push Notifications
-- [ ] "Implementasikan push notifications: notifikasi untuk daily quiz reminder, live class starting, new materi available, tryout result ready. User bisa manage notification preferences."
+- [x] "Implementasikan push notifications: notifikasi untuk daily quiz reminder, live class starting, new materi available, tryout result ready. User bisa manage notification preferences."
 
 ### 17.3 Mobile App (React Native/Flutter)
 - [ ] "Develop mobile app native dengan React Native atau Flutter: implementasikan semua fitur web version dengan UX yang dioptimalkan untuk mobile. Offline support, push notifications, biometric login."
@@ -245,10 +245,10 @@
 - [ ] "Implementasikan user behavior analytics: tracking page views, time spent per page, click heatmap, scroll depth. Gunakan tools seperti Google Analytics atau Matomo."
 
 ### 18.2 Learning Analytics
-- [ ] "Tambahkan learning analytics: tracking learning path user, materi yang sering diakses, soal yang sering diulang, time spent per topic. Generate learning insights untuk user."
+- [x] "Tambahkan learning analytics: tracking learning path user, materi yang sering diakses, soal yang sering diulang, time spent per topic. Generate learning insights untuk user."
 
 ### 18.3 Admin Reports
-- [ ] "Buat system admin reports: generate report PDF/Excel untuk user activity, tryout results, content performance, revenue (jika berbayar). Schedule automatic report generation tersedia di admin dashboard."
+- [x] "Buat system admin reports: generate report PDF/Excel untuk user activity, tryout results, content performance, revenue (jika berbayar). Schedule automatic report generation tersedia di admin dashboard."
 
 ---
 
@@ -284,13 +284,13 @@
 ## FLOW 21: Documentation
 
 ### 21.1 User Documentation
-- [ ] "Buat user documentation lengkap: user manual dengan screenshot, FAQ, video tutorial, troubleshooting guide. Tampilkan di help center atau link di footer."
+- [x] "Buat user documentation lengkap: user manual dengan screenshot, FAQ, video tutorial, troubleshooting guide. Tampilkan di help center atau link di footer."
 
 ### 21.2 Admin Documentation
-- [ ] "Buat admin documentation: admin manual untuk semua fitur admin, best practices, security guidelines, troubleshooting. Accessible dari admin dashboard."
+- [x] "Buat admin documentation: admin manual untuk semua fitur admin, best practices, security guidelines, troubleshooting. Accessible dari admin dashboard."
 
 ### 21.3 API Documentation
-- [ ] "Update API documentation: gunakan OpenAPI/Swagger untuk generate interactive API docs. Include semua endpoint, request/response examples, error codes, rate limiting info."
+- [x] "Update API documentation: gunakan OpenAPI/Swagger untuk generate interactive API docs. Include semua endpoint, request/response examples, error codes, rate limiting info."
 
 ---
 

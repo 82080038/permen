@@ -18,6 +18,7 @@ if (!validateCsrfApi()) {
 
 $q = $_GET['q'] ?? '';
 $subtes = $_GET['subtes'] ?? '';
+$tag = $_GET['tag'] ?? '';
 $limit = min(100, max(1, (int)($_GET['limit'] ?? 50)));
 $offset = (int)($_GET['offset'] ?? 0);
 
@@ -36,6 +37,10 @@ if ($q) {
 if ($subtes) {
     $whereClause .= " AND subtes = ?";
     $params[] = $subtes;
+}
+if ($tag) {
+    $whereClause .= " AND EXISTS (SELECT 1 FROM soal_tag_relations str JOIN soal_tags st ON str.tag_id = st.id WHERE str.soal_id = questions.id AND st.tag_name = ?)";
+    $params[] = $tag;
 }
 if ($needsRevision !== '') {
     $whereClause .= " AND needs_revision = ?";
@@ -60,6 +65,18 @@ $params[] = $offset;
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $soal = $stmt->fetchAll();
+
+// Get tags for each soal
+foreach ($soal as &$s) {
+    $stmt = $pdo->prepare("
+        SELECT st.tag_name 
+        FROM soal_tags st
+        JOIN soal_tag_relations str ON st.id = str.tag_id
+        WHERE str.soal_id = ?
+    ");
+    $stmt->execute([$s['id']]);
+    $s['tags'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+}
 
 // Calculate pagination metadata
 $totalPages = ceil($total / $limit);

@@ -128,6 +128,11 @@ session_set_cookie_params([
 
 session_start();
 
+// Apply user settings (theme, font size) - only if helpers.php is loaded
+if (function_exists('applyUserSettings')) {
+    applyUserSettings();
+}
+
 // Session IP binding and user-agent validation (skip in development for testing)
 if (($_ENV['APP_ENV'] ?? 'development') === 'production') {
     $currentIp = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';

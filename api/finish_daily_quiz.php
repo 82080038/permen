@@ -76,6 +76,90 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$benar, $salah, $kosong, $nilaiTotal, $sessionId]);
 
+// Update difficulty based on performance
+$scorePercentage = ($totalSoal > 0) ? ($benar / $totalSoal) * 100 : 0;
+$stmt = $pdo->prepare("SELECT * FROM user_quiz_difficulty WHERE user_id = ?");
+$stmt->execute([$userId]);
+$userDifficulty = $stmt->fetch();
+
+if ($userDifficulty) {
+    $currentDiff = $userDifficulty['current_difficulty'];
+    $consecutiveHigh = $userDifficulty['consecutive_high_scores'];
+    $consecutiveLow = $userDifficulty['consecutive_low_scores'];
+    
+    if ($scorePercentage >= 80) {
+        // High score - increase consecutive high
+        $consecutiveHigh++;
+        $consecutiveLow = 0;
+        
+        // Increase difficulty after 3 consecutive high scores
+        if ($consecutiveHigh >= 3 && $currentDiff !== 'sulit') {
+            $newDiff = ($currentDiff === 'mudah') ? 'sedang' : 'sulit';
+            $consecutiveHigh = 0;
+            $stmt = $pdo->prepare("UPDATE user_quiz_difficulty SET current_difficulty = ?, consecutive_high_scores = 0, consecutive_low_scores = 0 WHERE user_id = ?");
+            $stmt->execute([$newDiff, $userId]);
+        } else {
+            $stmt = $pdo->prepare("UPDATE user_quiz_difficulty SET consecutive_high_scores = ?, consecutive_low_scores = 0 WHERE user_id = ?");
+            $stmt->execute([$consecutiveHigh, $userId]);
+        }
+    } elseif ($scorePercentage < 50) {
+        // Low score - increase consecutive low
+        $consecutiveLow++;
+        $consecutiveHigh = 0;
+        
+        // Decrease difficulty after 3 consecutive low scores
+        if ($consecutiveLow >= 3 && $currentDiff !== 'mudah') {
+            $newDiff = ($currentDiff === 'sulit') ? 'sedang' : 'mudah';
+            $consecutiveLow = 0;
+            $stmt = $pdo->prepare("UPDATE user_quiz_difficulty SET current_difficulty = ?, consecutive_high_scores = 0, consecutive_low_scores = 0 WHERE user_id = ?");
+            $stmt->execute([$newDiff, $userId]);
+        } else {
+            $stmt = $pdo->prepare("UPDATE user_quiz_difficulty SET consecutive_high_scores = 0, consecutive_low_scores = ? WHERE user_id = ?");
+            $stmt->execute([$consecutiveLow, $userId]);
+        }
+    } else {
+        // Average score - reset counters
+        $stmt = $pdo->prepare("UPDATE user_quiz_difficulty SET consecutive_high_scores = 0, consecutive_low_scores = 0 WHERE user_id = ?");
+        $stmt->execute([$userId]);
+    }
+}
+
+// Update streak
+$today = date('Y-m-d');
+$stmt = $pdo->prepare("SELECT * FROM daily_quiz_streaks WHERE user_id = ?");
+$stmt->execute([$userId]);
+$streak = $stmt->fetch();
+
+if ($streak) {
+    $lastDate = $streak['last_quiz_date'];
+    $yesterday = date('Y-m-d', strtotime('-1 day'));
+    
+    if ($lastDate === $today) {
+        // Already completed today, no change
+    } elseif ($lastDate === $yesterday) {
+        // Consecutive day, increment streak
+        $newStreak = $streak['current_streak'] + 1;
+        $newLongest = max($streak['longest_streak'], $newStreak);
+        $stmt = $pdo->prepare("UPDATE daily_quiz_streaks SET current_streak = ?, longest_streak = ?, last_quiz_date = ?, total_quizzes = total_quizzes + 1 WHERE user_id = ?");
+        $stmt->execute([$newStreak, $newLongest, $today, $userId]);
+        
+        // Check for achievements
+        checkAndAwardAchievements($userId, $newStreak, $benar, $totalSoal);
+    } else {
+        // Streak broken, reset to 1
+        $stmt = $pdo->prepare("UPDATE daily_quiz_streaks SET current_streak = 1, last_quiz_date = ?, total_quizzes = total_quizzes + 1 WHERE user_id = ?");
+        $stmt->execute([$today, $userId]);
+        
+        checkAndAwardAchievements($userId, 1, $benar, $totalSoal);
+    }
+} else {
+    // First quiz
+    $stmt = $pdo->prepare("INSERT INTO daily_quiz_streaks (user_id, current_streak, longest_streak, last_quiz_date, total_quizzes) VALUES (?, 1, 1, ?, 1)");
+    $stmt->execute([$userId, $today]);
+    
+    checkAndAwardAchievements($userId, 1, $benar, $totalSoal);
+}
+
 echo json_encode([
     'success' => true,
     'hasil' => [
@@ -90,3 +174,29 @@ echo json_encode([
         'nilai_total' => $nilaiTotal
     ]
 ]);
+
+function checkAndAwardAchievements($userId, $streak, $benar, $totalSoal) {
+    global $pdo;
+    
+    $achievements = [];
+    
+    // Streak achievements
+    if ($streak >= 7) $achievements[] = ['streak_7', '🔥 Streak 7 Hari'];
+    if ($streak >= 30) $achievements[] = ['streak_30', '🔥 Streak 30 Hari'];
+    if ($streak >= 100) $achievements[] = ['streak_100', '🔥 Streak 100 Hari'];
+    
+    // Perfect score achievement
+    if ($benar === $totalSoal && $totalSoal > 0) {
+        $achievements[] = ['perfect_score', '💯 Skor Sempurna'];
+    }
+    
+    // Award achievements
+    foreach ($achievements as $ach) {
+        $stmt = $pdo->prepare("SELECT id FROM user_achievements WHERE user_id = ? AND achievement_type = ?");
+        $stmt->execute([$userId, $ach[0]]);
+        if (!$stmt->fetch()) {
+            $stmt = $pdo->prepare("INSERT INTO user_achievements (user_id, achievement_type, achievement_name) VALUES (?, ?, ?)");
+            $stmt->execute([$userId, $ach[0], $ach[1]]);
+        }
+    }
+}

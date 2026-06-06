@@ -52,21 +52,25 @@ function isActive($page, $active) {
 <a href="<?= $basePath ?>tryout.php" <?= isActive('tryout', $activePage) ?> role="menuitem">Try Out</a>
 <a href="<?= $basePath ?>leaderboard.php" <?= isActive('leaderboard', $activePage) ?> role="menuitem">Leaderboard</a>
 <a href="<?= $basePath ?>feedback.php" <?= isActive('feedback', $activePage) ?> role="menuitem">Feedback</a>
+<a href="<?= $basePath ?>help.php" <?= isActive('help', $activePage) ?> role="menuitem">Bantuan</a>
 <a href="<?= $apiPath ?>logout.php" role="menuitem">Logout</a>
 <?php elseif ($userId): ?>
 <a href="<?= $basePath ?>index.php" <?= isActive('beranda', $activePage) ?> role="menuitem">Beranda</a>
 <a href="<?= $basePath ?>profile.php" <?= isActive('profile', $activePage) ?> role="menuitem">Profil</a>
+<a href="<?= $basePath ?>settings.php" <?= isActive('settings', $activePage) ?> role="menuitem">Pengaturan</a>
 <a href="<?= $basePath ?>latihan.php" <?= isActive('latihan', $activePage) ?> role="menuitem">Latihan</a>
 <a href="<?= $basePath ?>daily_quiz.php" <?= isActive('daily_quiz', $activePage) ?> role="menuitem">Daily Quiz</a>
 <a href="<?= $basePath ?>tryout.php" <?= isActive('tryout', $activePage) ?> role="menuitem">Try Out</a>
 <a href="<?= $basePath ?>leaderboard.php" <?= isActive('leaderboard', $activePage) ?> role="menuitem">Leaderboard</a>
 <a href="<?= $basePath ?>feedback.php" <?= isActive('feedback', $activePage) ?> role="menuitem">Feedback</a>
+<a href="<?= $basePath ?>help.php" <?= isActive('help', $activePage) ?> role="menuitem">Bantuan</a>
 <a href="<?= $apiPath ?>logout.php" role="menuitem">Logout</a>
 <?php else: ?>
 <a href="<?= $basePath ?>index.php" <?= isActive('beranda', $activePage) ?> role="menuitem">Beranda</a>
 <a href="<?= $basePath ?>latihan.php" <?= isActive('latihan', $activePage) ?> role="menuitem">Latihan</a>
 <a href="<?= $basePath ?>tryout.php" <?= isActive('tryout', $activePage) ?> role="menuitem">Try Out</a>
 <a href="<?= $basePath ?>leaderboard.php" <?= isActive('leaderboard', $activePage) ?> role="menuitem">Leaderboard</a>
+<a href="<?= $basePath ?>help.php" <?= isActive('help', $activePage) ?> role="menuitem">Bantuan</a>
 <a href="<?= $basePath ?>login.php" role="menuitem">Login</a>
 <a href="<?= $basePath ?>register.php" role="menuitem">Daftar</a>
 <?php endif; ?>

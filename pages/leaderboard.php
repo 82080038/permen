@@ -9,7 +9,7 @@ $period = $_GET['period'] ?? 'all'; // all, week, month
 $subtes = $_GET['subtes'] ?? '';   // TWK, TIU, TKP (optional filter)
 $instansiFilter = $_GET['instansi'] ?? ''; // instansi filter
 
-$where = "ts.status = 'selesai'";
+$where = "ts.status = 'selesai' AND (u.show_leaderboard = 1 OR u.show_leaderboard IS NULL)";
 $params = [];
 
 if ($period === 'week') {
@@ -27,6 +27,7 @@ if ($instansiFilter) {
 // Get top 20 by total score
 $sqlTotal = "
     SELECT 
+        u.id as user_id,
         u.nama, u.instansi,
         ts.total_nilai,
         ts.nilai_twk, ts.nilai_tiu, ts.nilai_tkp,
@@ -41,11 +42,30 @@ $totalStmt = $pdo->prepare($sqlTotal);
 $totalStmt->execute($params);
 $topTotal = $totalStmt->fetchAll();
 
+// Fetch badges for leaderboard users
+$userIds = array_column($topTotal, 'user_id');
+$badges = [];
+if (!empty($userIds)) {
+    $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+    $stmt = $pdo->prepare("
+        SELECT user_id, badge_type, badge_name, badge_icon, badge_color
+        FROM leaderboard_badges
+        WHERE user_id IN ($placeholders)
+        ORDER BY earned_at DESC
+    ");
+    $stmt->execute($userIds);
+    $badgeRows = $stmt->fetchAll();
+    
+    foreach ($badgeRows as $badge) {
+        $badges[$badge['user_id']][] = $badge;
+    }
+}
+
 // Get top 10 per subtes
 $topSubtes = [];
 foreach (['TWK','TIU','TKP'] as $s) {
     $col = "nilai_" . strtolower($s);
-    $whereSubtes = "ts.status = 'selesai' AND ts.$col > 0";
+    $whereSubtes = "ts.status = 'selesai' AND ts.$col > 0 AND (u.show_leaderboard = 1 OR u.show_leaderboard IS NULL)";
     $paramsSubtes = [];
     
     if ($instansiFilter) {
@@ -124,11 +144,17 @@ foreach (['TWK','TIU','TKP'] as $s) {
     if ($i === 0) $medal = '🥇';
     elseif ($i === 1) $medal = '🥈';
     elseif ($i === 2) $medal = '🥉';
+    
+    $userBadges = $badges[$r['user_id']] ?? [];
+    $badgeHtml = '';
+    foreach ($userBadges as $badge) {
+        $badgeHtml .= '<span style="display:inline-block;background:'.$badge['badge_color'].';color:#fff;padding:.2rem .4rem;border-radius:12px;font-size:.7rem;margin-left:.3rem" title="'.e($badge['badge_name']).'">'.$badge['badge_icon'].'</span>';
+    }
 ?>
 <div class="rank-row">
     <div class="rank-num"><?= $medal ?: ($i + 1) ?></div>
     <div class="rank-name">
-        <div><strong><?= e($r['nama']) ?></strong></div>
+        <div><strong><?= e($r['nama']) ?></strong><?= $badgeHtml ?></div>
         <div style="font-size:.8rem;color:#888"><?= e($r['instansi'] ?: '-') ?></div>
     </div>
     <div class="rank-score"><?= $r['total_nilai'] ?></div>

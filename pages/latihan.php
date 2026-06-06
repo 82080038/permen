@@ -7,6 +7,20 @@ if (empty($_SESSION['user_id'])) {
 }
 $userId = $_SESSION['user_id'];
 
+// Fetch available topics for each subtes
+$topicsBySubtes = $pdo->query("SELECT DISTINCT subtes, topik FROM questions WHERE is_active = 1 ORDER BY subtes, topik")->fetchAll(PDO::FETCH_GROUP);
+
+// Fetch practice history
+$historyStmt = $pdo->prepare("
+    SELECT subtes, topik, jumlah_soal, tingkat_kesulitan, benar, salah, skor, waktu_mulai, waktu_selesai
+    FROM personal_practice_sessions
+    WHERE user_id = ?
+    ORDER BY waktu_mulai DESC
+    LIMIT 10
+");
+$historyStmt->execute([$userId]);
+$practiceHistory = $historyStmt->fetchAll(PDO::FETCH_ASSOC);
+
 // Jika subtes dipilih, buat session latihan dan redirect ke tryout
 $subtes = $_GET['subtes'] ?? '';
 if ($subtes && in_array($subtes, ['TWK','TIU','TKP'])) {
@@ -128,17 +142,518 @@ if ($subtes && in_array($subtes, ['TWK','TIU','TKP'])) {
 </div>
 
 <!-- Latihan Personal -->
-<div style="margin-top:1.5rem;background:#fff;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.08);padding:1.2rem;text-align:center;border:2px solid #8e44ad">
-    <h3 style="color:#8e44ad;margin-bottom:.5rem;font-size:1.1rem">Latihan Personal — Generate Soal</h3>
-    <p style="color:#555;font-size:.9rem;margin-bottom:1rem">Pilih topik spesifik yang ingin Anda latih. Aplikasi akan generate soal baru otomatis dengan pembahasan, tips & trick, dan link belajar.</p>
-    <a href="materi.php?subtes=TWK" style="display:inline-block;background:#8e44ad;color:#fff;padding:.65rem 1.2rem;border-radius:5px;text-decoration:none;font-weight:bold;margin:.3rem">TWK</a>
-    <a href="materi.php?subtes=TIU" style="display:inline-block;background:#8e44ad;color:#fff;padding:.65rem 1.2rem;border-radius:5px;text-decoration:none;font-weight:bold;margin:.3rem">TIU</a>
-    <a href="materi.php?subtes=TKP" style="display:inline-block;background:#8e44ad;color:#fff;padding:.65rem 1.2rem;border-radius:5px;text-decoration:none;font-weight:bold;margin:.3rem">TKP</a>
+<div style="margin-top:1.5rem;background:#fff;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.08);padding:1.2rem;border:2px solid #8e44ad">
+    <h3 style="color:#8e44ad;margin-bottom:.5rem;font-size:1.1rem;text-align:center">Latihan Personal — Generate Soal</h3>
+    <p style="color:#555;font-size:.9rem;margin-bottom:1rem;text-align:center">Pilih topik spesifik, jumlah soal, dan tingkat kesulitan untuk latihan yang lebih terarah.</p>
+    
+    <form id="personalPracticeForm" style="max-width:500px;margin:0 auto;padding:1rem;background:#f8f9fa;border-radius:6px">
+        <div style="margin-bottom:1rem">
+            <label style="display:block;font-weight:bold;margin-bottom:.3rem;font-size:.9rem">Subtes</label>
+            <select id="practiceSubtes" style="width:100%;padding:.5rem;border:1px solid #ddd;border-radius:4px" onchange="updateTopics()">
+                <option value="">Pilih Subtes</option>
+                <option value="TWK">TWK — Wawasan Kebangsaan</option>
+                <option value="TIU">TIU — Intelegensia Umum</option>
+                <option value="TKP">TKP — Karakteristik Pribadi</option>
+            </select>
+        </div>
+        
+        <div style="margin-bottom:1rem">
+            <label style="display:block;font-weight:bold;margin-bottom:.3rem;font-size:.9rem">Topik</label>
+            <select id="practiceTopic" style="width:100%;padding:.5rem;border:1px solid #ddd;border-radius:4px">
+                <option value="">-- Pilih Subtes Terlebih Dahulu --</option>
+            </select>
+        </div>
+        
+        <div style="margin-bottom:1rem">
+            <label style="display:block;font-weight:bold;margin-bottom:.3rem;font-size:.9rem">Jumlah Soal</label>
+            <select id="practiceCount" style="width:100%;padding:.5rem;border:1px solid #ddd;border-radius:4px">
+                <option value="5">5 soal</option>
+                <option value="10" selected>10 soal</option>
+                <option value="15">15 soal</option>
+                <option value="20">20 soal</option>
+                <option value="30">30 soal</option>
+                <option value="50">50 soal</option>
+            </select>
+        </div>
+        
+        <div style="margin-bottom:1rem">
+            <label style="display:block;font-weight:bold;margin-bottom:.3rem;font-size:.9rem">Tingkat Kesulitan</label>
+            <select id="practiceDifficulty" style="width:100%;padding:.5rem;border:1px solid #ddd;border-radius:4px">
+                <option value="mudah">Mudah</option>
+                <option value="sedang" selected>Sedang</option>
+                <option value="sulit">Sulit</option>
+            </select>
+        </div>
+        
+        <div style="margin-bottom:1rem">
+            <label style="display:block;font-weight:bold;margin-bottom:.3rem;font-size:.9rem">Timer</label>
+            <select id="practiceTimer" style="width:100%;padding:.5rem;border:1px solid #ddd;border-radius:4px">
+                <option value="none">Tanpa Timer</option>
+                <option value="30">30 detik per soal</option>
+                <option value="60" selected>60 detik per soal</option>
+                <option value="90">90 detik per soal</option>
+                <option value="120">120 detik per soal</option>
+                <option value="total">Total Timer (10 menit)</option>
+                <option value="total15">Total Timer (15 menit)</option>
+                <option value="total20">Total Timer (20 menit)</option>
+            </select>
+        </div>
+        
+        <button type="button" onclick="startPersonalPractice()" style="width:100%;background:#8e44ad;color:#fff;border:none;padding:.65rem 1.2rem;border-radius:5px;font-weight:bold;cursor:pointer;font-size:.9rem">Mulai Latihan Personal</button>
+    </form>
+    
+    <div id="practiceResult" style="display:none;margin-top:1rem"></div>
 </div>
+
+<!-- Adaptive Learning Recommendations -->
+<div style="margin-top:1.5rem;background:#fff;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.08);padding:1.2rem;border:2px solid #f39c12">
+    <h3 style="color:#f39c12;margin-bottom:.5rem;font-size:1.1rem;text-align:center">🎯 Rekomendasi Adaptive Learning</h3>
+    <p style="color:#555;font-size:.9rem;margin-bottom:1rem;text-align:center">Sistem menganalisis performa Anda dan merekomendasikan latihan yang tepat.</p>
+    
+    <div id="adaptiveRecommendations" style="text-align:center">
+        <p style="color:#666;font-size:.9rem">Memuat rekomendasi...</p>
+    </div>
+</div>
+
+<!-- Riwayat Latihan Personal -->
+<?php if (!empty($practiceHistory)): ?>
+<div style="margin-top:1.5rem;background:#fff;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.08);padding:1.2rem">
+    <h3 style="color:#1a5276;margin-bottom:.8rem;font-size:1.1rem">📊 Riwayat Latihan Personal</h3>
+    <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+            <thead>
+                <tr style="background:#f8f9fa">
+                    <th style="padding:.5rem;text-align:left">Subtes</th>
+                    <th style="padding:.5rem;text-align:left">Topik</th>
+                    <th style="padding:.5rem;text-align:center">Jumlah</th>
+                    <th style="padding:.5rem;text-align:center">Kesulitan</th>
+                    <th style="padding:.5rem;text-align:center">Benar</th>
+                    <th style="padding:.5rem;text-align:center">Salah</th>
+                    <th style="padding:.5rem;text-align:center">Skor</th>
+                    <th style="padding:.5rem;text-align:left">Waktu</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($practiceHistory as $h): ?>
+                <tr>
+                    <td style="padding:.5rem"><?= e($h['subtes']) ?></td>
+                    <td style="padding:.5rem"><?= e($h['topik'] ?? '-') ?></td>
+                    <td style="padding:.5rem;text-align:center"><?= $h['jumlah_soal'] ?></td>
+                    <td style="padding:.5rem;text-align:center"><?= e($h['tingkat_kesulitan']) ?></td>
+                    <td style="padding:.5rem;text-align:center;color:#27ae60"><?= $h['benar'] ?></td>
+                    <td style="padding:.5rem;text-align:center;color:#e74c3c"><?= $h['salah'] ?></td>
+                    <td style="padding:.5rem;text-align:center;font-weight:bold"><?= $h['skor'] ?></td>
+                    <td style="padding:.5rem;font-size:.75rem;color:#777"><?= date('d/m H:i', strtotime($h['waktu_mulai'])) ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+<?php endif; ?>
 </div>
 <div class="footer">
 Latihan ini menggunakan skor sesuai ketentuan SKD. TWK & TIU (benar/salah), TKP (bobot 1–5).<br>
 Dibangun berdasarkan KepmenPANRB No. 208/2025.
 </div>
+<script>
+const topicsData = <?= json_encode($topicsBySubtes ?? []) ?>;
+
+// Load adaptive recommendations on page load
+document.addEventListener('DOMContentLoaded', loadAdaptiveRecommendations);
+
+async function loadAdaptiveRecommendations() {
+    const container = document.getElementById('adaptiveRecommendations');
+    
+    try {
+        const response = await fetch('/permen/api/get_adaptive_recommendations.php');
+        const data = await response.json();
+        
+        if (!data.success) {
+            container.innerHTML = '<p style="color:#e74c3c;font-size:.9rem">Gagal memuat rekomendasi.</p>';
+            return;
+        }
+        
+        const result = data.data;
+        let html = '<p style="color:#555;font-size:.85rem;margin-bottom:1rem">' + result.message + '</p>';
+        
+        if (result.has_data && !empty(result.weak_topics)) {
+            html += '<div style="text-align:left;margin-bottom:1rem">';
+            html += '<h4 style="color:#e74c3c;font-size:.9rem;margin-bottom:.5rem">⚠️ Topik yang Perlu Diperbaiki:</h4>';
+            result.weak_topics.forEach(t => {
+                html += '<div style="padding:.5rem;background:#fff3cd;border-left:3px solid #f39c12;margin-bottom:.3rem;border-radius:4px">';
+                html += '<strong>' + t.subtes + ' — ' + t.topik + '</strong><br>';
+                html += '<span style="font-size:.8rem;color:#666">Akurasi: ' + t.accuracy + '% (' + t.total_attempts + ' soal)</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+        }
+        
+        html += '<h4 style="color:#27ae60;font-size:.9rem;margin-bottom:.5rem">💡 Rekomendasi Latihan:</h4>';
+        html += '<div style="display:flex;flex-direction:column;gap:.5rem">';
+        
+        result.recommendations.forEach((rec, i) => {
+            const priorityColor = rec.priority === 'high' ? '#e74c3c' : '#27ae60';
+            const priorityLabel = rec.priority === 'high' ? 'Prioritas Tinggi' : 'Prioritas Sedang';
+            
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:.6rem;background:#f8f9fa;border-radius:4px;border-left:4px solid ' + priorityColor + '">';
+            html += '<div style="text-align:left">';
+            html += '<strong>' + rec.subtes;
+            if (rec.topik) html += ' — ' + rec.topik;
+            html += '</strong>';
+            if (rec.accuracy !== null) {
+                html += '<br><span style="font-size:.75rem;color:#666">Akurasi: ' + rec.accuracy + '%</span>';
+            }
+            html += '</div>';
+            html += '<button onclick="startAdaptivePractice(\'' + rec.subtes + '\', \'' + (rec.topik || '') + '\')" style="background:#f39c12;color:#fff;border:none;padding:.4rem .8rem;border-radius:4px;cursor:pointer;font-size:.8rem">Latih</button>';
+            html += '</div>';
+        });
+        
+        html += '</div>';
+        
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = '<p style="color:#e74c3c;font-size:.9rem">Error: ' + e.message + '</p>';
+    }
+}
+
+async function startAdaptivePractice(subtes, topik) {
+    const resultDiv = document.getElementById('practiceResult');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<p style="color:#666;text-align:center">Memuat soal adaptif...</p>';
+    
+    // Set form values
+    document.getElementById('practiceSubtes').value = subtes;
+    updateTopics();
+    if (topik) {
+        document.getElementById('practiceTopic').value = topik;
+    }
+    document.getElementById('practiceCount').value = '10';
+    document.getElementById('practiceDifficulty').value = 'sedang';
+    
+    // Start practice
+    await startPersonalPractice();
+}
+
+function updateTopics() {
+    const subtes = document.getElementById('practiceSubtes').value;
+    const topicSelect = document.getElementById('practiceTopic');
+    
+    topicSelect.innerHTML = '<option value="">-- Pilih Topik --</option>';
+    
+    if (subtes && topicsData[subtes]) {
+        topicsData[subtes].forEach(topic => {
+            const opt = document.createElement('option');
+            opt.value = topic.topik;
+            opt.textContent = topic.topik;
+            topicSelect.appendChild(opt);
+        });
+    }
+}
+
+async function startPersonalPractice() {
+    const subtes = document.getElementById('practiceSubtes').value;
+    const topik = document.getElementById('practiceTopic').value;
+    const jumlah = document.getElementById('practiceCount').value;
+    const kesulitan = document.getElementById('practiceDifficulty').value;
+    const timer = document.getElementById('practiceTimer').value;
+    const resultDiv = document.getElementById('practiceResult');
+    
+    if (!subtes) {
+        alert('Pilih subtes terlebih dahulu');
+        return;
+    }
+    
+    if (!topik) {
+        alert('Pilih topik terlebih dahulu');
+        return;
+    }
+    
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<p style="color:#666;text-align:center">Memuat soal...</p>';
+    
+    try {
+        const response = await fetch('/permen/api/generate_user_soal.php?subtes=' + encodeURIComponent(subtes) + '&topik=' + encodeURIComponent(topik) + '&jumlah=' + encodeURIComponent(jumlah));
+        const data = await response.json();
+        
+        if (data.error) {
+            resultDiv.innerHTML = '<p style="color:#e74c3c;text-align:center">' + data.error + '</p>';
+            return;
+        }
+        
+        const result = data.data || data;
+        let html = '<h4 style="color:#8e44ad;margin-bottom:.8rem">Latihan Personal — ' + subtes + ' (' + topik + ')</h4>';
+        html += '<div style="font-size:.85rem;color:#666;margin-bottom:1rem">' + result.jumlah + ' soal, tingkat: ' + kesulitan;
+        
+        if (timer !== 'none') {
+            html += ', timer: ' + getTimerLabel(timer);
+        }
+        html += '</div>';
+        
+        // Timer display
+        if (timer !== 'none') {
+            html += '<div id="timerDisplay" style="background:#eaf2f8;padding:.5rem 1rem;border-radius:4px;margin-bottom:1rem;text-align:center;font-weight:bold;color:#1a5276;font-size:1.1rem">⏱️ Timer: --:--</div>';
+        }
+        
+        html += '<form id="personalPracticeForm">';
+        
+        result.soal.forEach((q, i) => {
+            html += '<div class="question-container" data-index="' + i + '" style="border:1px solid #ddd;border-radius:6px;padding:.8rem;margin-bottom:.6rem;background:#fff">';
+            html += '<strong>Soal ' + (i + 1) + '</strong><div style="margin:.3rem 0 .5rem;font-size:.9rem">' + escapeHtml(q.pertanyaan) + '</div>';
+            ['A', 'B', 'C', 'D', 'E'].forEach(opt => {
+                const val = q['pilihan_' + opt.toLowerCase()];
+                html += '<label style="display:block;font-size:.85rem;margin:.2rem 0;cursor:pointer">';
+                html += '<input type="radio" name="personal_soal_' + i + '" value="' + opt + '" data-key="' + q.jawaban_benar + '" style="margin-right:.3rem" onchange="onQuestionAnswered(' + i + ')">';
+                html += '<strong>' + opt + '.</strong> ' + escapeHtml(val);
+                html += '</label>';
+            });
+            html += '<div class="personal-pembahasan-' + i + '" style="display:none;margin-top:.5rem;padding:.5rem;background:#fffbea;border-left:3px solid #f1c40f;border-radius:4px;font-size:.85rem">';
+            html += '<strong>Pembahasan:</strong> ' + escapeHtml(q.pembahasan) + '<br>';
+            html += '<strong style="color:#1e8449">Tips & Trick:</strong> ' + escapeHtml(q.tips_trick);
+            if (q.related_links && q.related_links.length > 0) {
+                html += '<br><strong style="color:#1a5276">Pelajari lebih lanjut:</strong> ';
+                q.related_links.forEach(l => {
+                    html += '<a href="' + escapeHtml(l.url) + '" target="_blank" style="color:#2980b9;text-decoration:none;background:#eaf2f8;padding:.1rem .3rem;border-radius:3px;margin-right:.2rem;font-size:.8rem">' + escapeHtml(l.label) + '</a>';
+                });
+            }
+            html += '</div>';
+            html += '</div>';
+        });
+        
+        html += '<button type="button" onclick="checkPersonalPractice(\'' + subtes + '\', \'' + topik + '\', ' + jumlah + ', \'' + kesulitan + '\')" style="background:#8e44ad;color:#fff;border:none;padding:.6rem 1.2rem;border-radius:5px;cursor:pointer;font-size:.9rem" aria-label="Periksa jawaban latihan personal">Periksa Jawaban</button>';
+        html += '</form>';
+        
+        resultDiv.innerHTML = html;
+        
+        // Initialize timer if enabled
+        if (timer !== 'none') {
+            initTimer(timer, result.jumlah);
+        }
+    } catch (e) {
+        resultDiv.innerHTML = '<p style="color:#e74c3c;text-align:center">Error: ' + e.message + '</p>';
+    }
+}
+
+function getTimerLabel(timer) {
+    const labels = {
+        '30': '30 detik/soal',
+        '60': '60 detik/soal',
+        '90': '90 detik/soal',
+        '120': '120 detik/soal',
+        'total': '10 menit total',
+        'total15': '15 menit total',
+        'total20': '20 menit total'
+    };
+    return labels[timer] || timer;
+}
+
+let timerInterval = null;
+let currentQuestionIndex = 0;
+let timerSeconds = 0;
+let totalTimerSeconds = 0;
+let timerMode = '';
+
+function initTimer(timer, totalQuestions) {
+    const timerDisplay = document.getElementById('timerDisplay');
+    if (!timerDisplay) return;
+    
+    timerMode = timer;
+    
+    if (timer.startsWith('total')) {
+        // Total timer mode
+        const minutes = timer === 'total' ? 10 : (timer === 'total15' ? 15 : 20);
+        totalTimerSeconds = minutes * 60;
+        updateTimerDisplay(totalTimerSeconds);
+        
+        timerInterval = setInterval(() => {
+            totalTimerSeconds--;
+            updateTimerDisplay(totalTimerSeconds);
+            
+            if (totalTimerSeconds <= 0) {
+                clearInterval(timerInterval);
+                timerDisplay.style.background = '#f8d7da';
+                timerDisplay.style.color = '#721c24';
+                timerDisplay.textContent = '⏱️ Waktu Habis!';
+                disableAllQuestions();
+                checkPersonalPractice(document.getElementById('practiceSubtes').value, document.getElementById('practiceTopic').value, document.getElementById('practiceCount').value, document.getElementById('practiceDifficulty').value);
+            }
+        }, 1000);
+    } else {
+        // Per-question timer mode
+        timerSeconds = parseInt(timer);
+        currentQuestionIndex = 0;
+        updateTimerDisplay(timerSeconds);
+        
+        timerInterval = setInterval(() => {
+            timerSeconds--;
+            updateTimerDisplay(timerSeconds);
+            
+            if (timerSeconds <= 0) {
+                // Move to next question
+                moveToNextQuestion();
+            }
+        }, 1000);
+    }
+}
+
+function updateTimerDisplay(seconds) {
+    const timerDisplay = document.getElementById('timerDisplay');
+    if (!timerDisplay) return;
+    
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    const display = mins + ':' + (secs < 10 ? '0' : '') + secs;
+    
+    if (timerMode.startsWith('total')) {
+        timerDisplay.textContent = '⏱️ Total Timer: ' + display;
+    } else {
+        timerDisplay.textContent = '⏱️ Soal ' + (currentQuestionIndex + 1) + ': ' + display;
+    }
+    
+    // Warning color
+    if (seconds <= 10) {
+        timerDisplay.style.background = '#f8d7da';
+        timerDisplay.style.color = '#721c24';
+    } else if (seconds <= 30) {
+        timerDisplay.style.background = '#fff3cd';
+        timerDisplay.style.color = '#856404';
+    }
+}
+
+function onQuestionAnswered(index) {
+    if (timerMode.startsWith('total')) {
+        // In total timer mode, just continue
+        return;
+    }
+    
+    // In per-question mode, move to next question after answering
+    if (index === currentQuestionIndex) {
+        moveToNextQuestion();
+    }
+}
+
+function moveToNextQuestion() {
+    const questions = document.querySelectorAll('.question-container');
+    
+    // Hide current question
+    if (currentQuestionIndex < questions.length) {
+        questions[currentQuestionIndex].style.display = 'none';
+    }
+    
+    // Move to next
+    currentQuestionIndex++;
+    
+    if (currentQuestionIndex >= questions.length) {
+        // All questions done
+        clearInterval(timerInterval);
+        const timerDisplay = document.getElementById('timerDisplay');
+        if (timerDisplay) {
+            timerDisplay.textContent = '⏱️ Semua soal selesai!';
+            timerDisplay.style.background = '#d4edda';
+            timerDisplay.style.color = '#155724';
+        }
+        return;
+    }
+    
+    // Show next question
+    questions[currentQuestionIndex].style.display = 'block';
+    
+    // Reset timer
+    timerSeconds = parseInt(timerMode);
+    updateTimerDisplay(timerSeconds);
+}
+
+function disableAllQuestions() {
+    const inputs = document.querySelectorAll('#personalPracticeForm input[type="radio"]');
+    inputs.forEach(input => input.disabled = true);
+}
+
+async function checkPersonalPractice(subtes, topik, jumlah, kesulitan) {
+    // Stop timer if running
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    
+    const form = document.getElementById('personalPracticeForm');
+    const inputs = form.querySelectorAll('input[type="radio"]:checked');
+    let benar = 0, total = 0;
+    
+    form.querySelectorAll('input[type="radio"]').forEach(r => {
+        const name = r.name;
+        const idx = parseInt(name.replace('personal_soal_', ''));
+        const key = r.getAttribute('data-key');
+        const pembDiv = form.querySelector('.personal-pembahasan-' + idx);
+        if (pembDiv) pembDiv.style.display = 'block';
+        if (r.checked) {
+            total++;
+            if (r.value === key) {
+                benar++;
+                r.parentElement.style.color = '#27ae60';
+                r.parentElement.style.fontWeight = 'bold';
+            } else {
+                r.parentElement.style.color = '#e74c3c';
+            }
+        }
+    });
+    
+    form.querySelectorAll('input[type="radio"]').forEach(r => r.disabled = true);
+    
+    const salah = total - benar;
+    const skor = benar * 5; // Simple scoring: 5 points per correct answer
+    
+    // Calculate time used
+    const timer = document.getElementById('practiceTimer').value;
+    let timerUsed = 0;
+    if (timerMode.startsWith('total')) {
+        const totalSeconds = timer === 'total' ? 600 : (timer === 'total15' ? 900 : 1200);
+        timerUsed = totalSeconds - totalTimerSeconds;
+    } else if (timerMode !== 'none' && timerMode !== '') {
+        // Per-question mode: calculate based on questions answered
+        timerUsed = (currentQuestionIndex * parseInt(timerMode)) + (parseInt(timerMode) - timerSeconds);
+    }
+    
+    // Save to server
+    const formData = new FormData();
+    formData.append('subtes', subtes);
+    formData.append('topik', topik);
+    formData.append('jumlah_soal', jumlah);
+    formData.append('tingkat_kesulitan', kesulitan);
+    formData.append('benar', benar);
+    formData.append('salah', salah);
+    formData.append('skor', skor);
+    formData.append('timer_mode', timerMode || 'none');
+    formData.append('timer_used', timerUsed);
+    formData.append('csrf_token', '<?= csrfToken() ?>');
+    
+    try {
+        await fetch('/permen/api/save_practice_session.php', {
+            method: 'POST',
+            body: formData
+        });
+    } catch (e) {
+        console.error('Failed to save practice session:', e);
+    }
+    
+    const resultDiv = document.createElement('div');
+    resultDiv.style.cssText = 'background:#eaf2f8;padding:.8rem;border-radius:6px;margin-top:1rem;font-size:.9rem';
+    resultDiv.innerHTML = '<strong>Hasil:</strong> Benar ' + benar + ' / ' + total + ' dijawab. Skor: ' + skor + '.';
+    if (timerMode !== 'none') {
+        const mins = Math.floor(timerUsed / 60);
+        const secs = timerUsed % 60;
+        resultDiv.innerHTML += ' Waktu: ' + mins + 'm ' + secs + 's.';
+    }
+    if (benar === total && total > 0) resultDiv.innerHTML += '<span style="color:#27ae60;font-weight:bold"> Sempurna! 🎉</span>';
+    else if (benar >= total / 2) resultDiv.innerHTML += '<span style="color:#f39c12"> Bagus, tingkatkan lagi!</span>';
+    else resultDiv.innerHTML += '<span style="color:#e74c3c"> Perlu latihan lebih banyak.</span>';
+    form.appendChild(resultDiv);
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
 </body>
 </html>

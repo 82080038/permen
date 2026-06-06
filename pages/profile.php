@@ -19,6 +19,16 @@ $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
 $stmt->execute([$userId]);
 $user = $stmt->fetch();
 
+// Fetch user's badges
+$stmt = $pdo->prepare("
+    SELECT badge_type, badge_name, badge_icon, badge_color, earned_at, period_start, period_end
+    FROM leaderboard_badges
+    WHERE user_id = ?
+    ORDER BY earned_at DESC
+");
+$stmt->execute([$userId]);
+$badges = $stmt->fetchAll();
+
 // Ambil daftar instansi aktif untuk dropdown
 $instansiList = $pdo->query("SELECT id, kode, nama FROM instansi WHERE aktif = 1 ORDER BY urutan, nama")->fetchAll();
 
@@ -58,12 +68,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sekolahAsal = sanitizeInput($_POST['sekolah_asal'] ?? '');
             $tahunTamat = (int)($_POST['tahun_tamat'] ?? 0);
             $instansiId = (int)($_POST['instansi_id'] ?? 0);
+            $tanggalLahir = $_POST['tanggal_lahir'] ?? '';
+            $jenisKelamin = $_POST['jenis_kelamin'] ?? '';
+            $alamat = sanitizeInput($_POST['alamat'] ?? '');
+            $showLeaderboard = isset($_POST['show_leaderboard']) ? 1 : 0;
 
             // Validasi
             if (!$nama || !$noHp) {
                 $error = 'Nama dan Nomor HP wajib diisi.';
             } elseif (!isValidPhoneNumber($noHp)) {
                 $error = 'Format nomor HP tidak valid. Gunakan format 08xx atau 628xx (minimal 10 digit).';
+            } elseif ($tanggalLahir && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggalLahir)) {
+                $error = 'Format tanggal lahir tidak valid. Gunakan format YYYY-MM-DD.';
+            } elseif ($jenisKelamin && !in_array($jenisKelamin, ['L', 'P'])) {
+                $error = 'Jenis kelamin tidak valid.';
             } else {
                 // Cek no_hp sudah terdaftar oleh user lain
                 $stmt = $pdo->prepare("SELECT id FROM users WHERE no_hp = ? AND id != ?");
@@ -72,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'Nomor HP sudah digunakan oleh user lain.';
                 } else {
                     // Update data user
-                    $stmt = $pdo->prepare("UPDATE users SET nama = ?, no_hp = ?, sekolah_asal = ?, tahun_tamat = ?, instansi_id = ? WHERE id = ?");
+                    $stmt = $pdo->prepare("UPDATE users SET nama = ?, no_hp = ?, sekolah_asal = ?, tahun_tamat = ?, instansi_id = ?, tanggal_lahir = ?, jenis_kelamin = ?, alamat = ?, show_leaderboard = ? WHERE id = ?");
                     
                     // Ambil nama instansi untuk backward compatibility
                     $instansiNama = '';
@@ -83,7 +101,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
                     
-                    $stmt->execute([$nama, $noHp, $sekolahAsal ?: null, $tahunTamat ?: null, $instansiId ?: null, $userId]);
+                    $stmt->execute([
+                        $nama, 
+                        $noHp, 
+                        $sekolahAsal ?: null, 
+                        $tahunTamat ?: null, 
+                        $instansiId ?: null, 
+                        $tanggalLahir ?: null, 
+                        $jenisKelamin ?: null, 
+                        $alamat ?: null, 
+                        $showLeaderboard, 
+                        $userId
+                    ]);
                     
                     // Update instansi field untuk backward compatibility
                     $stmt = $pdo->prepare("UPDATE users SET instansi = ? WHERE id = ?");
@@ -126,9 +155,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php if ($success): ?><div class="alert success"><?= e($success) ?></div><?php endif; ?>
 
 <!-- Profile Form -->
-<form method="POST" action="">
+<form method="POST" action="" enctype="multipart/form-data">
 <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
 <input type="hidden" name="action" value="profile">
+
+<!-- Photo Upload Section -->
+<div style="text-align:center;margin-bottom:2rem;padding:1.5rem;background:#f8f9fa;border-radius:8px">
+    <div style="margin-bottom:1rem">
+        <?php if ($user['foto_profil']): ?>
+            <img src="/permen/uploads/profile_photos/<?= e($user['foto_profil']) ?>" alt="Foto Profil" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:3px solid #2980b9">
+        <?php else: ?>
+            <div style="width:120px;height:120px;border-radius:50%;background:#e9ecef;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:3rem;color:#999">👤</div>
+        <?php endif; ?>
+    </div>
+    <div style="margin-bottom:1rem">
+        <label for="photo" style="display:inline-block;background:#2980b9;color:#fff;padding:.5rem 1rem;border-radius:5px;cursor:pointer;font-size:.9rem">
+            📷 Upload Foto
+        </label>
+        <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/jpg" style="display:none" onchange="previewPhoto(this)">
+        <button type="button" onclick="uploadPhoto()" style="background:#27ae60;color:#fff;border:none;padding:.5rem 1rem;border-radius:5px;cursor:pointer;font-size:.9rem;margin-left:.5rem">Simpan Foto</button>
+    </div>
+    <small style="color:#777;font-size:.8rem">Format: JPG/PNG, Max: 2MB. Foto akan di-resize otomatis ke 300x300px.</small>
+    <div id="photoError" style="color:#e74c3c;font-size:.85rem;margin-top:.5rem"></div>
+</div>
+
 <div class="form-group">
 <label for="nama">Nama Lengkap</label>
 <input type="text" id="nama" name="nama" value="<?= e($user['nama'] ?? '') ?>" required minlength="2" aria-required="true" aria-label="Nama lengkap">
@@ -137,6 +187,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <label for="no_hp">Nomor HP</label>
 <input type="tel" id="no_hp" name="no_hp" value="<?= e($user['no_hp'] ?? '') ?>" required minlength="10" maxlength="14" aria-required="true" aria-describedby="nohp-help" aria-label="Nomor HP" pattern="[0-9]*" inputmode="numeric">
 <small id="nohp-help" style="color:#777;font-size:.8rem">Nomor HP digunakan untuk login (format: 08xx atau 628xx)</small>
+</div>
+<div class="form-group">
+<label for="tanggal_lahir">Tanggal Lahir (opsional)</label>
+<input type="date" id="tanggal_lahir" name="tanggal_lahir" value="<?= e($user['tanggal_lahir'] ?? '') ?>" aria-label="Tanggal lahir">
+</div>
+<div class="form-group">
+<label for="jenis_kelamin">Jenis Kelamin (opsional)</label>
+<select id="jenis_kelamin" name="jenis_kelamin" aria-label="Jenis kelamin">
+<option value="">-- Pilih --</option>
+<option value="L" <?= ($user['jenis_kelamin'] ?? '') === 'L' ? 'selected' : '' ?>>Laki-laki</option>
+<option value="P" <?= ($user['jenis_kelamin'] ?? '') === 'P' ? 'selected' : '' ?>>Perempuan</option>
+</select>
+</div>
+<div class="form-group">
+<label for="alamat">Alamat Lengkap (opsional)</label>
+<textarea id="alamat" name="alamat" rows="3" aria-label="Alamat lengkap"><?= e($user['alamat'] ?? '') ?></textarea>
 </div>
 <div class="form-group">
 <label for="sekolah_asal">Sekolah Asal (opsional)</label>
@@ -157,6 +223,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php endforeach; ?>
 </select>
 <small id="instansi-help" style="color:#777;font-size:.8rem">Pilih instansi yang ingin dilamar untuk mendapatkan rekomendasi</small>
+</div>
+<div class="form-group">
+<label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+    <input type="checkbox" id="show_leaderboard" name="show_leaderboard" <?= ($user['show_leaderboard'] ?? 1) ? 'checked' : '' ?> aria-label="Tampilkan profil di leaderboard">
+    <span style="font-size:.9rem;color:#555">Tampilkan profil saya di leaderboard</span>
+</label>
+<small style="color:#777;font-size:.8rem">Jika dicentang, nama dan nilai Anda akan terlihat oleh pengguna lain di leaderboard.</small>
 </div>
 <button type="submit" class="btn" aria-label="Simpan perubahan profil">Simpan Perubahan</button>
 </form>
@@ -187,9 +260,101 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <p style="text-align:center;margin-top:1rem;font-size:.9rem">
 <a href="user_dashboard.php" class="link">Kembali ke Dashboard</a>
 </p>
+
+<!-- Badges Section -->
+<?php if (!empty($badges)): ?>
+<div class="card" style="margin-top:2rem">
+<h3 style="color:#1a5276;margin-bottom:1rem">🏆 Badge & Pencapaian</h3>
+<div style="display:flex;flex-wrap:wrap;gap:1rem">
+    <?php foreach ($badges as $badge): ?>
+    <div style="background:#f8f9fa;padding:1rem;border-radius:8px;border-left:4px solid <?= $badge['badge_color'] ?>;min-width:200px;flex:1">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
+            <span style="font-size:1.5rem"><?= $badge['badge_icon'] ?></span>
+            <div style="font-weight:bold;color:#1a5276"><?= e($badge['badge_name']) ?></div>
+        </div>
+        <div style="font-size:.75rem;color:#666">
+            Diperoleh: <?= date('d M Y', strtotime($badge['earned_at'])) ?>
+            <?php if ($badge['period_start']): ?>
+            <br>Periode: <?= date('d M', strtotime($badge['period_start'])) ?> - <?= date('d M Y', strtotime($badge['period_end'])) ?>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endforeach; ?>
+</div>
+</div>
+<?php else: ?>
+<div class="card" style="margin-top:2rem;text-align:center;padding:2rem">
+<div style="font-size:2rem;margin-bottom:.5rem">🏆</div>
+<p style="color:#777;font-size:.9rem">Belum ada badge. Raih pencapaian untuk mendapatkan badge!</p>
+</div>
+<?php endif; ?>
 </div>
 </div>
 <div class="footer">SKD CAT-BKN Try Out & Bimbel</div>
 <script src="assets/app.js"></script>
+<script>
+function previewPhoto(input) {
+    const errorDiv = document.getElementById('photoError');
+    errorDiv.textContent = '';
+    
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        
+        // Validate file size (2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            errorDiv.textContent = 'File terlalu besar. Maksimal 2MB.';
+            input.value = '';
+            return;
+        }
+        
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (!allowedTypes.includes(file.type)) {
+            errorDiv.textContent = 'Format file tidak valid. Hanya JPG dan PNG.';
+            input.value = '';
+            return;
+        }
+        
+        // Preview image
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const imgContainer = document.querySelector('.card form > div > div:first-child');
+            imgContainer.innerHTML = `<img src="${e.target.result}" alt="Preview" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:3px solid #2980b9">`;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+async function uploadPhoto() {
+    const input = document.getElementById('photo');
+    const errorDiv = document.getElementById('photoError');
+    
+    if (!input.files || !input.files[0]) {
+        errorDiv.textContent = 'Pilih foto terlebih dahulu.';
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('photo', input.files[0]);
+    
+    try {
+        const response = await fetch('/permen/api/upload_profile_photo.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Refresh page to show new photo
+            window.location.reload();
+        } else {
+            errorDiv.textContent = result.error || 'Gagal mengupload foto.';
+        }
+    } catch (error) {
+        errorDiv.textContent = 'Terjadi kesalahan. Silakan coba lagi.';
+    }
+}
+</script>
 </body>
 </html>
