@@ -67,7 +67,7 @@ self.addEventListener('sync', event => {
 async function syncOfflineAnswers() {
   try {
     const offlineAnswers = await getOfflineAnswers();
-    
+
     for (const answer of offlineAnswers) {
       try {
         const response = await fetch('/permen/api/save_answer.php', {
@@ -75,7 +75,7 @@ async function syncOfflineAnswers() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(answer)
         });
-        
+
         if (response.ok) {
           await removeOfflineAnswer(answer.id);
         }
@@ -83,7 +83,7 @@ async function syncOfflineAnswers() {
         console.error('Failed to sync answer:', answer.id, e);
       }
     }
-    
+
     // Notify clients that sync is complete
     const clients = await self.clients.matchAll();
     clients.forEach(client => {
@@ -118,8 +118,8 @@ self.addEventListener('fetch', event => {
     // Special handling for materi and soal APIs - cache for offline
     if (request.url.includes('list_soal.php') || request.url.includes('materi')) {
       event.respondWith(
-        fetch(request).then(response => {
-          if (response.status === 200) {
+        fetch(request, { redirect: 'follow' }).then(response => {
+          if (response.status === 200 && !response.redirected) {
             const clone = response.clone();
             caches.open(CONTENT_CACHE_NAME).then(cache => cache.put(request, clone));
           }
@@ -136,11 +136,11 @@ self.addEventListener('fetch', event => {
       );
       return;
     }
-    
+
     // Other API calls: network-first with cache fallback
     event.respondWith(
-      fetch(request).then(response => {
-        if (response.status === 200) {
+      fetch(request, { redirect: 'follow' }).then(response => {
+        if (response.status === 200 && !response.redirected) {
           const clone = response.clone();
           caches.open(CACHE_NAME + '-api').then(cache => cache.put(request, clone));
         }
@@ -163,16 +163,18 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       caches.match(request).then(cached => {
         if (cached) {
-          fetch(request).then(response => {
-            if (response.status === 200) {
+          fetch(request, { redirect: 'follow' }).then(response => {
+            if (response.status === 200 && !response.redirected) {
               const clone = response.clone();
               caches.open(CONTENT_CACHE_NAME).then(cache => cache.put(request, clone));
             }
+          }).catch(err => {
+            console.warn('Background fetch failed:', err);
           });
           return cached;
         }
-        return fetch(request).then(response => {
-          if (response.status === 200) {
+        return fetch(request, { redirect: 'follow' }).then(response => {
+          if (response.status === 200 && !response.redirected) {
             const clone = response.clone();
             caches.open(CONTENT_CACHE_NAME).then(cache => cache.put(request, clone));
           }
@@ -189,16 +191,18 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(request).then(cached => {
       if (cached) {
-        fetch(request).then(response => {
-          if (response.status === 200) {
+        fetch(request, { redirect: 'follow' }).then(response => {
+          if (response.status === 200 && !response.redirected) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
           }
+        }).catch(err => {
+          console.warn('Background fetch failed:', err);
         });
         return cached;
       }
-      return fetch(request).then(response => {
-        if (response.status === 200) {
+      return fetch(request, { redirect: 'follow' }).then(response => {
+        if (response.status === 200 && !response.redirected) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
         }

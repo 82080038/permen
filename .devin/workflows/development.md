@@ -39,8 +39,12 @@ sudo /opt/lampp/lampp startmysql
 
 #### Option B: Import from SQL Files
 ```bash
-# Import main schema
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/skd_cat_bkn.sql
+# Import all SQL files using IMPORT_ALL.sql
+cd /opt/lampp/htdocs/permen/sql
+/opt/lampp/bin/mysql -u root -proot < IMPORT_ALL.sql
+
+# Or import main schema separately
+/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/skd_cat_bkn_latest.sql
 
 # Import additional data
 /opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_master_materi.sql

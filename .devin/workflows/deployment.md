@@ -31,8 +31,12 @@ sudo /opt/lampp/lampp start
 # Create database
 /opt/lampp/bin/mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS skd_cat_bkn;"
 
-# Import schema and data
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/skd_cat_bkn.sql
+# Import all SQL files using IMPORT_ALL.sql
+cd /opt/lampp/htdocs/permen/sql
+/opt/lampp/bin/mysql -u root -proot < IMPORT_ALL.sql
+
+# Or import schema and data separately
+/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/skd_cat_bkn_latest.sql
 
 # Import additional data (optional)
 /opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_master_materi.sql

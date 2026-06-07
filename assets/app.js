@@ -717,7 +717,7 @@ async function retry(fn, maxRetries = 3, delay = 1000) {
 async function fetchWithRetry(url, options = {}, maxRetries = 3) {
     // Show loading indicator
     const loadingIndicator = showLoading('Memuat data...');
-    
+
     return retry(async () => {
         const response = await fetch(url, options);
 
@@ -892,7 +892,7 @@ function initServiceWorker() {
         navigator.serviceWorker.register('/permen/sw.js')
             .then(registration => {
                 console.log('Service Worker registered:', registration);
-                
+
                 // Check for updates
                 registration.addEventListener('updatefound', () => {
                     const newWorker = registration.installing;
@@ -907,7 +907,7 @@ function initServiceWorker() {
             .catch(error => {
                 console.error('Service Worker registration failed:', error);
             });
-        
+
         // Listen for messages from service worker
         navigator.serviceWorker.addEventListener('message', event => {
             if (event.data.type === 'SYNC_COMPLETE') {
@@ -924,15 +924,15 @@ let deferredPrompt;
 
 function initPWAInstallPrompt() {
     if (!('serviceWorker' in navigator)) return;
-    
+
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        
+
         // Show install button
         showInstallButton();
     });
-    
+
     window.addEventListener('appinstalled', () => {
         deferredPrompt = null;
         hideInstallButton();
@@ -962,7 +962,7 @@ function hideInstallButton() {
 
 function handleInstallClick() {
     if (!deferredPrompt) return;
-    
+
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then((choiceResult) => {
         if (choiceResult.outcome === 'accepted') {
@@ -982,7 +982,7 @@ function showUpdateNotification() {
         <button onclick="location.reload()" style="background:#fff;color:#27ae60;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-weight:bold">Refresh</button>
     `;
     document.body.appendChild(notification);
-    
+
     setTimeout(() => notification.remove(), 30000);
 }
 
@@ -996,10 +996,10 @@ const STORE_NAME = 'offline_answers';
 function openDB() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
-        
+
         request.onerror = () => reject(request.error);
         request.onsuccess = () => resolve(request.result);
-        
+
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
             if (!db.objectStoreNames.contains(STORE_NAME)) {
@@ -1017,25 +1017,25 @@ async function saveOfflineAnswer(answerData) {
         const db = await openDB();
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const store = transaction.objectStore(STORE_NAME);
-        
+
         const record = {
             ...answerData,
             timestamp: new Date().toISOString(),
             synced: false
         };
-        
+
         await new Promise((resolve, reject) => {
             const request = store.add(record);
             request.onsuccess = () => resolve();
             request.onerror = () => reject(request.error);
         });
-        
+
         // Register background sync
         if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
             const registration = await navigator.serviceWorker.ready;
             await registration.sync.register('sync-offline-answers');
         }
-        
+
         return true;
     } catch (e) {
         console.error('Failed to save offline answer:', e);
@@ -1048,7 +1048,7 @@ async function getOfflineAnswers() {
         const db = await openDB();
         const transaction = db.transaction([STORE_NAME], 'readonly');
         const store = transaction.objectStore(STORE_NAME);
-        
+
         return await new Promise((resolve, reject) => {
             const request = store.getAll();
             request.onsuccess = () => resolve(request.result);
@@ -1065,13 +1065,13 @@ async function removeOfflineAnswer(id) {
         const db = await openDB();
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const store = transaction.objectStore(STORE_NAME);
-        
+
         await new Promise((resolve, reject) => {
             const request = store.delete(id);
             request.onsuccess = () => resolve();
             request.onerror = () => reject(request.error);
         });
-        
+
         return true;
     } catch (e) {
         console.error('Failed to remove offline answer:', e);
@@ -1094,20 +1094,20 @@ async function initPushNotifications() {
         console.log('Push notifications not supported');
         return;
     }
-    
+
     try {
         const registration = await navigator.serviceWorker.ready;
         pushSubscription = await registration.pushManager.getSubscription();
-        
+
         // Check if user has subscription in database
         const response = await fetch('/permen/api/push_notifications.php?action=check_subscription');
         const data = await response.json();
-        
+
         if (data.success && data.subscribed && !pushSubscription) {
             // User has subscription in DB but not in browser - might need to resubscribe
             console.log('Subscription mismatch detected');
         }
-        
+
         return pushSubscription;
     } catch (e) {
         console.error('Push notification init failed:', e);
@@ -1118,19 +1118,19 @@ async function initPushNotifications() {
 async function subscribeToPushNotifications() {
     try {
         const registration = await navigator.serviceWorker.ready;
-        
+
         // Request permission
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
             throw new Error('Notification permission denied');
         }
-        
+
         // Subscribe to push
         const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array('YOUR_VAPID_PUBLIC_KEY_HERE')
         });
-        
+
         // Send subscription to server
         const response = await fetch('/permen/api/push_notifications.php', {
             method: 'POST',
@@ -1142,7 +1142,7 @@ async function subscribeToPushNotifications() {
                 auth: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth'))))
             })
         });
-        
+
         const data = await response.json();
         if (data.success) {
             pushSubscription = subscription;
@@ -1160,10 +1160,10 @@ async function subscribeToPushNotifications() {
 
 async function unsubscribeFromPushNotifications() {
     if (!pushSubscription) return true;
-    
+
     try {
         await pushSubscription.unsubscribe();
-        
+
         // Remove from server
         const response = await fetch('/permen/api/push_notifications.php', {
             method: 'POST',
@@ -1173,7 +1173,7 @@ async function unsubscribeFromPushNotifications() {
                 endpoint: pushSubscription.endpoint
             })
         });
-        
+
         const data = await response.json();
         if (data.success) {
             pushSubscription = null;
@@ -1193,7 +1193,7 @@ async function getNotificationPreferences() {
     try {
         const response = await fetch('/permen/api/push_notifications.php?action=get_preferences');
         const data = await response.json();
-        
+
         if (data.success) {
             return data.preferences;
         }
@@ -1214,7 +1214,7 @@ async function updateNotificationPreferences(preferences) {
                 ...preferences
             })
         });
-        
+
         const data = await response.json();
         if (data.success) {
             showToast('Preferensi notifikasi berhasil diupdate', 'success');
@@ -1234,11 +1234,11 @@ function urlBase64ToUint8Array(base64String) {
     const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
     const rawData = window.atob(base64);
     const outputArray = new Uint8Array(rawData.length);
-    
+
     for (let i = 0; i < rawData.length; ++i) {
         outputArray[i] = rawData.charCodeAt(i);
     }
-    
+
     return outputArray;
 }
 
@@ -1257,15 +1257,20 @@ let pageStartTime = null;
 let currentPageUrl = null;
 
 function initAnalytics() {
+    // Only track analytics if user is logged in
+    if (typeof isLoggedIn === 'undefined' || !isLoggedIn) {
+        return;
+    }
+
     analyticsSessionId = typeof session_id !== 'undefined' ? session_id : generateSessionId();
     pageStartTime = Date.now();
     currentPageUrl = window.location.pathname;
-    
+
     // Track page view
     trackEvent('page_view', {
         page_url: currentPageUrl
     });
-    
+
     // Track time spent on page unload
     window.addEventListener('beforeunload', () => {
         const timeSpent = Math.floor((Date.now() - pageStartTime) / 1000);
@@ -1276,7 +1281,7 @@ function initAnalytics() {
             }, true);
         }
     });
-    
+
     // Track visibility changes (user switching tabs)
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
@@ -1298,13 +1303,18 @@ function generateSessionId() {
 }
 
 function trackEvent(eventType, data = {}, sendBeacon = false) {
+    // Only track analytics if user is logged in
+    if (typeof isLoggedIn === 'undefined' || !isLoggedIn) {
+        return;
+    }
+
     const payload = {
         action: 'track_event',
         event_type: eventType,
         session_id: analyticsSessionId,
         ...data
     };
-    
+
     if (sendBeacon && navigator.sendBeacon) {
         const formData = new URLSearchParams(payload);
         navigator.sendBeacon('/permen/api/learning_analytics.php', formData);
@@ -1373,7 +1383,7 @@ async function getLearningInsights() {
     try {
         const response = await fetch('/permen/api/learning_analytics.php?action=get_learning_insights');
         const data = await response.json();
-        
+
         if (data.success) {
             return data.insights;
         }
@@ -1396,7 +1406,7 @@ async function getLearningStats() {
     try {
         const response = await fetch('/permen/api/learning_analytics.php?action=get_learning_stats');
         const data = await response.json();
-        
+
         if (data.success) {
             return data;
         }
