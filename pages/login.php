@@ -103,7 +103,7 @@ if (!empty($_SESSION['user_id'])) {
 </div>
 <div class="form-group">
 <label for="password">Password</label>
-<input type="password" id="password" name="password" placeholder="Password" required aria-required="true" aria-describedby="password-help" aria-label="Password">
+<input type="password" id="password" name="password" placeholder="Password" required aria-required="true" aria-describedby="password-help" aria-label="Password" autocomplete="current-password">
 <small id="password-help" style="color:#777;font-size:.8rem">Minimal 8 karakter, 1 huruf besar, 1 huruf kecil, 1 angka</small>
 </div>
 <button type="submit" class="btn" aria-label="Masuk ke akun">Masuk</button>

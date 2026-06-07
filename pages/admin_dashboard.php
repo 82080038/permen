@@ -97,7 +97,7 @@ $activityHeatmap = $pdo->query("
     FROM (
         SELECT user_id, created_at FROM tryout_sessions WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
         UNION ALL
-        SELECT user_id, created_at FROM daily_quiz_sessions WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        SELECT user_id, waktu_mulai as created_at FROM daily_quiz_sessions WHERE waktu_mulai >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
         UNION ALL
         SELECT user_id, waktu_mulai as created_at FROM personal_practice_sessions WHERE waktu_mulai >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
     ) activities

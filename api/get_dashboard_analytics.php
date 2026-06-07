@@ -76,7 +76,7 @@ try {
         WHERE ts.user_id = ? AND a.jawaban_user IS NOT NULL AND a.jawaban_user != ''
         GROUP BY q.subtes, q.topik
         HAVING COUNT(*) >= 3
-        ORDER BY subtes, (benar * 100.0 / total) ASC
+        ORDER BY subtes, (SUM(CASE WHEN a.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) * 100.0 / COUNT(*)) ASC
         LIMIT 5
     ");
     $stmt->execute([$userId]);

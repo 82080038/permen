@@ -176,17 +176,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
     
-    <!-- Push Notification Toggle -->
-    <div class="setting-item" id="pushNotificationToggle" style="display:none">
-        <div class="setting-label">
-            <h4>Aktifkan Push Notifications</h4>
-            <p>Terima notifikasi langsung di perangkat Anda</p>
-        </div>
-        <div class="setting-control">
-            <button type="button" id="togglePushBtn" class="btn" onclick="togglePushNotifications()">Aktifkan Push</button>
-        </div>
-    </div>
-    
     <!-- Detailed Notification Preferences -->
     <div class="setting-item" id="detailedNotificationPrefs" style="display:none">
         <div class="setting-label">
@@ -326,86 +315,11 @@ document.querySelectorAll('input[name="font_size"]').forEach(radio => {
 document.querySelectorAll('input[name="notification_preference"]').forEach(radio => {
     radio.addEventListener('change', function() {
         const value = this.value;
-        const pushToggle = document.getElementById('pushNotificationToggle');
         const detailedPrefs = document.getElementById('detailedNotificationPrefs');
-        
-        if (value === 'push' || value === 'both') {
-            pushToggle.style.display = 'flex';
-            detailedPrefs.style.display = 'flex';
-            initPushNotificationSettings();
-        } else {
-            pushToggle.style.display = 'none';
-            detailedPrefs.style.display = 'none';
+        if (detailedPrefs) {
+            detailedPrefs.style.display = (value === 'push' || value === 'both') ? 'flex' : 'none';
         }
     });
-});
-
-// Initialize push notification settings
-async function initPushNotificationSettings() {
-    const isSubscribed = await initPushNotifications();
-    const toggleBtn = document.getElementById('togglePushBtn');
-    
-    if (isSubscribed) {
-        toggleBtn.textContent = 'Nonaktifkan Push';
-        toggleBtn.style.background = '#e74c3c';
-    } else {
-        toggleBtn.textContent = 'Aktifkan Push';
-        toggleBtn.style.background = '#27ae60';
-    }
-    
-    // Load detailed preferences
-    const prefs = await getNotificationPreferences();
-    if (prefs) {
-        document.getElementById('prefDailyQuiz').checked = prefs.daily_quiz_reminder;
-        document.getElementById('prefLiveClass').checked = prefs.live_class_starting;
-        document.getElementById('prefNewMateri').checked = prefs.new_materi_available;
-        document.getElementById('prefTryoutResult').checked = prefs.tryout_result_ready;
-    }
-}
-
-// Toggle push notifications
-async function togglePushNotifications() {
-    const isSubscribed = await initPushNotifications();
-    const toggleBtn = document.getElementById('togglePushBtn');
-    
-    if (isSubscribed) {
-        const success = await unsubscribeFromPushNotifications();
-        if (success) {
-            toggleBtn.textContent = 'Aktifkan Push';
-            toggleBtn.style.background = '#27ae60';
-        }
-    } else {
-        const success = await subscribeToPushNotifications();
-        if (success) {
-            toggleBtn.textContent = 'Nonaktifkan Push';
-            toggleBtn.style.background = '#e74c3c';
-        }
-    }
-}
-
-// Save detailed notification preferences
-async function saveNotificationPreferences() {
-    const preferences = {
-        daily_quiz_reminder: document.getElementById('prefDailyQuiz').checked ? 1 : 0,
-        live_class_starting: document.getElementById('prefLiveClass').checked ? 1 : 0,
-        new_materi_available: document.getElementById('prefNewMateri').checked ? 1 : 0,
-        tryout_result_ready: document.getElementById('prefTryoutResult').checked ? 1 : 0
-    };
-    
-    await updateNotificationPreferences(preferences);
-}
-
-// Add event listeners for detailed preferences
-document.querySelectorAll('#detailedNotificationPrefs input[type="checkbox"]').forEach(checkbox => {
-    checkbox.addEventListener('change', saveNotificationPreferences);
-});
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const notificationPref = document.querySelector('input[name="notification_preference"]:checked');
-    if (notificationPref && (notificationPref.value === 'push' || notificationPref.value === 'both')) {
-        initPushNotificationSettings();
-    }
 });
 
 

@@ -125,6 +125,6 @@ $activePage = 'help';
     </div>
     
     <div class="footer">SKD CAT-BKN Try Out & Bimbel</div>
-    <script src="../assets/app.js"></script>
+<script src="../assets/app.js"></script>
 </body>
 </html>
