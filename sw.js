@@ -4,17 +4,16 @@
  * Background sync untuk jawaban offline
  */
 
-const CACHE_NAME = 'skd-cat-bkn-v6';
+const CACHE_VERSION = 'v7';
+const CACHE_NAME = 'skd-cat-bkn-' + CACHE_VERSION;
+const CONTENT_CACHE_NAME = 'skd-cat-bkn-content-' + CACHE_VERSION;
+
+// Only cache public pages — NEVER cache auth-protected pages
 const STATIC_ASSETS = [
   '/permen/index.php',
   '/permen/pages/login.php',
   '/permen/pages/register.php',
   '/permen/pages/materi.php',
-  '/permen/pages/latihan.php',
-  '/permen/pages/hasil.php',
-  '/permen/pages/user_dashboard.php',
-  '/permen/pages/admin_dashboard.php',
-  '/permen/pages/riwayat_soal.php',
   '/permen/pages/leaderboard.php',
   '/permen/pages/forgot_password.php',
   '/permen/manifest.json',
@@ -25,13 +24,7 @@ const STATIC_ASSETS = [
   '/permen/assets/icon-512.png'
 ];
 
-// Materi and soal content URLs to cache
-const CONTENT_CACHE_NAME = 'skd-cat-bkn-content-v1';
-
-// Background sync tag for offline answers
-const SYNC_TAG = 'sync-offline-answers';
-
-// Pages that redirect when not authenticated — skip during install
+// Pages that require authentication — bypass service worker completely
 const AUTH_PAGES = [
   '/permen/pages/user_dashboard.php',
   '/permen/pages/admin_dashboard.php',
@@ -41,44 +34,50 @@ const AUTH_PAGES = [
   '/permen/pages/riwayat_soal.php'
 ];
 
-// Install: cache static assets
+const SYNC_TAG = 'sync-offline-answers';
+
+function isAuthPage(url) {
+  const path = new URL(url).pathname;
+  return AUTH_PAGES.some(p => path === p || path.startsWith(p + '?'));
+}
+
+// Install: cache only public static assets
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      const assetsToCache = STATIC_ASSETS.filter(url => !AUTH_PAGES.includes(url));
-      return cache.addAll(assetsToCache.map(url => {
-        return new Request(url, { redirect: 'follow' });
-      })).catch(err => {
-        console.warn('Service Worker: Some assets failed to cache:', err);
-        return Promise.resolve();
+      return cache.addAll(STATIC_ASSETS).catch(err => {
+        console.warn('SW: Some assets failed to cache:', err);
       });
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
-// Activate: clean old caches
+// Activate: delete ALL old caches regardless of name
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
+    caches.keys().then(names => {
       return Promise.all(
-        cacheNames.filter(name => name !== CACHE_NAME && name !== CONTENT_CACHE_NAME).map(name => caches.delete(name))
+        names.map(name => {
+          if (!name.includes(CACHE_VERSION)) {
+            return caches.delete(name);
+          }
+        })
       );
     }).then(() => self.clients.claim())
   );
 });
 
-// Register background sync
+// Background sync
 self.addEventListener('sync', event => {
   if (event.tag === SYNC_TAG) {
     event.waitUntil(syncOfflineAnswers());
   }
 });
 
-// Sync offline answers to server
 async function syncOfflineAnswers() {
   try {
     const offlineAnswers = await getOfflineAnswers();
-
     for (const answer of offlineAnswers) {
       try {
         const response = await fetch('/permen/api/save_answer.php', {
@@ -86,122 +85,57 @@ async function syncOfflineAnswers() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(answer)
         });
-
-        if (response.ok) {
-          await removeOfflineAnswer(answer.id);
-        }
+        if (response.ok) await removeOfflineAnswer(answer.id);
       } catch (e) {
         console.error('Failed to sync answer:', answer.id, e);
       }
     }
-
-    // Notify clients that sync is complete
     const clients = await self.clients.matchAll();
-    clients.forEach(client => {
-      client.postMessage({ type: 'SYNC_COMPLETE' });
-    });
+    clients.forEach(client => client.postMessage({ type: 'SYNC_COMPLETE' }));
   } catch (e) {
     console.error('Sync failed:', e);
   }
 }
 
-// Get offline answers from IndexedDB
-async function getOfflineAnswers() {
-  // This would use IndexedDB in a real implementation
-  // For now, return empty array
-  return [];
+async function getOfflineAnswers() { return []; }
+async function removeOfflineAnswer(id) { }
+
+// Helper: strip redirect flag from response
+function cleanResponse(response) {
+  if (!response.redirected) return response;
+  // For non-navigation, return as-is
+  return response;
 }
 
-// Remove synced answer from IndexedDB
-async function removeOfflineAnswer(id) {
-  // This would use IndexedDB in a real implementation
-}
-
-// Fetch: serve from cache, fallback to network
+// Fetch handler
 self.addEventListener('fetch', event => {
   const { request } = event;
 
-  // Skip non-GET requests
+  // Skip non-GET
   if (request.method !== 'GET') return;
 
-  // API calls: network-first with cache fallback
-  if (request.url.includes('/api/')) {
-    // Special handling for materi and soal APIs - cache for offline
-    if (request.url.includes('list_soal.php') || request.url.includes('materi')) {
-      event.respondWith(
-        fetch(request, { redirect: 'follow' }).then(response => {
-          if (response.status === 200 && !response.redirected) {
-            const clone = response.clone();
-            caches.open(CONTENT_CACHE_NAME).then(cache => cache.put(request, clone));
-          }
-          return response;
-        }).catch(() => {
-          return caches.match(request).then(cached => {
-            if (cached) return cached;
-            return new Response(JSON.stringify({ error: 'Offline - Tidak dapat mengambil data' }), {
-              status: 503,
-              headers: { 'Content-Type': 'application/json' }
-            });
-          });
-        })
-      );
-      return;
-    }
+  // Bypass SW completely for auth pages (let browser handle redirects)
+  if (isAuthPage(request.url)) {
+    return;
+  }
 
-    // Other API calls: network-first with cache fallback
+  // API calls
+  if (request.url.includes('/api/')) {
     event.respondWith(
-      fetch(request, { redirect: 'follow' }).then(response => {
-        if (response.status === 200 && !response.redirected) {
+      fetch(request).then(response => {
+        if (response.ok && !response.redirected) {
           const clone = response.clone();
-          caches.open(CACHE_NAME + '-api').then(cache => cache.put(request, clone));
+          const cacheName = request.url.includes('list_soal.php') || request.url.includes('materi')
+            ? CONTENT_CACHE_NAME : (CACHE_NAME + '-api');
+          caches.open(cacheName).then(cache => cache.put(request, clone));
         }
         return response;
       }).catch(() => {
         return caches.match(request).then(cached => {
           if (cached) return cached;
-          return new Response(JSON.stringify({ error: 'Offline - Tidak dapat mengambil data' }), {
-            status: 503,
-            headers: { 'Content-Type': 'application/json' }
+          return new Response(JSON.stringify({ error: 'Offline' }), {
+            status: 503, headers: { 'Content-Type': 'application/json' }
           });
-        });
-      })
-    );
-    return;
-  }
-
-  // Content assets (materi, soal images): cache-first with network fallback
-  if (request.url.includes('/assets/soal/') || request.url.includes('/content/')) {
-    event.respondWith(
-      caches.match(request).then(cached => {
-        if (cached) {
-          fetch(request, { redirect: 'follow' }).then(response => {
-            if (response.status === 200 && !response.redirected) {
-              const clone = response.clone();
-              caches.open(CONTENT_CACHE_NAME).then(cache => cache.put(request, clone));
-            }
-          }).catch(err => {
-            console.warn('Background fetch failed:', err);
-          });
-          return cached;
-        }
-        return fetch(request, { redirect: 'follow' }).then(response => {
-          if (response.status === 200 && !response.redirected) {
-            const clone = response.clone();
-            caches.open(CONTENT_CACHE_NAME).then(cache => cache.put(request, clone));
-          }
-          // Strip redirect flag for navigations
-          if (response.redirected && request.mode === 'navigate') {
-            return response.text().then(body => {
-              return new Response(body, {
-                status: response.status,
-                statusText: response.statusText,
-                headers: response.headers
-              });
-            });
-          }
-          return response;
-        }).catch(() => {
-          return new Response('Offline - Content tidak tersedia', { status: 503 });
         });
       })
     );
@@ -212,30 +146,17 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(request).then(cached => {
       if (cached) {
-        fetch(request, { redirect: 'follow' }).then(response => {
-          if (response.status === 200 && !response.redirected) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+        // Background refresh
+        fetch(request).then(response => {
+          if (response.ok && !response.redirected) {
+            caches.open(CACHE_NAME).then(cache => cache.put(request, response.clone()));
           }
-        }).catch(err => {
-          console.warn('Background fetch failed:', err);
-        });
+        }).catch(() => { });
         return cached;
       }
-      return fetch(request, { redirect: 'follow' }).then(response => {
-        if (response.status === 200 && !response.redirected) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
-        }
-        // Strip redirect flag by creating new Response for navigations
-        if (response.redirected && request.mode === 'navigate') {
-          return response.text().then(body => {
-            return new Response(body, {
-              status: response.status,
-              statusText: response.statusText,
-              headers: response.headers
-            });
-          });
+      return fetch(request).then(response => {
+        if (response.ok && !response.redirected) {
+          caches.open(CACHE_NAME).then(cache => cache.put(request, response.clone()));
         }
         return response;
       }).catch(() => {
