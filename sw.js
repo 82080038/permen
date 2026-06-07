@@ -31,12 +31,23 @@ const CONTENT_CACHE_NAME = 'skd-cat-bkn-content-v1';
 // Background sync tag for offline answers
 const SYNC_TAG = 'sync-offline-answers';
 
+// Pages that redirect when not authenticated — skip during install
+const AUTH_PAGES = [
+  '/permen/pages/user_dashboard.php',
+  '/permen/pages/admin_dashboard.php',
+  '/permen/pages/latihan.php',
+  '/permen/pages/tryout.php',
+  '/permen/pages/hasil.php',
+  '/permen/pages/riwayat_soal.php'
+];
+
 // Install: cache static assets
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(STATIC_ASSETS.map(url => {
-        return new Request(url, { mode: 'no-cors', redirect: 'follow' });
+      const assetsToCache = STATIC_ASSETS.filter(url => !AUTH_PAGES.includes(url));
+      return cache.addAll(assetsToCache.map(url => {
+        return new Request(url, { redirect: 'follow' });
       })).catch(err => {
         console.warn('Service Worker: Some assets failed to cache:', err);
         return Promise.resolve();
@@ -178,6 +189,16 @@ self.addEventListener('fetch', event => {
             const clone = response.clone();
             caches.open(CONTENT_CACHE_NAME).then(cache => cache.put(request, clone));
           }
+          // Strip redirect flag for navigations
+          if (response.redirected && request.mode === 'navigate') {
+            return response.text().then(body => {
+              return new Response(body, {
+                status: response.status,
+                statusText: response.statusText,
+                headers: response.headers
+              });
+            });
+          }
           return response;
         }).catch(() => {
           return new Response('Offline - Content tidak tersedia', { status: 503 });
@@ -205,6 +226,16 @@ self.addEventListener('fetch', event => {
         if (response.status === 200 && !response.redirected) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+        }
+        // Strip redirect flag by creating new Response for navigations
+        if (response.redirected && request.mode === 'navigate') {
+          return response.text().then(body => {
+            return new Response(body, {
+              status: response.status,
+              statusText: response.statusText,
+              headers: response.headers
+            });
+          });
         }
         return response;
       }).catch(() => {
