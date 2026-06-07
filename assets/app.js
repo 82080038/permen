@@ -888,33 +888,38 @@ if (document.readyState === 'loading') {
  * Initialize Service Worker for PWA
  */
 function initServiceWorker() {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/permen/sw.js')
-            .then(registration => {
-                console.log('Service Worker registered:', registration);
-
-                // Check for updates
-                registration.addEventListener('updatefound', () => {
-                    const newWorker = registration.installing;
-                    newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            // New version available
-                            showUpdateNotification();
-                        }
-                    });
-                });
-            })
-            .catch(error => {
-                console.error('Service Worker registration failed:', error);
-            });
-
-        // Listen for messages from service worker
-        navigator.serviceWorker.addEventListener('message', event => {
-            if (event.data.type === 'SYNC_COMPLETE') {
-                showToast('Jawaban offline berhasil disinkronisasi', 'success');
-            }
-        });
+    if (!('serviceWorker' in navigator)) return;
+    // Skip if disabled (incognito or ?nosw)
+    if (window.__SW_DISABLED) {
+        console.log('Service Worker registration skipped (incognito or disabled)');
+        navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+        return;
     }
+    navigator.serviceWorker.register('/permen/sw.js')
+        .then(registration => {
+            console.log('Service Worker registered:', registration);
+
+            // Check for updates
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // New version available
+                        showUpdateNotification();
+                    }
+                });
+            });
+        })
+        .catch(error => {
+            console.error('Service Worker registration failed:', error);
+        });
+
+    // Listen for messages from service worker
+    navigator.serviceWorker.addEventListener('message', event => {
+        if (event.data.type === 'SYNC_COMPLETE') {
+            showToast('Jawaban offline berhasil disinkronisasi', 'success');
+        }
+    });
 }
 
 /**

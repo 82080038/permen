@@ -536,6 +536,16 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+
+// Detect incognito / private browsing and disable SW registration
+(async function() {
+  let isIncognito = false;
+  try {
+    const estimate = await navigator.storage.estimate();
+    isIncognito = estimate.quota && estimate.quota < 120000000;
+  } catch (e) { /* ignore */ }
+  window.__SW_DISABLED = isIncognito || new URLSearchParams(location.search).has('nosw');
+})();
 </script>
 </body>
 </html>
