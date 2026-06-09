@@ -10,24 +10,48 @@ if (empty($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'admin') {
 
 $adminName = e($_SESSION['user_nama'] ?? 'Admin');
 
-// Stats
+// Stats - with error handling
 $stats = [];
-$stats['total_soal'] = $pdo->query("SELECT COUNT(*) FROM questions")->fetchColumn();
-$stats['total_users'] = $pdo->query("SELECT COUNT(*) FROM users WHERE role='user'")->fetchColumn();
-$stats['total_tryout'] = $pdo->query("SELECT COUNT(*) FROM tryout_sessions")->fetchColumn();
-$stats['tryout_selesai'] = $pdo->query("SELECT COUNT(*) FROM tryout_sessions WHERE status='selesai'")->fetchColumn();
+try {
+    $stats['total_soal'] = $pdo->query("SELECT COUNT(*) FROM questions")->fetchColumn();
+} catch (Exception $e) {
+    $stats['total_soal'] = 0;
+}
+try {
+    $stats['total_users'] = $pdo->query("SELECT COUNT(*) FROM users WHERE role='user'")->fetchColumn();
+} catch (Exception $e) {
+    $stats['total_users'] = 0;
+}
+try {
+    $stats['total_tryout'] = $pdo->query("SELECT COUNT(*) FROM tryout_sessions")->fetchColumn();
+} catch (Exception $e) {
+    $stats['total_tryout'] = 0;
+}
+try {
+    $stats['tryout_selesai'] = $pdo->query("SELECT COUNT(*) FROM tryout_sessions WHERE status='selesai'")->fetchColumn();
+} catch (Exception $e) {
+    $stats['tryout_selesai'] = 0;
+}
 
 // Users list with pagination
 $usersLimit = min(50, max(10, (int)($_GET['users_limit'] ?? 20)));
 $usersOffset = (int)($_GET['users_offset'] ?? 0);
 
 // Get total count
-$usersTotal = $pdo->query("SELECT COUNT(*) FROM users WHERE role='user'")->fetchColumn();
+try {
+    $usersTotal = $pdo->query("SELECT COUNT(*) FROM users WHERE role='user'")->fetchColumn();
+} catch (Exception $e) {
+    $usersTotal = 0;
+}
 
 // Get paginated users
-$users = $pdo->prepare("SELECT id, nama, no_hp, sekolah_asal, tahun_tamat, instansi, created_at, status FROM users WHERE role='user' ORDER BY created_at DESC LIMIT ? OFFSET ?");
-$users->execute([$usersLimit, $usersOffset]);
-$users = $users->fetchAll();
+try {
+    $users = $pdo->prepare("SELECT id, nama, no_hp, sekolah_asal, tahun_tamat, instansi, created_at, status FROM users WHERE role='user' ORDER BY created_at DESC LIMIT ? OFFSET ?");
+    $users->execute([$usersLimit, $usersOffset]);
+    $users = $users->fetchAll();
+} catch (Exception $e) {
+    $users = [];
+}
 
 // Calculate pagination metadata
 $usersTotalPages = ceil($usersTotal / $usersLimit);
@@ -40,14 +64,22 @@ $tryoutsLimit = min(50, max(10, (int)($_GET['tryouts_limit'] ?? 20)));
 $tryoutsOffset = (int)($_GET['tryouts_offset'] ?? 0);
 
 // Get total count
-$tryoutsTotal = $pdo->query("SELECT COUNT(*) FROM tryout_sessions")->fetchColumn();
+try {
+    $tryoutsTotal = $pdo->query("SELECT COUNT(*) FROM tryout_sessions")->fetchColumn();
+} catch (Exception $e) {
+    $tryoutsTotal = 0;
+}
 
 // Get paginated tryouts
-$tryouts = $pdo->prepare("SELECT ts.id, ts.nama, u.nama as peserta, ts.total_nilai, ts.status, ts.waktu_mulai 
-    FROM tryout_sessions ts LEFT JOIN users u ON ts.user_id = u.id 
+try {
+    $tryouts = $pdo->prepare("SELECT ts.id, ts.nama, u.nama as peserta, ts.total_nilai, ts.status, ts.waktu_mulai
+    FROM tryout_sessions ts LEFT JOIN users u ON ts.user_id = u.id
     ORDER BY ts.id DESC LIMIT ? OFFSET ?");
-$tryouts->execute([$tryoutsLimit, $tryoutsOffset]);
-$tryouts = $tryouts->fetchAll();
+    $tryouts->execute([$tryoutsLimit, $tryoutsOffset]);
+    $tryouts = $tryouts->fetchAll();
+} catch (Exception $e) {
+    $tryouts = [];
+}
 
 // Calculate pagination metadata
 $tryoutsTotalPages = ceil($tryoutsTotal / $tryoutsLimit);
@@ -56,10 +88,18 @@ $tryoutsHasNext = $tryoutsCurrentPage < $tryoutsTotalPages;
 $tryoutsHasPrev = $tryoutsCurrentPage > 1;
 
 // Soal per subtes
-$soalPerSubtes = $pdo->query("SELECT subtes, COUNT(*) as jumlah FROM questions GROUP BY subtes")->fetchAll(PDO::FETCH_KEY_PAIR);
+try {
+    $soalPerSubtes = $pdo->query("SELECT subtes, COUNT(*) as jumlah FROM questions GROUP BY subtes")->fetchAll(PDO::FETCH_KEY_PAIR);
+} catch (Exception $e) {
+    $soalPerSubtes = [];
+}
 
 // Subtes config
-$subtesConfig = $pdo->query("SELECT * FROM subtes_config ORDER BY urutan")->fetchAll();
+try {
+    $subtesConfig = $pdo->query("SELECT * FROM subtes_config ORDER BY urutan")->fetchAll();
+} catch (Exception $e) {
+    $subtesConfig = [];
+}
 
 // Analytics data - simplified for performance
 // User registration trend (last 30 days) - only if requested
@@ -105,7 +145,6 @@ try {
     $avgScores = ['avg_tkp' => 0, 'avg_tiu' => 0, 'avg_twk' => 0];
 }
 
-<<<<<<< HEAD
 // Activity heatmap data (last 30 days) - only load when analytics tab is active
 $activityHeatmap = [];
 if (isset($_GET['tab']) && $_GET['tab'] === 'analytics') {
@@ -199,7 +238,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
             ]);
         }
         $updateMsg = 'Konfigurasi berhasil diperbarui.';
-        $subtesConfig = $pdo->query("SELECT * FROM subtes_config ORDER BY urutan")->fetchAll();
+        try {
+            $subtesConfig = $pdo->query("SELECT * FROM subtes_config ORDER BY urutan")->fetchAll();
+        } catch (Exception $e) {
+            $subtesConfig = [];
+        }
     }
 }
 ?>
