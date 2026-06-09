@@ -52,6 +52,7 @@ window.isLoggedIn = <?= $userId ? 'true' : 'false' ?>;
 <?php if ($userRole === 'admin'): ?>
 <a href="<?= $basePath ?>index.php" <?= isActive('beranda', $activePage) ?> role="menuitem">Beranda</a>
 <a href="<?= $basePath ?>admin_dashboard.php" <?= isActive('admin_dashboard', $activePage) ?> role="menuitem">Dashboard</a>
+<a href="<?= $basePath ?>admin_scheduled_tryouts.php" <?= isActive('admin_scheduled_tryouts', $activePage) ?> role="menuitem">Scheduled Tryout</a>
 <a href="<?= $basePath ?>latihan.php" <?= isActive('latihan', $activePage) ?> role="menuitem">Latihan</a>
 <a href="<?= $basePath ?>tryout.php" <?= isActive('tryout', $activePage) ?> role="menuitem">Try Out</a>
 <a href="<?= $basePath ?>leaderboard.php" <?= isActive('leaderboard', $activePage) ?> role="menuitem">Leaderboard</a>
@@ -64,6 +65,7 @@ window.isLoggedIn = <?= $userId ? 'true' : 'false' ?>;
 <a href="<?= $basePath ?>settings.php" <?= isActive('settings', $activePage) ?> role="menuitem">Pengaturan</a>
 <a href="<?= $basePath ?>latihan.php" <?= isActive('latihan', $activePage) ?> role="menuitem">Latihan</a>
 <a href="<?= $basePath ?>daily_quiz.php" <?= isActive('daily_quiz', $activePage) ?> role="menuitem">Daily Quiz</a>
+<a href="<?= $basePath ?>scheduled_tryouts.php" <?= isActive('scheduled_tryouts', $activePage) ?> role="menuitem">Scheduled Tryout</a>
 <a href="<?= $basePath ?>tryout.php" <?= isActive('tryout', $activePage) ?> role="menuitem">Try Out</a>
 <a href="<?= $basePath ?>leaderboard.php" <?= isActive('leaderboard', $activePage) ?> role="menuitem">Leaderboard</a>
 <a href="<?= $basePath ?>feedback.php" <?= isActive('feedback', $activePage) ?> role="menuitem">Feedback</a>
