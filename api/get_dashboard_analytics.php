@@ -7,6 +7,7 @@ header('Content-Type: application/json');
 $userId = (int)($_SESSION['user_id'] ?? 0);
 
 if (!$userId) {
+    http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'Not logged in']);
     exit;
 }

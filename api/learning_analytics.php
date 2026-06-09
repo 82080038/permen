@@ -11,7 +11,12 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 
-$action = $_POST['action'] ?? '';
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
+
+if (empty($action)) {
+    echo json_encode(['error' => 'Action parameter required']);
+    exit;
+}
 
 if ($action === 'track_event') {
     $eventType = sanitizeInput($_POST['event_type'] ?? '');

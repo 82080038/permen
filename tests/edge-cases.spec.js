@@ -50,15 +50,19 @@ test.describe('Edge Cases — Navigation', () => {
   test('handles direct access to admin dashboard without admin role', async ({ page }) => {
     // Login as regular user
     await page.goto('http://localhost/permen/pages/login.php');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     await page.fill('input[name="no_hp"]', '081987654321');
     await page.fill('input[name="password"]', 'password');
     await page.click('button[type="submit"]');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     await page.waitForURL(/user_dashboard\.php/, { timeout: 15000 });
 
     // Try to access admin dashboard
     await page.goto('http://localhost/permen/pages/admin_dashboard.php');
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     // Should redirect to login or user dashboard
-    expect(page.url()).toMatch(/login\.php|user_dashboard\.php/);
+    const currentUrl = page.url();
+    expect(currentUrl).toMatch(/login\.php|user_dashboard\.php/);
   });
 
   test('handles invalid materi subtes parameter', async ({ page }) => {

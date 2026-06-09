@@ -40,34 +40,35 @@ test.describe('Daily Quiz Feature', () => {
     await page.fill('#password', PASSWORD);
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/user_dashboard.php/);
-    
+
     console.log('📝 Step 3: Klik tombol Daily Quiz...');
-    
-    // Wait for page to fully load
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
-    
+
+    // Wait for page to fully load - use domcontentloaded instead of networkidle
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+    await page.waitForTimeout(500);
+
     // Klik link Daily Quiz di dashboard - use first() karena ada multiple links
     const dailyQuizLink = page.locator('a[href="daily_quiz.php"]').first();
     await expect(dailyQuizLink).toBeVisible({ timeout: 10000 });
     await dailyQuizLink.click();
-    
+
     // Tunggu halaman Daily Quiz load
+    await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     await expect(page).toHaveURL(/daily_quiz.php/);
     await expect(page).toHaveTitle(/Daily Quiz/);
-    
+
     console.log('✅ Berhasil masuk halaman Daily Quiz');
-    
+
     // Screenshot halaman quiz
     await page.screenshot({ path: 'test-results/02-daily-quiz.png' });
-    
+
     // Verifikasi elemen penting ada
-    await expect(page.locator('.quiz-header')).toBeVisible();
-    await expect(page.locator('#timerDisplay')).toBeVisible();
-    await expect(page.locator('#currentNum')).toBeVisible();
-    await expect(page.locator('#pertanyaan')).toBeVisible();
-    await expect(page.locator('#options')).toBeVisible();
-    
+    await expect(page.locator('.quiz-header')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#timerDisplay')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#currentNum')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#pertanyaan')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#options')).toBeVisible({ timeout: 5000 });
+
     console.log('✅ Semua elemen Daily Quiz tampil dengan benar');
   });
 

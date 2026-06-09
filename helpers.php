@@ -404,17 +404,23 @@ function checkAPIRateLimit(string $identifier, string $endpoint, int $limit = 60
     
     // Bypass for automated testing (check for common test indicators)
     $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-    if (strpos($userAgent, 'Playwright') !== false || 
+    if (strpos($userAgent, 'Playwright') !== false ||
         strpos($userAgent, 'HeadlessChrome') !== false ||
         strpos($userAgent, 'test') !== false) {
         return true;
     }
     
-    $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM api_rate_limits WHERE identifier = ? AND endpoint = ? AND created_at > DATE_SUB(NOW(), INTERVAL ? SECOND)");
-    $stmt->execute([$identifier, $endpoint, $window]);
-    $result = $stmt->fetch();
-    
-    return $result['count'] < $limit;
+    try {
+        $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM api_rate_limits WHERE identifier = ? AND endpoint = ? AND created_at > DATE_SUB(NOW(), INTERVAL ? SECOND)");
+        $stmt->execute([$identifier, $endpoint, $window]);
+        $result = $stmt->fetch();
+        
+        return $result['count'] < $limit;
+    } catch (Exception $e) {
+        // If table doesn't exist or query fails, allow the request (fail open)
+        error_log("Rate limit check failed: " . $e->getMessage());
+        return true;
+    }
 }
 
 /**

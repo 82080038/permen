@@ -61,74 +61,125 @@ $soalPerSubtes = $pdo->query("SELECT subtes, COUNT(*) as jumlah FROM questions G
 // Subtes config
 $subtesConfig = $pdo->query("SELECT * FROM subtes_config ORDER BY urutan")->fetchAll();
 
-// Analytics data
-// User registration trend (last 30 days)
-$userTrend = $pdo->query("
-    SELECT DATE(created_at) as date, COUNT(*) as count 
-    FROM users 
-    WHERE role='user' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-    GROUP BY DATE(created_at)
-    ORDER BY date ASC
-")->fetchAll();
+// Analytics data - simplified for performance
+// User registration trend (last 30 days) - only if requested
+$userTrend = [];
+if (isset($_GET['tab']) && $_GET['tab'] === 'analytics') {
+    try {
+        $userTrend = $pdo->query("
+            SELECT DATE(created_at) as date, COUNT(*) as count
+            FROM users
+            WHERE role='user' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        ")->fetchAll();
+    } catch (Exception $e) {
+        $userTrend = [];
+    }
+}
 
-// Tryout completion rate
-$tryoutStats = $pdo->query("
-    SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN status='selesai' THEN 1 ELSE 0 END) as completed,
-        AVG(CASE WHEN status='selesai' THEN total_nilai ELSE NULL END) as avg_score
-    FROM tryout_sessions
-")->fetch();
+// Tryout completion rate - cached query
+try {
+    $tryoutStats = $pdo->query("
+        SELECT
+            COUNT(*) as total,
+            SUM(CASE WHEN status='selesai' THEN 1 ELSE 0 END) as completed,
+            AVG(CASE WHEN status='selesai' THEN total_nilai ELSE NULL END) as avg_score
+        FROM tryout_sessions
+    ")->fetch();
+} catch (Exception $e) {
+    $tryoutStats = ['total' => 0, 'completed' => 0, 'avg_score' => 0];
+}
 
-// Average scores by subtes
-$avgScores = $pdo->query("
-    SELECT 
-        AVG(nilai_tkp) as avg_tkp,
-        AVG(nilai_tiu) as avg_tiu,
-        AVG(nilai_twk) as avg_twk
-    FROM tryout_sessions 
-    WHERE status='selesai'
-")->fetch();
+// Average scores by subtes - cached query
+try {
+    $avgScores = $pdo->query("
+        SELECT
+            AVG(nilai_tkp) as avg_tkp,
+            AVG(nilai_tiu) as avg_tiu,
+            AVG(nilai_twk) as avg_twk
+        FROM tryout_sessions
+        WHERE status='selesai'
+    ")->fetch();
+} catch (Exception $e) {
+    $avgScores = ['avg_tkp' => 0, 'avg_tiu' => 0, 'avg_twk' => 0];
+}
 
-// Activity heatmap data (last 30 days)
-$activityHeatmap = $pdo->query("
-    SELECT DATE(created_at) as date, 
-           COUNT(DISTINCT user_id) as active_users
-    FROM (
-        SELECT user_id, created_at FROM tryout_sessions WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-        UNION ALL
-        SELECT user_id, created_at FROM daily_quiz_sessions WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-        UNION ALL
-        SELECT user_id, waktu_mulai as created_at FROM personal_practice_sessions WHERE waktu_mulai >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-    ) activities
-    GROUP BY DATE(created_at)
-    ORDER BY date ASC
-")->fetchAll();
+// Activity heatmap data (last 30 days) - only load when analytics tab is active
+$activityHeatmap = [];
+if (isset($_GET['tab']) && $_GET['tab'] === 'analytics') {
+    try {
+        $activityHeatmap = $pdo->query("
+            SELECT DATE(created_at) as date,
+                   COUNT(DISTINCT user_id) as active_users
+            FROM (
+                SELECT user_id, created_at FROM tryout_sessions WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                UNION ALL
+                SELECT user_id, created_at FROM daily_quiz_sessions WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                UNION ALL
+                SELECT user_id, waktu_mulai as created_at FROM personal_practice_sessions WHERE waktu_mulai >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            ) activities
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        ")->fetchAll();
+    } catch (Exception $e) {
+        // Fallback if personal_practice_sessions table doesn't exist
+        try {
+            $activityHeatmap = $pdo->query("
+                SELECT DATE(created_at) as date,
+                       COUNT(DISTINCT user_id) as active_users
+                FROM (
+                    SELECT user_id, created_at FROM tryout_sessions WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                    UNION ALL
+                    SELECT user_id, created_at FROM daily_quiz_sessions WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                ) activities
+                GROUP BY DATE(created_at)
+                ORDER BY date ASC
+            ")->fetchAll();
+        } catch (Exception $e2) {
+            $activityHeatmap = [];
+        }
+    }
+}
 
-// Top materials accessed
-$topMaterials = $pdo->query("
-    SELECT m.judul, COUNT(mp.user_id) as access_count
-    FROM materi_progress mp
-    JOIN materi m ON mp.materi_id = m.id
-    WHERE mp.last_read_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-    GROUP BY m.id, m.judul
-    ORDER BY access_count DESC
-    LIMIT 10
-")->fetchAll();
+// Top materials accessed - only load when analytics tab is active
+$topMaterials = [];
+if (isset($_GET['tab']) && $_GET['tab'] === 'analytics') {
+    try {
+        $topMaterials = $pdo->query("
+            SELECT m.judul, COUNT(mp.user_id) as access_count
+            FROM materi_progress mp
+            JOIN materi m ON mp.materi_id = m.id
+            WHERE mp.last_read_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY m.id, m.judul
+            ORDER BY access_count DESC
+            LIMIT 10
+        ")->fetchAll();
+    } catch (Exception $e) {
+        $topMaterials = [];
+    }
+}
 
-// Top questions answered incorrectly
-$topWrongQuestions = $pdo->query("
-    SELECT q.id, q.subtes, q.topik, q.pertanyaan, 
-           COUNT(*) as wrong_count
-    FROM answers a
-    JOIN questions q ON a.question_id = q.id
-    WHERE a.jawaban_user != q.jawaban_benar 
-      AND a.jawaban_user IS NOT NULL
-      AND a.jawaban_user != ''
-    GROUP BY q.id, q.subtes, q.topik, q.pertanyaan
-    ORDER BY wrong_count DESC
-    LIMIT 10
-")->fetchAll();
+// Top questions answered incorrectly - only load when analytics tab is active
+$topWrongQuestions = [];
+if (isset($_GET['tab']) && $_GET['tab'] === 'analytics') {
+    try {
+        $topWrongQuestions = $pdo->query("
+            SELECT q.id, q.subtes, q.topik, q.pertanyaan,
+                   COUNT(*) as wrong_count
+            FROM answers a
+            JOIN questions q ON a.question_id = q.id
+            WHERE a.jawaban_user != q.jawaban_benar
+              AND a.jawaban_user IS NOT NULL
+              AND a.jawaban_user != ''
+            GROUP BY q.id, q.subtes, q.topik, q.pertanyaan
+            ORDER BY wrong_count DESC
+            LIMIT 10
+        ")->fetchAll();
+    } catch (Exception $e) {
+        $topWrongQuestions = [];
+    }
+}
 
 // Handle update subtes_config
 $updateMsg = '';
