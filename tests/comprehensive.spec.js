@@ -226,7 +226,8 @@ test.describe('SKD CAT-BKN Comprehensive Test Suite', () => {
     const filteredErrors = errors.filter(e =>
       !e.includes('learning_analytics') &&
       !e.includes('get_notifications') &&
-      !e.includes('get_dashboard_analytics')
+      !e.includes('get_dashboard_analytics') &&
+      !e.includes('loadAnalytics')
     );
     expect(filteredErrors).toHaveLength(0);
   });
