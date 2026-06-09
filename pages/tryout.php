@@ -190,9 +190,8 @@ $strictMode = (int)($stmt->fetchColumn() ?? 0);
 .passage-info{font-size:.8rem;color:var(--text-info);margin-bottom:.5rem;font-style:italic}
 .options label{display:block;padding:.9rem 1rem;border:1px solid var(--border-light);border-radius:6px;margin-bottom:.6rem;cursor:pointer;transition:.2s;font-size:.95rem;min-height:44px}
 .options label:hover{background:var(--bg-option-hover)}
-.options input{margin-right:.6rem;min-width:18px;min-height:18px}
+.options input{margin-right:.6rem;min-width:22px;min-height:22px;width:22px;height:22px;cursor:pointer}
 .options label.selected{background:var(--bg-option-selected);border-color:#27ae60}
-.options input{min-width:20px;min-height:20px}
 .btn-group{margin-top:1.2rem;display:flex;gap:.5rem;flex-wrap:wrap}
 .btn{background:#2980b9;color:#fff;border:none;padding:.65rem 1rem;border-radius:5px;cursor:pointer;font-size:.9rem;min-height:44px;min-width:44px}
 .btn.finish{background:#e74c3c}.btn:disabled{opacity:.5;cursor:not-allowed}
@@ -252,9 +251,9 @@ require '../includes/breadcrumbs.php';
 <h3>Navigasi Soal</h3>
 <div id="navStatus" style="font-size:.8rem;color:var(--text-muted);margin-bottom:.4rem">Memuat...</div>
 <div style="margin-bottom:.4rem">
-    <button onclick="filterRagu()" style="padding:.3rem .6rem;font-size:.8rem;background:#f39c12;color:#fff;border:none;border-radius:3px;cursor:pointer;margin-right:.5rem">🔍 Ragu-ragu</button>
-    <button onclick="filterUnanswered()" style="padding:.3rem .6rem;font-size:.8rem;background:#95a5a6;color:#fff;border:none;border-radius:3px;cursor:pointer">🔍 Belum Dijawab</button>
-    <button onclick="showAll()" style="padding:.3rem .6rem;font-size:.8rem;background:#7f8c8d;color:#fff;border:none;border-radius:3px;cursor:pointer">🔍 Semua</button>
+    <button onclick="filterRagu()" style="padding:.4rem .6rem;font-size:.8rem;background:#f39c12;color:#fff;border:none;border-radius:3px;cursor:pointer;margin-right:.5rem;min-height:44px;min-width:44px">🔍 Ragu-ragu</button>
+    <button onclick="filterUnanswered()" style="padding:.4rem .6rem;font-size:.8rem;background:#95a5a6;color:#fff;border:none;border-radius:3px;cursor:pointer;min-height:44px;min-width:44px">🔍 Belum Dijawab</button>
+    <button onclick="showAll()" style="padding:.4rem .6rem;font-size:.8rem;background:#7f8c8d;color:#fff;border:none;border-radius:3px;cursor:pointer;min-height:44px;min-width:44px">🔍 Semua</button>
 </div>
 <div class="number-grid" id="numberGrid">
 <!-- Placeholder buttons shown during loading -->
@@ -604,8 +603,13 @@ function renderSoal(idx){
     html += '<div class="pembahasan" id="pembahasanBox" style="display:none">' + escapeHtml(s.pembahasan) + '</div>';
     document.getElementById('soalContainer').innerHTML = html;
     renderNumberGrid();
-    // Scroll to question content, not nav grid
-    document.getElementById('soalContainer').scrollIntoView({behavior:'smooth', block:'start'});
+    // Pada mobile: scroll ke soal jika soal berada di bawah viewport (misal setelah sidebar)
+    // Tidak scroll jika soal sudah terlihat agar tidak naik-turun
+    const soalEl = document.getElementById('soalContainer');
+    const rect = soalEl.getBoundingClientRect();
+    if (rect.top < 0 || rect.top > window.innerHeight) {
+        soalEl.scrollIntoView({behavior:'smooth', block:'start'});
+    }
 }
 
 /**

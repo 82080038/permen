@@ -1,6 +1,10 @@
 # jQuery — Referensi & Patterns
 
-Aplikasi ini menggunakan **jQuery 3.x** (bisa ditambahkan via CDN) untuk manipulasi DOM dan AJAX. Dokumen ini adalah acuan pengembangan.
+> **Status**: jQuery **TIDAK digunakan** di aplikasi ini. Semua manipulasi DOM dan AJAX dilakukan dengan **Vanilla JS** (fetch, querySelector, addEventListener).
+> Dokumen ini disimpan sebagai referensi bagi developer yang ingin memahami ekuivalen jQuery dari pola yang ada di kode, atau jika di masa depan diputuskan untuk menambahkan jQuery.
+> Bootstrap 5 (yang digunakan aplikasi ini) tidak membutuhkan jQuery.
+
+Aplikasi ini menggunakan Vanilla JS modern sebagai pengganti jQuery. Dokumen ini adalah acuan perbandingan.
 
 ---
 

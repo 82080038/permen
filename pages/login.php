@@ -93,6 +93,8 @@ if (!empty($_SESSION['user_id'])) {
 <meta name="theme-color" content="#1a5276">
 <base href="/permen/">
 <title>Login — SKD CAT-BKN</title>
+<link rel="stylesheet" href="assets/css/bootstrap.min.css">
+<link rel="stylesheet" href="assets/css/bootstrap-icons.min.css">
 <link rel="stylesheet" href="assets/login.css">
 </head>
 <body>
@@ -140,7 +142,13 @@ function quickLogin(noHp, password) {
 <div class="footer">
 <a href="index.php">Kembali ke Beranda</a> &middot; <a href="register.php">Daftar Akun Baru</a>
 </div>
+
+<div style="margin-top:1rem;padding:1rem;background:#e8f4fd;border:1px solid #bee5eb;border-radius:6px;text-align:center">
+<p style="color:#0c5460;font-size:.85rem;margin:0"><strong>🔑 Lupa Password?</strong></p>
+<p style="color:#0c5460;font-size:.8rem;margin:.5rem 0 0 0">Reset password dilakukan oleh Admin. Silakan hubungi Admin melalui kontak pribadi atau hubungan langsung untuk permintaan reset password.</p>
 </div>
+</div>
+<script src="assets/js/bootstrap.bundle.min.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>
