@@ -1933,60 +1933,9 @@ INSERT INTO `users` (`id`, `nama`, `email`, `instansi_pilihan`, `created_at`, `r
 UNLOCK TABLES;
 
 --
--- Temporary table structure for view `v_tryout_sessions_flat`
+-- Note: VIEW v_tryout_sessions_flat dihapus untuk kompatibilitas shared hosting
+-- View ini tidak digunakan di kode PHP aplikasi
 --
-
-DROP TABLE IF EXISTS `v_tryout_sessions_flat`;
-/*!50001 DROP VIEW IF EXISTS `v_tryout_sessions_flat`*/;
-SET @saved_cs_client     = @@character_set_client;
-SET character_set_client = utf8;
-/*!50001 CREATE VIEW `v_tryout_sessions_flat` AS SELECT
- 1 AS `id`,
-  1 AS `user_id`,
-  1 AS `nama`,
-  1 AS `waktu_mulai`,
-  1 AS `waktu_selesai`,
-  1 AS `status`,
-  1 AS `created_at`,
-  1 AS `durasi_twk_v`,
-  1 AS `durasi_tiu_v`,
-  1 AS `durasi_tkp_v`,
-  1 AS `jumlah_twk_v`,
-  1 AS `jumlah_tiu_v`,
-  1 AS `jumlah_tkp_v`,
-  1 AS `passing_twk_v`,
-  1 AS `passing_tiu_v`,
-  1 AS `passing_tkp_v`,
-  1 AS `nilai_twk_v`,
-  1 AS `nilai_tiu_v`,
-  1 AS `nilai_tkp_v` */;
-SET character_set_client = @saved_cs_client;
-
---
--- Dumping events for database 'skd_cat_bkn'
---
-
---
--- Dumping routines for database 'skd_cat_bkn'
---
-
---
--- Final view structure for view `v_tryout_sessions_flat`
---
-
-/*!50001 DROP VIEW IF EXISTS `v_tryout_sessions_flat`*/;
-/*!50001 SET @saved_cs_client          = @@character_set_client */;
-/*!50001 SET @saved_cs_results         = @@character_set_results */;
-/*!50001 SET @saved_col_connection     = @@collation_connection */;
-/*!50001 SET character_set_client      = utf8mb4 */;
-/*!50001 SET character_set_results     = utf8mb4 */;
-/*!50001 SET collation_connection      = utf8mb4_general_ci */;
-/*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
-/*!50001 VIEW `v_tryout_sessions_flat` AS select `ts`.`id` AS `id`,`ts`.`user_id` AS `user_id`,`ts`.`nama` AS `nama`,`ts`.`waktu_mulai` AS `waktu_mulai`,`ts`.`waktu_selesai` AS `waktu_selesai`,`ts`.`status` AS `status`,`ts`.`created_at` AS `created_at`,max(case when `ss`.`subtes` = 'TWK' then `ss`.`durasi_menit` end) AS `durasi_twk_v`,max(case when `ss`.`subtes` = 'TIU' then `ss`.`durasi_menit` end) AS `durasi_tiu_v`,max(case when `ss`.`subtes` = 'TKP' then `ss`.`durasi_menit` end) AS `durasi_tkp_v`,max(case when `ss`.`subtes` = 'TWK' then `ss`.`jumlah_soal` end) AS `jumlah_twk_v`,max(case when `ss`.`subtes` = 'TIU' then `ss`.`jumlah_soal` end) AS `jumlah_tiu_v`,max(case when `ss`.`subtes` = 'TKP' then `ss`.`jumlah_soal` end) AS `jumlah_tkp_v`,max(case when `ss`.`subtes` = 'TWK' then `ss`.`passing_grade` end) AS `passing_twk_v`,max(case when `ss`.`subtes` = 'TIU' then `ss`.`passing_grade` end) AS `passing_tiu_v`,max(case when `ss`.`subtes` = 'TKP' then `ss`.`passing_grade` end) AS `passing_tkp_v`,max(case when `ss`.`subtes` = 'TWK' then `ss`.`nilai` end) AS `nilai_twk_v`,max(case when `ss`.`subtes` = 'TIU' then `ss`.`nilai` end) AS `nilai_tiu_v`,max(case when `ss`.`subtes` = 'TKP' then `ss`.`nilai` end) AS `nilai_tkp_v` from (`tryout_sessions` `ts` left join `session_subtes` `ss` on(`ts`.`id` = `ss`.`session_id`)) group by `ts`.`id` */;
-/*!50001 SET character_set_client      = @saved_cs_client */;
-/*!50001 SET character_set_results     = @saved_cs_results */;
-/*!50001 SET collation_connection      = @saved_col_connection */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
