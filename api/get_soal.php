@@ -26,6 +26,9 @@ error_reporting(0);
 // Start output buffer to catch any accidental HTML output
 ob_start();
 
+// Start timing for performance monitoring
+$startTime = microtime(true);
+
 // Load environment variables without config.php error handlers
 require '../env_loader.php';
 
@@ -284,14 +287,32 @@ try {
 
     // Clear any buffered HTML output before sending JSON
     ob_end_clean();
+
+    // Calculate response time and log performance
+    $responseTimeMs = round((microtime(true) - $startTime) * 1000);
+    require '../helpers.php';
+    logApiPerformance('/api/get_soal.php', $responseTimeMs, 200);
+
     echo json_encode(['success' => true, 'data' => ['session' => $session, 'soal' => $soal, 'passages' => $passages]]);
 } catch (PDOException $e) {
     ob_end_clean();
+
+    // Calculate response time and log performance for error
+    $responseTimeMs = round((microtime(true) - $startTime) * 1000);
+    require '../helpers.php';
+    logApiPerformance('/api/get_soal.php', $responseTimeMs, 500);
+
     http_response_code(500);
     echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
     exit;
 } catch (Exception $e) {
     ob_end_clean();
+
+    // Calculate response time and log performance for error
+    $responseTimeMs = round((microtime(true) - $startTime) * 1000);
+    require '../helpers.php';
+    logApiPerformance('/api/get_soal.php', $responseTimeMs, 500);
+
     http_response_code(500);
     echo json_encode(['error' => 'Terjadi kesalahan server: ' . $e->getMessage()]);
     exit;

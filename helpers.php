@@ -229,6 +229,36 @@ function appLog(string $message, string $level = 'info'): void
 }
 
 /**
+ * Log API performance metrics for monitoring
+ * @param string $endpoint API endpoint path
+ * @param int $responseTimeMs Response time in milliseconds
+ * @param int $statusCode HTTP status code
+ */
+function logApiPerformance(string $endpoint, int $responseTimeMs, int $statusCode): void
+{
+    global $pdo;
+
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO api_performance_log
+            (endpoint, method, response_time_ms, status_code, user_id, ip_address)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([
+            $endpoint,
+            $_SERVER['REQUEST_METHOD'] ?? 'GET',
+            $responseTimeMs,
+            $statusCode,
+            $_SESSION['user_id'] ?? null,
+            $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+        ]);
+    } catch (Exception $e) {
+        // Fail silently if table doesn't exist
+        appLog("Failed to log API performance: " . $e->getMessage(), 'warning');
+    }
+}
+
+/**
  * Validasi format nomor HP Indonesia
  * Format: 08xx atau 628xx, minimal 10 digit, maksimal 14 digit
  */

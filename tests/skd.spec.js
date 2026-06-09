@@ -36,9 +36,8 @@ test.describe('SKD CAT-BKN Try Out & Bimbel', () => {
   });
 
   test('latihan per subtes menampilkan 3 pilihan', async ({ page }) => {
-    // Skip this test if test user doesn't exist
-    test.skip(true, 'Requires valid test user account');
-    
+    // Test user account (081987654321) exists in database - test enabled
+
     // Use normal login form (CSRF token is already in the hidden field)
     await page.goto('http://localhost/permen/pages/login.php');
     await page.fill('input[name="no_hp"]', '081987654321');

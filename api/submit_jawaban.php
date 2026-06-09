@@ -25,6 +25,9 @@ require '../config.php';
 require '../helpers.php';
 header('Content-Type: application/json; charset=utf-8');
 
+// Start timing for performance monitoring
+$startTime = microtime(true);
+
 $userId = (int)($_SESSION['user_id'] ?? 0);
 if (!$userId) {
     http_response_code(401);
@@ -141,9 +144,19 @@ try {
     logUserAction($userId, 'submit_answer', "answer_id=$answerId, session_id={$soal['session_id']}, jawaban=$jawaban, skor=$skor, is_ragu=$isRagu");
     
     $pdo->commit();
+
+    // Calculate response time and log performance
+    $responseTimeMs = round((microtime(true) - $startTime) * 1000);
+    logApiPerformance('/api/submit_jawaban.php', $responseTimeMs, 200);
+
     echo json_encode(['success' => true, 'skor' => $skor, 'is_ragu' => $isRagu]);
 } catch (Exception $e) {
     $pdo->rollBack();
+
+    // Calculate response time and log performance for error
+    $responseTimeMs = round((microtime(true) - $startTime) * 1000);
+    logApiPerformance('/api/submit_jawaban.php', $responseTimeMs, 500);
+
     http_response_code(500);
     echo json_encode(['error' => 'Gagal menyimpan jawaban. Silakan coba lagi.']);
     exit;
