@@ -485,13 +485,13 @@ test.describe('SKD CAT-BKN Comprehensive Test Suite', () => {
 
     // Wait for page to fully load and questions to be fetched via AJAX
     await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
-    
+
     // Wait for soal to be loaded (check for subtes-info or question container)
     await page.waitForSelector('#subtes-info', { timeout: 10000 });
-    
+
     // Wait for AJAX soal to load - look for the container that holds questions (soalContainer)
     await page.waitForSelector('#soalContainer', { timeout: 15000 });
-    
+
     // Give extra time for questions to render
     await page.waitForTimeout(3000);
 
@@ -509,7 +509,7 @@ test.describe('SKD CAT-BKN Comprehensive Test Suite', () => {
           await page.waitForTimeout(1000);
         }
       }
-      
+
       if (!optionsVisible) {
         console.log(`Question ${i + 1} options not visible, breaking loop`);
         break;
@@ -525,12 +525,12 @@ test.describe('SKD CAT-BKN Comprehensive Test Suite', () => {
 
     // Finish tryout - handle dialog
     page.on('dialog', dialog => dialog.accept());
-    
+
     // Try to click finish button if available
     const finishButton = page.locator('button.finish');
     if (await finishButton.count() > 0) {
       await finishButton.click();
-      
+
       // Wait for redirect to hasil page
       await page.waitForURL(/hasil\.php/, { timeout: 10000 });
 

@@ -84,7 +84,7 @@ $akurasiTopik = $pdo->prepare("
     WHERE ts.user_id = ? AND a.jawaban_user IS NOT NULL AND a.jawaban_user != ''
     GROUP BY q.subtes, q.topik
     HAVING COUNT(*) >= 3
-    ORDER BY subtes, benar ASC, total DESC
+    ORDER BY subtes, (SUM(CASE WHEN a.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END)) ASC, COUNT(*) DESC
     LIMIT 10
 ");
 $akurasiTopik->execute([$userId]);
@@ -619,6 +619,7 @@ document.addEventListener('DOMContentLoaded', drawPieChart);
 </script>
 <?php endif; ?>
 
+<script src="../assets/chart.umd.min.js"></script>
 <script>
 const chartData = <?= json_encode(array_map(fn($r)=>[
     'date'=>date('d M',strtotime($r['waktu_mulai'])),

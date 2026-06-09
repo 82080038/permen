@@ -31,6 +31,10 @@ function isActive($page, $active) {
 <?php if ($showThemeToggle): ?>
 <button class="theme-toggle" onclick="toggleTheme()" title="Dark/Light Mode" aria-label="Toggle dark/light mode">🌙</button>
 <?php endif; ?>
+<script>
+window.isLoggedIn = <?= $userId ? 'true' : 'false' ?>;
+</script>
+
 <?php if ($showNotifications): ?>
 <div style="position:relative">
 <button onclick="toggleNotifications()" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;padding:.4rem;min-width:44px;min-height:44px" aria-label="Notifikasi" aria-haspopup="true" aria-expanded="false">

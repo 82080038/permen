@@ -105,6 +105,7 @@ try {
     $avgScores = ['avg_tkp' => 0, 'avg_tiu' => 0, 'avg_twk' => 0];
 }
 
+<<<<<<< HEAD
 // Activity heatmap data (last 30 days) - only load when analytics tab is active
 $activityHeatmap = [];
 if (isset($_GET['tab']) && $_GET['tab'] === 'analytics') {

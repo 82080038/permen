@@ -717,7 +717,7 @@ async function retry(fn, maxRetries = 3, delay = 1000) {
 async function fetchWithRetry(url, options = {}, maxRetries = 3) {
     // Show loading indicator
     const loadingIndicator = showLoading('Memuat data...');
-    
+
     return retry(async () => {
         const response = await fetch(url, options);
 
@@ -870,8 +870,6 @@ if (document.readyState === 'loading') {
         initDarkMode();
         initMobileMenu();
         initKeyboardShortcuts();
-        initServiceWorker();
-        initPWAInstallPrompt();
         initAnalytics();
     });
 } else {
@@ -879,375 +877,9 @@ if (document.readyState === 'loading') {
     initDarkMode();
     initMobileMenu();
     initKeyboardShortcuts();
-    initServiceWorker();
-    initPWAInstallPrompt();
     initAnalytics();
 }
 
-/**
- * Initialize Service Worker for PWA
- */
-function initServiceWorker() {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/permen/sw.js')
-            .then(registration => {
-                console.log('Service Worker registered:', registration);
-                
-                // Check for updates
-                registration.addEventListener('updatefound', () => {
-                    const newWorker = registration.installing;
-                    newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            // New version available
-                            showUpdateNotification();
-                        }
-                    });
-                });
-            })
-            .catch(error => {
-                console.error('Service Worker registration failed:', error);
-            });
-        
-        // Listen for messages from service worker
-        navigator.serviceWorker.addEventListener('message', event => {
-            if (event.data.type === 'SYNC_COMPLETE') {
-                showToast('Jawaban offline berhasil disinkronisasi', 'success');
-            }
-        });
-    }
-}
-
-/**
- * Initialize PWA Install Prompt
- */
-let deferredPrompt;
-
-function initPWAInstallPrompt() {
-    if (!('serviceWorker' in navigator)) return;
-    
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        
-        // Show install button
-        showInstallButton();
-    });
-    
-    window.addEventListener('appinstalled', () => {
-        deferredPrompt = null;
-        hideInstallButton();
-        showToast('Aplikasi berhasil diinstall!', 'success');
-    });
-}
-
-function showInstallButton() {
-    let installBtn = document.getElementById('pwa-install-btn');
-    if (!installBtn) {
-        installBtn = document.createElement('button');
-        installBtn.id = 'pwa-install-btn';
-        installBtn.innerHTML = '📱 Install App';
-        installBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:12px 20px;background:#2980b9;color:#fff;border:none;border-radius:25px;cursor:pointer;font-size:14px;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:9999;transition:transform 0.2s;';
-        installBtn.addEventListener('click', handleInstallClick);
-        document.body.appendChild(installBtn);
-    }
-    installBtn.style.display = 'block';
-}
-
-function hideInstallButton() {
-    const installBtn = document.getElementById('pwa-install-btn');
-    if (installBtn) {
-        installBtn.style.display = 'none';
-    }
-}
-
-function handleInstallClick() {
-    if (!deferredPrompt) return;
-    
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then((choiceResult) => {
-        if (choiceResult.outcome === 'accepted') {
-            console.log('User accepted the install prompt');
-        }
-        deferredPrompt = null;
-        hideInstallButton();
-    });
-}
-
-function showUpdateNotification() {
-    const notification = document.createElement('div');
-    notification.style.cssText = 'position:fixed;top:20px;right:20px;background:#27ae60;color:#fff;padding:15px 20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:10000;max-width:300px;';
-    notification.innerHTML = `
-        <div style="font-weight:bold;margin-bottom:5px">Update Tersedia!</div>
-        <div style="font-size:13px;margin-bottom:10px">Versi baru aplikasi tersedia. Refresh untuk update.</div>
-        <button onclick="location.reload()" style="background:#fff;color:#27ae60;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-weight:bold">Refresh</button>
-    `;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => notification.remove(), 30000);
-}
-
-/**
- * IndexedDB for offline answers storage
- */
-const DB_NAME = 'SKD_CAT_BKN_Offline';
-const DB_VERSION = 1;
-const STORE_NAME = 'offline_answers';
-
-function openDB() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => resolve(request.result);
-        
-        request.onupgradeneeded = (event) => {
-            const db = event.target.result;
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-                store.createIndex('soal_id', 'soal_id', { unique: false });
-                store.createIndex('user_id', 'user_id', { unique: false });
-                store.createIndex('timestamp', 'timestamp', { unique: false });
-            }
-        };
-    });
-}
-
-async function saveOfflineAnswer(answerData) {
-    try {
-        const db = await openDB();
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        
-        const record = {
-            ...answerData,
-            timestamp: new Date().toISOString(),
-            synced: false
-        };
-        
-        await new Promise((resolve, reject) => {
-            const request = store.add(record);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
-        
-        // Register background sync
-        if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
-            const registration = await navigator.serviceWorker.ready;
-            await registration.sync.register('sync-offline-answers');
-        }
-        
-        return true;
-    } catch (e) {
-        console.error('Failed to save offline answer:', e);
-        return false;
-    }
-}
-
-async function getOfflineAnswers() {
-    try {
-        const db = await openDB();
-        const transaction = db.transaction([STORE_NAME], 'readonly');
-        const store = transaction.objectStore(STORE_NAME);
-        
-        return await new Promise((resolve, reject) => {
-            const request = store.getAll();
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
-    } catch (e) {
-        console.error('Failed to get offline answers:', e);
-        return [];
-    }
-}
-
-async function removeOfflineAnswer(id) {
-    try {
-        const db = await openDB();
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        
-        await new Promise((resolve, reject) => {
-            const request = store.delete(id);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
-        
-        return true;
-    } catch (e) {
-        console.error('Failed to remove offline answer:', e);
-        return false;
-    }
-}
-
-// Make offline functions available globally
-window.saveOfflineAnswer = saveOfflineAnswer;
-window.getOfflineAnswers = getOfflineAnswers;
-window.removeOfflineAnswer = removeOfflineAnswer;
-
-/**
- * Push Notifications Management
- */
-let pushSubscription = null;
-
-async function initPushNotifications() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.log('Push notifications not supported');
-        return;
-    }
-    
-    try {
-        const registration = await navigator.serviceWorker.ready;
-        pushSubscription = await registration.pushManager.getSubscription();
-        
-        // Check if user has subscription in database
-        const response = await fetch('/permen/api/push_notifications.php?action=check_subscription');
-        const data = await response.json();
-        
-        if (data.success && data.subscribed && !pushSubscription) {
-            // User has subscription in DB but not in browser - might need to resubscribe
-            console.log('Subscription mismatch detected');
-        }
-        
-        return pushSubscription;
-    } catch (e) {
-        console.error('Push notification init failed:', e);
-        return null;
-    }
-}
-
-async function subscribeToPushNotifications() {
-    try {
-        const registration = await navigator.serviceWorker.ready;
-        
-        // Request permission
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-            throw new Error('Notification permission denied');
-        }
-        
-        // Subscribe to push
-        const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array('YOUR_VAPID_PUBLIC_KEY_HERE')
-        });
-        
-        // Send subscription to server
-        const response = await fetch('/permen/api/push_notifications.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                action: 'subscribe',
-                endpoint: subscription.endpoint,
-                p256dh: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))),
-                auth: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth'))))
-            })
-        });
-        
-        const data = await response.json();
-        if (data.success) {
-            pushSubscription = subscription;
-            showToast('Notifikasi berhasil diaktifkan', 'success');
-            return true;
-        } else {
-            throw new Error(data.error || 'Subscription failed');
-        }
-    } catch (e) {
-        console.error('Push subscription failed:', e);
-        showToast('Gagal mengaktifkan notifikasi', 'error');
-        return false;
-    }
-}
-
-async function unsubscribeFromPushNotifications() {
-    if (!pushSubscription) return true;
-    
-    try {
-        await pushSubscription.unsubscribe();
-        
-        // Remove from server
-        const response = await fetch('/permen/api/push_notifications.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                action: 'unsubscribe',
-                endpoint: pushSubscription.endpoint
-            })
-        });
-        
-        const data = await response.json();
-        if (data.success) {
-            pushSubscription = null;
-            showToast('Notifikasi berhasil dinonaktifkan', 'success');
-            return true;
-        } else {
-            throw new Error(data.error || 'Unsubscribe failed');
-        }
-    } catch (e) {
-        console.error('Push unsubscribe failed:', e);
-        showToast('Gagal menonaktifkan notifikasi', 'error');
-        return false;
-    }
-}
-
-async function getNotificationPreferences() {
-    try {
-        const response = await fetch('/permen/api/push_notifications.php?action=get_preferences');
-        const data = await response.json();
-        
-        if (data.success) {
-            return data.preferences;
-        }
-        return null;
-    } catch (e) {
-        console.error('Failed to get notification preferences:', e);
-        return null;
-    }
-}
-
-async function updateNotificationPreferences(preferences) {
-    try {
-        const response = await fetch('/permen/api/push_notifications.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                action: 'update_preferences',
-                ...preferences
-            })
-        });
-        
-        const data = await response.json();
-        if (data.success) {
-            showToast('Preferensi notifikasi berhasil diupdate', 'success');
-            return true;
-        } else {
-            throw new Error(data.error || 'Update failed');
-        }
-    } catch (e) {
-        console.error('Failed to update notification preferences:', e);
-        showToast('Gagal update preferensi notifikasi', 'error');
-        return false;
-    }
-}
-
-function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-    
-    return outputArray;
-}
-
-// Make push notification functions available globally
-window.initPushNotifications = initPushNotifications;
-window.subscribeToPushNotifications = subscribeToPushNotifications;
-window.unsubscribeFromPushNotifications = unsubscribeFromPushNotifications;
-window.getNotificationPreferences = getNotificationPreferences;
-window.updateNotificationPreferences = updateNotificationPreferences;
 
 /**
  * Learning Analytics Tracking
@@ -1257,15 +889,20 @@ let pageStartTime = null;
 let currentPageUrl = null;
 
 function initAnalytics() {
+    // Only track analytics if user is logged in
+    if (typeof isLoggedIn === 'undefined' || !isLoggedIn) {
+        return;
+    }
+
     analyticsSessionId = typeof session_id !== 'undefined' ? session_id : generateSessionId();
     pageStartTime = Date.now();
     currentPageUrl = window.location.pathname;
-    
+
     // Track page view
     trackEvent('page_view', {
         page_url: currentPageUrl
     });
-    
+
     // Track time spent on page unload
     window.addEventListener('beforeunload', () => {
         const timeSpent = Math.floor((Date.now() - pageStartTime) / 1000);
@@ -1276,7 +913,7 @@ function initAnalytics() {
             }, true);
         }
     });
-    
+
     // Track visibility changes (user switching tabs)
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
@@ -1298,13 +935,18 @@ function generateSessionId() {
 }
 
 function trackEvent(eventType, data = {}, sendBeacon = false) {
+    // Only track analytics if user is logged in
+    if (typeof isLoggedIn === 'undefined' || !isLoggedIn) {
+        return;
+    }
+
     const payload = {
         action: 'track_event',
         event_type: eventType,
         session_id: analyticsSessionId,
         ...data
     };
-    
+
     if (sendBeacon && navigator.sendBeacon) {
         const formData = new URLSearchParams(payload);
         navigator.sendBeacon('/permen/api/learning_analytics.php', formData);
@@ -1373,7 +1015,7 @@ async function getLearningInsights() {
     try {
         const response = await fetch('/permen/api/learning_analytics.php?action=get_learning_insights');
         const data = await response.json();
-        
+
         if (data.success) {
             return data.insights;
         }
@@ -1396,7 +1038,7 @@ async function getLearningStats() {
     try {
         const response = await fetch('/permen/api/learning_analytics.php?action=get_learning_stats');
         const data = await response.json();
-        
+
         if (data.success) {
             return data;
         }

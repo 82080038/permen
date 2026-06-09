@@ -5,7 +5,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
-<link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="assets/style.css">
 <title>SKD CAT-BKN Try Out & Bimbel</title>
 <style>
@@ -527,15 +526,6 @@ document.querySelectorAll('.feature-card, .testimonial-card, .stat-card').forEac
 // Initialize
 fetchStats();
 
-// Unregister existing service worker (cleanup)
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    registrations.forEach(registration => {
-      registration.unregister();
-      console.log('Service Worker unregistered');
-    });
-  });
-}
 </script>
 </body>
 </html>

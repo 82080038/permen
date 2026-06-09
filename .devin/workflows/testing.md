@@ -15,7 +15,10 @@ This workflow runs comprehensive end-to-end tests using Playwright with console 
 
 2. Database must be imported:
    ```bash
-   /opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/skd_cat_bkn.sql
+   cd /opt/lampp/htdocs/permen/sql
+   /opt/lampp/bin/mysql -u root -proot < IMPORT_ALL.sql
+   # Or import main schema separately
+   /opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/skd_cat_bkn_latest.sql
    ```
 
 3. Dependencies must be installed:
