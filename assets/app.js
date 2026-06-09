@@ -815,31 +815,31 @@ function initKeyboardShortcuts() {
         // Alt + L: Go to login
         if (e.altKey && e.key === 'l') {
             e.preventDefault();
-            window.location.href = '/permen/pages/login.php';
+            window.location.href = '/permen/login.php';
         }
 
         // Alt + D: Go to dashboard (if logged in)
         if (e.altKey && e.key === 'd') {
             e.preventDefault();
-            window.location.href = '/permen/pages/user_dashboard.php';
+            window.location.href = '/permen/user_dashboard.php';
         }
 
         // Alt + T: Go to tryout
         if (e.altKey && e.key === 't') {
             e.preventDefault();
-            window.location.href = '/permen/pages/tryout.php';
+            window.location.href = '/permen/tryout.php';
         }
 
         // Alt + M: Go to materi
         if (e.altKey && e.key === 'm') {
             e.preventDefault();
-            window.location.href = '/permen/pages/materi.php?subtes=TWK';
+            window.location.href = '/permen/materi.php?subtes=TWK';
         }
 
         // Alt + L: Go to latihan
         if (e.altKey && e.key === 'L') {
             e.preventDefault();
-            window.location.href = '/permen/pages/latihan.php';
+            window.location.href = '/permen/latihan.php';
         }
 
         // Escape: Close modals/menus

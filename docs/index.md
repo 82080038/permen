@@ -11,6 +11,9 @@ Selamat datang di dokumentasi aplikasi. Gunakan indeks di bawah ini untuk naviga
 |---------|-----|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Arsitektur sistem, stack teknologi, diagram alur data, skema database, mekanisme skoring, catatan keamanan |
 | [API.md](API.md) | Endpoint lengkap: materi, soal, submit jawaban, finish tryout. Contoh request/response JSON |
+| [IMPLEMENTATION_SUMMARY.md](../IMPLEMENTATION_SUMMARY.md) | Ringkasan lengkap implementasi 10 batch perbaikan |
+| [TESTING_REPORT.md](../TESTING_REPORT.md) | Laporan testing dan verifikasi perbaikan |
+| [SARAN_PERBAIKAN_APLIKASI.md](SARAN_PERBAIKAN_APLIKASI.md) | Analisis komprehensif dan rekomendasi perbaikan |
 
 ### Untuk Manajemen Proyek
 | Dokumen | Isi |
@@ -35,11 +38,13 @@ Setiap kali ada pengembangan, ikuti urutan berikut:
 3. Update ROADMAP.md    -> tandai fitur DONE atau IN PROGRESS
 4. Update ARCHITECTURE.md -> jika ada perubahan struktur/flow baru
 5. Update API.md         -> jika ada endpoint baru atau perubahan response
-6. Commit & push
+6. Update IMPLEMENTATION_SUMMARY.md -> jika ada perbaikan/optimasi
+7. Commit & push
 ```
 
 ---
 
 ## Versi Dokumentasi Terakhir
 
+- **v1.1.0** — 2026-06-09 — Implementasi lengkap: 10 batch perbaikan, cleanup, optimasi database, security hardening, API standardization, DevOps ready.
 - **v1.0.0** — 2026-06-02 — Dokumentasi awal lengkap (ARCHITECTURE, API, ROADMAP, CHANGELOG).

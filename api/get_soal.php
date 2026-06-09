@@ -290,7 +290,6 @@ try {
 
     // Calculate response time and log performance
     $responseTimeMs = round((microtime(true) - $startTime) * 1000);
-    require '../helpers.php';
     logApiPerformance('/api/get_soal.php', $responseTimeMs, 200);
 
     echo json_encode(['success' => true, 'data' => ['session' => $session, 'soal' => $soal, 'passages' => $passages]]);
@@ -299,7 +298,6 @@ try {
 
     // Calculate response time and log performance for error
     $responseTimeMs = round((microtime(true) - $startTime) * 1000);
-    require '../helpers.php';
     logApiPerformance('/api/get_soal.php', $responseTimeMs, 500);
 
     http_response_code(500);
@@ -310,7 +308,6 @@ try {
 
     // Calculate response time and log performance for error
     $responseTimeMs = round((microtime(true) - $startTime) * 1000);
-    require '../helpers.php';
     logApiPerformance('/api/get_soal.php', $responseTimeMs, 500);
 
     http_response_code(500);

@@ -4,7 +4,7 @@ require '../helpers.php';
 
 // Guard: only admin
 if (empty($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
-    header('Location: ../pages/login.php');
+    header('Location: login.php');
     exit;
 }
 
@@ -50,11 +50,15 @@ $scheduledTryouts = $stmt->fetchAll();
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<meta name="theme-color" content="#1a5276">
+<base href="/permen/">
 <title>Kelola Scheduled Tryouts — Admin SKD CAT-BKN</title>
-<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
+<?php $pageTitle = 'Kelola Scheduled Tryouts — Admin SKD CAT-BKN'; $activePage = 'admin_scheduled_tryouts'; ?>
 <?php require '../includes/navigation.php'; ?>
 <div class="container">
 <h1>Kelola Scheduled Tryouts</h1>

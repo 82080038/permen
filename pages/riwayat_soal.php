@@ -3,7 +3,7 @@ require '../config.php';
 require '../helpers.php';
 
 if (empty($_SESSION['user_id'])) {
-    header('Location: ../pages/login.php');
+    header('Location: login.php');
     exit;
 }
 
@@ -28,9 +28,13 @@ elseif ($filterStatus === 'salah') { $where .= " AND a.jawaban_user IS NOT NULL 
 elseif ($filterStatus === 'kosong') { $where .= " AND (a.jawaban_user IS NULL OR a.jawaban_user = '')"; }
 
 // Count total
-$countStmt = $pdo->prepare("SELECT COUNT(*) FROM answers a JOIN questions q ON a.question_id = q.id WHERE $where");
-$countStmt->execute($params);
-$totalRows = $countStmt->fetchColumn();
+try {
+    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM answers a JOIN questions q ON a.question_id = q.id WHERE $where");
+    $countStmt->execute($params);
+    $totalRows = $countStmt->fetchColumn();
+} catch (Throwable $e) {
+    $totalRows = 0;
+}
 $totalPages = max(1, ceil($totalRows / $perPage));
 
 // Fetch data
@@ -43,31 +47,39 @@ $query = "
         ts.nama as session_nama, ts.waktu_mulai
     FROM answers a
     JOIN questions q ON a.question_id = q.id
-    JOIN tryout_sessions ts ON a.session_id = ts.id
+    LEFT JOIN tryout_sessions ts ON a.session_id = ts.id
     WHERE $where
     ORDER BY a.id DESC
     LIMIT $perPage OFFSET $offset
 ";
-$stmt = $pdo->prepare($query);
-$stmt->execute($params);
-$riwayat = $stmt->fetchAll();
+try {
+    $stmt = $pdo->prepare($query);
+    $stmt->execute($params);
+    $riwayat = $stmt->fetchAll();
+} catch (Throwable $e) {
+    $riwayat = [];
+}
 
 // Distinct subtes & topik for filters
 $subtesList = $pdo->query("SELECT DISTINCT subtes FROM questions ORDER BY subtes")->fetchAll(PDO::FETCH_COLUMN);
 $topikList = $pdo->query("SELECT DISTINCT topik FROM questions ORDER BY topik")->fetchAll(PDO::FETCH_COLUMN);
 
 // Summary stats
-$summary = $pdo->prepare("
-    SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN a.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) as benar,
-        SUM(CASE WHEN a.jawaban_user IS NOT NULL AND a.jawaban_user != '' AND a.jawaban_user != q.jawaban_benar THEN 1 ELSE 0 END) as salah,
-        SUM(CASE WHEN a.jawaban_user IS NULL OR a.jawaban_user = '' THEN 1 ELSE 0 END) as kosong
-    FROM answers a JOIN questions q ON a.question_id = q.id
-    WHERE a.user_id = ?
-");
-$summary->execute([$userId]);
-$sum = $summary->fetch();
+try {
+    $summary = $pdo->prepare("
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN a.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) as benar,
+            SUM(CASE WHEN a.jawaban_user IS NOT NULL AND a.jawaban_user != '' AND a.jawaban_user != q.jawaban_benar THEN 1 ELSE 0 END) as salah,
+            SUM(CASE WHEN a.jawaban_user IS NULL OR a.jawaban_user = '' THEN 1 ELSE 0 END) as kosong
+        FROM answers a JOIN questions q ON a.question_id = q.id
+        WHERE a.user_id = ?
+    ");
+    $summary->execute([$userId]);
+    $sum = $summary->fetch();
+} catch (Throwable $e) {
+    $sum = ['total' => 0, 'benar' => 0, 'salah' => 0, 'kosong' => 0];
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">

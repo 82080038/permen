@@ -11,29 +11,31 @@ $activePage = 'help';
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
     <meta name="theme-color" content="#1a5276">
+    <base href="/permen/">
     <title><?= $pageTitle ?></title>
-    <link rel="stylesheet" href="../assets/form.css">
-    <link rel="stylesheet" href="../assets/login.css">
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/form.css">
 </head>
 <body>
     <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
+<?php require '../includes/navigation.php'; ?>
     
-    <div class="login-container">
-        <div class="login-card">
-            <h1 style="text-align:center;color:#1a5276;margin-bottom:1.5rem">📚 Help Center</h1>
+    <div class="container">
+        <div class="card" style="max-width:700px;margin:2rem auto">
+            <h1 style="text-align:center;color:#1a5276;margin-bottom:1.5rem">Help Center</h1>
             
             <div id="main-content">
                 <!-- Quick Links -->
                 <div style="margin-bottom:2rem">
                     <h2 style="color:#1a5276;font-size:1.2rem;margin-bottom:1rem">Dokumentasi</h2>
                     <div style="display:grid;gap:1rem">
-                        <a href="../docs/USER_MANUAL.md" target="_blank" class="btn" style="display:block;text-align:center;text-decoration:none">
+                        <a href="docs/USER_MANUAL.md" target="_blank" class="btn" style="display:block;text-align:center;text-decoration:none">
                             📖 User Manual
                         </a>
-                        <a href="../docs/ADMIN_MANUAL.md" target="_blank" class="btn" style="display:block;text-align:center;text-decoration:none">
+                        <a href="docs/ADMIN_MANUAL.md" target="_blank" class="btn" style="display:block;text-align:center;text-decoration:none">
                             👨‍💼 Admin Manual
                         </a>
-                        <a href="../docs/API_DOCUMENTATION.md" target="_blank" class="btn" style="display:block;text-align:center;text-decoration:none">
+                        <a href="docs/API_DOCUMENTATION.md" target="_blank" class="btn" style="display:block;text-align:center;text-decoration:none">
                             🔌 API Documentation
                         </a>
                     </div>
@@ -105,7 +107,7 @@ $activePage = 'help';
                     <h2 style="color:#1a5276;font-size:1.2rem;margin-bottom:1rem">Hubungi Support</h2>
                     <p style="color:#555;margin-bottom:1rem">Jika Anda tidak menemukan jawaban yang Anda cari, silakan hubungi kami:</p>
                     <div style="display:flex;flex-direction:column;gap:.5rem">
-                        <a href="pages/feedback.php" class="btn" style="text-align:center;text-decoration:none">Kirim Feedback</a>
+                        <a href="feedback.php" class="btn" style="text-align:center;text-decoration:none">Kirim Feedback</a>
                         <a href="mailto:support@example.com" class="btn" style="text-align:center;text-decoration:none;background:#3498db">Email Support</a>
                     </div>
                 </div>
@@ -118,13 +120,13 @@ $activePage = 'help';
                 
                 <!-- Back Link -->
                 <div style="text-align:center;margin-top:2rem">
-                    <a href="../index.php" class="link">Kembali ke Beranda</a>
+                    <a href="index.php" class="link">Kembali ke Beranda</a>
                 </div>
             </div>
         </div>
     </div>
     
-    <div class="footer">SKD CAT-BKN Try Out & Bimbel</div>
-<script src="../assets/app.js"></script>
+    <div class="footer" style="text-align:center;padding:1.5rem;color:#777;font-size:.85rem">SKD CAT-BKN Try Out &amp; Bimbel</div>
+<script src="assets/app.js"></script>
 </body>
 </html>

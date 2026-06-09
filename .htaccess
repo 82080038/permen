@@ -37,8 +37,9 @@ Options -Indexes
     # RewriteRule ^api/(?!v1/)(.*)$ api/v1/$1 [R=301,L]
     
     # Redirect common pages to pages/ folder
-    RewriteRule ^(login|register|profile|forgot_password)\.php$ pages/$1.php [L]
+    RewriteRule ^(login|register|profile|forgot_password|settings|help)\.php$ pages/$1.php [L]
     RewriteRule ^(user_dashboard|admin_dashboard|tryout|latihan|daily_quiz|hasil|materi|riwayat_soal|leaderboard|feedback)\.php$ pages/$1.php [L]
+    RewriteRule ^(scheduled_tryouts|admin_scheduled_tryouts|tryout_simple)\.php$ pages/$1.php [L]
     
     # Redirect all other .php files to pages/ if they exist there
     RewriteCond %{REQUEST_FILENAME} !-f

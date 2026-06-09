@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * API: Submit Answer for Tryout Question
  * 
@@ -8,21 +10,33 @@
  * 
  * @param JSON body {
  *   answer_id: int The answer record ID,
- *   jawaban: string The selected answer (A, B, C, D, E)
+ *   jawaban: string The selected answer (A, B, C, D, E),
+ *   is_ragu: bool Optional flag for doubtful answer
  * }
  * @return JSON {
  *   success: bool,
- *   skor: int Calculated score (0-5 for TIU/TWK, 1-5 for TKP)
+ *   message: string,
+ *   data: {
+ *     skor: int,
+ *     is_ragu: bool
+ *   }
  * }
  * 
  * HTTP Status Codes:
  * - 401: User not authenticated
  * - 400: Invalid data or answer
  * - 403: Question not found, not owned by user, session finished, or time expired
+ * - 429: Rate limit exceeded
  * - 200: Success
  */
 require '../config.php';
 require '../helpers.php';
+
+// Load ApiResponse class
+require_once __DIR__ . '/../src/Http/ApiResponse.php';
+
+use App\Http\ApiResponse;
+
 header('Content-Type: application/json; charset=utf-8');
 
 // Start timing for performance monitoring
@@ -30,24 +44,18 @@ $startTime = microtime(true);
 
 $userId = (int)($_SESSION['user_id'] ?? 0);
 if (!$userId) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Autentikasi diperlukan']);
-    exit;
+    ApiResponse::unauthorized('Silakan login terlebih dahulu.');
 }
 
 // CSRF validation for API endpoints
 if (!validateCsrfApi()) {
-    http_response_code(403);
-    echo json_encode(['error' => 'CSRF token tidak valid']);
-    exit;
+    ApiResponse::forbidden('Token keamanan tidak valid. Silakan muat ulang halaman.');
 }
 
 // API rate limiting
 $identifier = "user_$userId";
 if (!checkAPIRateLimit($identifier, 'submit_jawaban', 200, 60)) {
-    http_response_code(429);
-    echo json_encode(['error' => 'Rate limit exceeded. Please try again later.']);
-    exit;
+    ApiResponse::rateLimit('Terlalu banyak jawaban yang dikirim. Silakan tunggu sebentar.');
 }
 logAPIRequest($identifier, 'submit_jawaban');
 
@@ -58,9 +66,10 @@ $jawaban = strtoupper(substr(trim($jawaban), 0, 1));
 $isRagu = (int)($data['is_ragu'] ?? 0);
 
 if (!$answerId || !in_array($jawaban, ['A','B','C','D','E'])) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Data tidak lengkap atau jawaban tidak valid']);
-    exit;
+    ApiResponse::validationError([
+        'answer_id' => !$answerId ? 'ID jawaban diperlukan' : null,
+        'jawaban' => !in_array($jawaban, ['A','B','C','D','E']) ? 'Jawaban harus A, B, C, D, atau E' : null
+    ], 'Data tidak lengkap atau tidak valid.');
 }
 
 // Ambil soal + validasi kepemilikan session
@@ -74,16 +83,12 @@ $stmt->execute([$answerId, $userId]);
 $soal = $stmt->fetch();
 
 if (!$soal) {
-    http_response_code(403);
-    echo json_encode(['error' => 'Soal tidak ditemukan atau bukan milik Anda']);
-    exit;
+    ApiResponse::forbidden('Soal tidak ditemukan atau bukan milik Anda.');
 }
 
 // Enforce timer server-side per subtes
 if ($soal['status'] !== 'berjalan') {
-    http_response_code(403);
-    echo json_encode(['error' => 'Session sudah selesai. Jawaban tidak dapat diubah.']);
-    exit;
+    ApiResponse::forbidden('Sesi tryout sudah selesai. Jawaban tidak dapat diubah.');
 }
 
 // Validate per-subtes time
@@ -95,19 +100,15 @@ if ($subData && $subData['waktu_mulai_subtes']) {
     $elapsedSub = time() - strtotime($subData['waktu_mulai_subtes']);
     $maxSubSeconds = (int)$subData['durasi_menit'] * 60 + 60; // toleransi 60 detik
     if ($elapsedSub > $maxSubSeconds) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Waktu subtes ' . $soal['subtes'] . ' sudah habis.']);
-        exit;
+        ApiResponse::forbidden('Waktu subtes ' . $soal['subtes'] . ' sudah habis.');
     }
 }
 
 // Also validate total time
 $elapsedSeconds = time() - strtotime($soal['waktu_mulai']);
 $totalSeconds = (int)$soal['total_durasi_menit'] * 60;
-if ($totalSeconds > 0 && $elapsedSeconds > $totalSeconds + 60) { // toleransi 1 menit total (tightened from 5)
-    http_response_code(403);
-    echo json_encode(['error' => 'Waktu tryout sudah habis.']);
-    exit;
+if ($totalSeconds > 0 && $elapsedSeconds > $totalSeconds + 60) {
+    ApiResponse::forbidden('Waktu tryout sudah habis.');
 }
 
 $skor = 0;
@@ -148,16 +149,19 @@ try {
     // Calculate response time and log performance
     $responseTimeMs = round((microtime(true) - $startTime) * 1000);
     logApiPerformance('/api/submit_jawaban.php', $responseTimeMs, 200);
-
-    echo json_encode(['success' => true, 'skor' => $skor, 'is_ragu' => $isRagu]);
+    
+    ApiResponse::success([
+        'skor' => $skor,
+        'is_ragu' => $isRagu
+    ], 'Jawaban berhasil disimpan.');
+    
 } catch (Exception $e) {
     $pdo->rollBack();
 
     // Calculate response time and log performance for error
     $responseTimeMs = round((microtime(true) - $startTime) * 1000);
     logApiPerformance('/api/submit_jawaban.php', $responseTimeMs, 500);
-
-    http_response_code(500);
-    echo json_encode(['error' => 'Gagal menyimpan jawaban. Silakan coba lagi.']);
-    exit;
+    
+    error_log('Submit jawaban error: ' . $e->getMessage());
+    ApiResponse::serverError('Gagal menyimpan jawaban. Silakan coba lagi nanti.');
 }

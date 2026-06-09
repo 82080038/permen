@@ -584,7 +584,8 @@ function generateKetidaksamaan(): array {
         'pilihan_d' => $options['D'],
         'pilihan_e' => $options['E'],
         'jawaban_benar' => $correct,
-        'pembahasan' => $s['pembahasan']
+        'pembahasan' => $s['pembahasan'],
+        'image_url' => 'assets/soal/figural_03_ketidaksamaan.svg'
     ];
 }
 
@@ -677,7 +678,8 @@ function generateSerial(): array {
         'pilihan_d' => $options['D'],
         'pilihan_e' => $options['E'],
         'jawaban_benar' => $correct,
-        'pembahasan' => $s['pembahasan']
+        'pembahasan' => $s['pembahasan'],
+        'image_url' => 'assets/soal/figural_02_serial.svg'
     ];
 }
 

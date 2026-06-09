@@ -2,6 +2,12 @@
 require '../config.php';
 require '../helpers.php';
 
+// Guard: user yang sudah login tidak perlu register
+if (!empty($_SESSION['user_id'])) {
+    header('Location: user_dashboard.php');
+    exit;
+}
+
 $error = '';
 $success = '';
 

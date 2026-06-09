@@ -16,7 +16,8 @@ $userId = $_SESSION['user_id'] ?? null;
 $userRole = $_SESSION['role'] ?? '';
 
 // Detect if navigation is included from pages/ directory or root
-$basePath = (basename(dirname($_SERVER['SCRIPT_NAME'])) === 'pages') ? '../' : '';
+// Since base href="/permen/" is set in all pages, use empty basePath
+$basePath = '';
 $apiPath = '/permen/api/'; // Use absolute path for API calls
 
 // Helper untuk menentukan apakah menu aktif
@@ -83,3 +84,30 @@ window.isLoggedIn = <?= $userId ? 'true' : 'false' ?>;
 </div>
 </nav>
 </div>
+
+<?php // Service Worker Registration - PWA Support ?>
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/permen/assets/js/sw.js')
+            .then((registration) => {
+                console.log('[SW] Registered:', registration.scope);
+                
+                // Handle updates
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // New version available
+                            console.log('[SW] New version available');
+                            // Optionally show update notification to user
+                        }
+                    });
+                });
+            })
+            .catch((error) => {
+                console.error('[SW] Registration failed:', error);
+            });
+    });
+}
+</script>

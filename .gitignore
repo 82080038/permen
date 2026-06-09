@@ -33,3 +33,12 @@ cache/
 
 # Database exports (keep only latest)
 database_export.sql
+
+# Archive folders (history, not needed in repo)
+sql/archive/
+docs/archive/
+scripts/archive/
+
+# Cache
+.phpunit.result.cache
+*.cache

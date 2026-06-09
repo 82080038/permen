@@ -4,7 +4,7 @@ require '../helpers.php';
 
 // Guard: user harus login
 if (empty($_SESSION['user_id'])) {
-    header('Location: ../pages/login.php');
+    header('Location: login.php');
     exit;
 }
 
@@ -62,6 +62,7 @@ $hasCompleted = $session && $session['status'] === 'selesai';
 .quiz-container{max-width:900px;margin:2rem auto;padding:0 1rem}
 .quiz-header{background:linear-gradient(135deg,#1a5276,#2980b9);color:#fff;padding:1.5rem;border-radius:8px;margin-bottom:1.5rem;text-align:center}
 .quiz-header h1{font-size:1.3rem;margin-bottom:.5rem}
+#imgZoomModal.show{display:flex}
 .quiz-header p{opacity:.9;font-size:.9rem}
 .quiz-info{display:flex;justify-content:center;gap:2rem;margin-top:1rem;flex-wrap:wrap}
 .quiz-info span{background:rgba(255,255,255,.2);padding:.5rem 1rem;border-radius:20px;font-size:.85rem}
@@ -269,6 +270,14 @@ let sessionId = 0;
 let jawaban = {}; // {question_id: {jawaban, ragu}}
 let startTime = Date.now();
 
+// XSS protection function
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 // Load soal saat halaman dimuat
 async function loadQuiz() {
     try {
@@ -309,7 +318,7 @@ function renderNav() {
         else if (j?.jawaban) cls += ' answered';
         return `<button class="${cls}" onclick="goToSoal(${i})">${i+1}</button>`;
     }).join('');
-}
+}ecapeHtml(s)l" oading="lazy" onerror="this.style.display='none'; this.parentElement.insertAdjacentHTML('beforeend', '<small style=\'color:#e74c3c;display:block;margin:0.5rem 0\'>Gambar tidak dapat dimuat</small>')" style="max-width:100%;max-height:250px;border:1px solid #ddd;border-radius:4px;margin:0.5rem 0;cursor:zoom-in" onclick="openZoom(this.src)
 
 function renderSoal() {
     const s = soal[currentIndex];
@@ -556,6 +565,25 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+</script>
+
+<!-- Image Zoom Modal -->
+<div id="imgZoomModal" onclick="closeZoom()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:2000;justify-content:center;align-items:center;flex-direction:column;padding:1rem">
+    <button class="zoom-close" onclick="event.stopPropagation();closeZoom()" style="position:absolute;top:1rem;right:1rem;background:#fff;color:#333;border:none;padding:.5rem 1rem;border-radius:4px;cursor:pointer;font-size:1rem">Tutup</button>
+    <img id="zoomImg" src="" alt="Zoomed" style="max-width:95%;max-height:80vh;object-fit:contain">
+    <div class="zoom-hint" style="color:#fff;font-size:.85rem;margin-top:.5rem">Ketik gambar atau di luar area untuk menutup</div>
+</div>
+
+<script>
+function openZoom(src){
+    const modal = document.getElementById('imgZoomModal');
+    const img = document.getElementById('zoomImg');
+    img.src = src;
+    modal.style.display = 'flex';
+}
+function closeZoom(){
+    document.getElementById('imgZoomModal').style.display = 'none';
 }
 </script>
 

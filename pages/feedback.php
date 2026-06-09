@@ -4,7 +4,7 @@ require '../helpers.php';
 
 // Guard: only logged in users
 if (empty($_SESSION['user_id'])) {
-    header('Location: ../pages/login.php');
+    header('Location: login.php');
     exit;
 }
 

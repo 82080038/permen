@@ -37,25 +37,57 @@ if (class_exists('App\Core\App')) {
     }
 }
 
+// Environment detection
+$appEnv = $_ENV['APP_ENV'] ?? 'development';
+$isProduction = $appEnv === 'production';
+
 // Legacy global error handlers (kept for backward compatibility)
-set_error_handler(function($errno, $errstr, $errfile, $errline) {
+set_error_handler(function($errno, $errstr, $errfile, $errline) use ($isProduction) {
     if (!(error_reporting() & $errno)) {
         return false;
     }
+    
+    // Always log detailed error internally
     $errorMsg = "[$errno] $errstr in $errfile on line $errline";
     error_log($errorMsg);
+    
+    // In production, show generic message to prevent information leakage
+    if ($isProduction && !headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: text/plain');
+        echo 'Terjadi kesalahan sistem. Silakan hubungi administrator.';
+        exit;
+    }
+    
     return true;
 });
 
-set_exception_handler(function($exception) {
+set_exception_handler(function($exception) use ($isProduction) {
+    // Always log detailed exception internally
     $errorMsg = "Uncaught Exception: " . $exception->getMessage() . " in " . $exception->getFile() . " on line " . $exception->getLine();
     error_log($errorMsg);
+    
+    // In production, show generic message
+    if ($isProduction && !headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Terjadi kesalahan server. Silakan coba lagi nanti.']);
+        exit;
+    }
 });
 
-register_shutdown_function(function() {
+register_shutdown_function(function() use ($isProduction) {
     $error = error_get_last();
     if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        // Always log the fatal error
         error_log("Fatal Error: {$error['message']} in {$error['file']} on line {$error['line']}");
+        
+        // In production, show generic error
+        if ($isProduction && !headers_sent()) {
+            http_response_code(500);
+            header('Content-Type: text/html');
+            echo '<h1>Error</h1><p>Terjadi kesalahan fatal. Silakan hubungi administrator.</p>';
+        }
     }
 });
 

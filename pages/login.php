@@ -2,6 +2,12 @@
 require '../config.php';
 require '../helpers.php';
 
+// Guard: user yang sudah login tidak perlu login lagi
+if (!empty($_SESSION['user_id'])) {
+    header('Location: user_dashboard.php');
+    exit;
+}
+
 $error = '';
 
 // Quick login for testing (development only) - REMOVED FOR SECURITY
@@ -10,12 +16,16 @@ $error = '';
 // Proses login form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-    // Skip rate limiting and CSRF validation in development for testing
-    if (($_ENV['APP_ENV'] ?? 'development') === 'production') {
+    
+    // CSRF validation ALWAYS required (security critical)
+    if (!validateCsrf($_POST['csrf_token'] ?? '')) {
+        $error = 'Sesi tidak valid. Silakan muat ulang halaman.';
+    }
+    
+    // Rate limiting: always in production, optional in development
+    if (!$error && ($_ENV['APP_ENV'] ?? 'development') === 'production') {
         if (!checkRateLimit($ip, $pdo)) {
             $error = 'Terlalu banyak percobaan login. Silakan coba lagi dalam 15 menit.';
-        } elseif (!validateCsrf($_POST['csrf_token'] ?? '')) {
-            $error = 'Sesi tidak valid. Silakan muat ulang halaman.';
         }
     }
     
@@ -47,9 +57,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     session_regenerate_id(true);
 
                     if ($user['role'] === 'admin') {
-                        header('Location: /permen/pages/admin_dashboard.php');
+                        header('Location: /permen/admin_dashboard.php');
                     } else {
-                        header('Location: /permen/pages/user_dashboard.php');
+                        header('Location: /permen/user_dashboard.php');
                     }
                     exit;
                 } else {
@@ -68,9 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Jika sudah login, redirect
 if (!empty($_SESSION['user_id'])) {
     if ($_SESSION['user_role'] === 'admin') {
-        header('Location: /permen/pages/admin_dashboard.php');
+        header('Location: /permen/admin_dashboard.php');
     } else {
-        header('Location: /permen/pages/user_dashboard.php');
+        header('Location: /permen/user_dashboard.php');
     }
     exit;
 }

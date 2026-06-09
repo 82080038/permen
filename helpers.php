@@ -692,7 +692,74 @@ function validateUploadedFile(array $file): array
         }
     }
 
+    // Sanitize SVG files to prevent XSS
+    if ($ext === 'svg' && $mime === 'image/svg+xml') {
+        if (!sanitizeSvgFile($file['tmp_name'])) {
+            return ['valid' => false, 'error' => 'File SVG tidak aman atau tidak valid'];
+        }
+    }
+    
     return ['valid' => true, 'error' => ''];
+}
+
+/**
+ * Sanitize SVG file to prevent XSS attacks
+ * Removes dangerous elements and attributes
+ * 
+ * @param string $filePath Path to SVG file
+ * @return bool True if sanitized successfully
+ */
+function sanitizeSvgFile(string $filePath): bool
+{
+    if (!file_exists($filePath)) {
+        return false;
+    }
+    
+    $svg = file_get_contents($filePath);
+    if ($svg === false) {
+        return false;
+    }
+    
+    // Remove potentially dangerous elements
+    $dangerousElements = [
+        '<script', '</script>',
+        '<foreignObject', '</foreignObject>',
+        '<iframe', '</iframe>',
+        '<object', '</object>',
+        '<embed', '</embed>',
+        '<form', '</form>',
+        '<input', '</input>',
+        '<button', '</button>',
+        '<link', '</link>',
+        '<meta', '</meta>',
+        '<style', '</style>',
+        'javascript:',
+        'onload=', 'onerror=', 'onclick=',
+        'onmouseover=', 'onmouseout=',
+        'onfocus=', 'onblur=',
+        'onchange=', 'onsubmit=',
+        'onkeyup=', 'onkeydown=',
+        'onkeypress=', 'oncontextmenu='
+    ];
+    
+    foreach ($dangerousElements as $dangerous) {
+        if (stripos($svg, $dangerous) !== false) {
+            // Found dangerous content
+            return false;
+        }
+    }
+    
+    // Check for base64 encoded scripts
+    if (preg_match('/data:text\/html|data:application\/xhtml|data:application\/javascript/i', $svg)) {
+        return false;
+    }
+    
+    // Additional check for encoded javascript
+    if (preg_match('/(j|&#106;|&#x6a;)(a|&#97;|&#x61;)(v|&#118;|&#x76;)(a|&#97;|&#x61;)(s|&#115;|&#x73;)(c|&#99;|&#x63;)(r|&#114;|&#x72;)(i|&#105;|&#x69;)(p|&#112;|&#x70;)(t|&#116;|&#x74;)/i', $svg)) {
+        return false;
+    }
+    
+    return true;
 }
 
 /**

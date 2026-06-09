@@ -4,7 +4,7 @@ require '../helpers.php';
 
 // Guard: only logged in
 if (empty($_SESSION['user_id'])) {
-    header('Location: ../pages/login.php');
+    header('Location: login.php');
     exit;
 }
 
@@ -182,7 +182,7 @@ tr:hover{background:#f8f9fa}
 <?php require '../includes/navigation.php'; ?>
 <?php 
 $breadcrumbs = [
-    ['label' => 'Beranda', 'url' => '../index.php'],
+    ['label' => 'Beranda', 'url' => '/permen/index.php'],
     ['label' => 'Dashboard', 'url' => '']
 ];
 require '../includes/breadcrumbs.php'; 
@@ -496,7 +496,7 @@ async function openNotification(id, link) {
     try {
         const formData = new FormData();
         formData.append('notification_id', id);
-        await fetch('../api/mark_notification_read.php', { method: 'POST', body: formData });
+        await fetch('/permen/api/mark_notification_read.php', { method: 'POST', body: formData });
     } catch (e) {}
     
     // Navigate if link exists
@@ -517,7 +517,7 @@ async function markAllRead() {
             for (const n of data.data.notifications) {
                 const formData = new FormData();
                 formData.append('notification_id', n.id);
-                await fetch('/permenermen/api/mark_notification_read.php', { method: 'POST', body: formData });
+                await fetch('/permen/api/mark_notification_read.php', { method: 'POST', body: formData });
             }
             loadNotifications();
         }
@@ -619,7 +619,7 @@ document.addEventListener('DOMContentLoaded', drawPieChart);
 </script>
 <?php endif; ?>
 
-<script src="../assets/chart.umd.min.js"></script>
+<script src="/permen/assets/chart.umd.min.js"></script>
 <script>
 const chartData = <?= json_encode(array_map(fn($r)=>[
     'date'=>date('d M',strtotime($r['waktu_mulai'])),

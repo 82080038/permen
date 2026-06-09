@@ -2,7 +2,7 @@
 require '../config.php';
 require '../helpers.php';
 if (empty($_SESSION['user_id'])) {
-    header('Location: ../pages/login.php');
+    header('Location: login.php');
     exit;
 }
 $userId = $_SESSION['user_id'];

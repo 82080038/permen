@@ -2,7 +2,7 @@
 require '../config.php';
 require '../helpers.php';
 if (empty($_SESSION['user_id'])) {
-    header('Location: ../pages/login.php');
+    header('Location: login.php');
     exit;
 }
 $userId = (int)$_SESSION['user_id'];
@@ -234,7 +234,7 @@ $strictMode = (int)($stmt->fetchColumn() ?? 0);
 <?php require '../includes/navigation.php'; ?>
 <?php 
 $breadcrumbs = [
-    ['label' => 'Beranda', 'url' => '../index.php'],
+    ['label' => 'Beranda', 'url' => '/permen/index.php'],
     ['label' => 'Try Out', 'url' => '']
 ];
 require '../includes/breadcrumbs.php'; 
@@ -350,7 +350,7 @@ async function loadSoal(){
 
         if (res.status === 401 || res.status === 403) {
             alert('Sesi Anda telah berakhir. Silakan login kembali.');
-            window.location.href = '/permen/pages/login.php';
+            window.location.href = '/permen/login.php';
             return;
         }
 
@@ -502,7 +502,7 @@ function advanceToNextSubtes(){
     const currentSub = subtesOrder[activeSubtesIdx];
 
     // Call API to record subtes transition
-    fetch('..next_subtes.php',{
+    fetch('/permen/api/next_subtes.php',{
         method:'POST',
         headers:{
             'Content-Type':'application/json',
@@ -550,7 +550,7 @@ function renderSoal(idx){
                 return;
             }
             // Call API to record transition
-            fetch('...ext_subtes.php',{
+            fetch('/permen/api/next_subtes.php',{
                 method:'POST',
                 headers:{
                     'Content-Type':'application/json',
@@ -632,7 +632,7 @@ function pilihJawaban(answerId, opt, el){
     }).then(r=>{
         if(r.status === 401 || r.status === 403){
             alert('Sesi Anda telah berakhir. Silakan login kembali.');
-            window.location.href = '/permen/pages/login.php';
+            window.location.href = '/permen/login.php';
         }
     }).catch(e=>{
         console.error('Error submitting answer:', e);
@@ -671,7 +671,7 @@ function pilihJawaban(answerId, opt, el){
                         'Waktu ' + currentSub + ' yang tersisa tidak bisa digunakan untuk subtes lain.\n\n' +
                         'Yakin ingin lanjut?';
             if (!confirm(msg)) return;
-            fetch('...ext_subtes.php',{
+            fetch('/permen/api/next_subtes.php',{
                 method:'POST',
                 headers:{
                     'Content-Type':'application/json',
@@ -711,7 +711,7 @@ function nextSoal(){
                     'Yakin ingin lanjut?';
         if (!confirm(msg)) return;
         // Record transition via API
-        fetch('..next_subtes.php',{
+        fetch('/permen/api/next_subtes.php',{
             method:'POST',
             headers:{
                 'Content-Type':'application/json',
@@ -845,7 +845,7 @@ async function togglePause(){
             
             if (res.status === 401 || res.status === 403) {
                 alert('Sesi Anda telah berakhir. Silakan login kembali.');
-                window.location.href = '/permen/pages/login.php';
+                window.location.href = '/permen/login.php';
                 return;
             }
             
@@ -877,7 +877,7 @@ async function togglePause(){
             
             if (res.status === 401 || res.status === 403) {
                 alert('Sesi Anda telah berakhir. Silakan login kembali.');
-                window.location.href = '/permen/pages/login.php';
+                window.location.href = '/permen/login.php';
                 return;
             }
             
@@ -925,7 +925,7 @@ async function toggleBookmark(){
 
         if (res.status === 401 || res.status === 403) {
             showToast('Sesi telah berakhir. Silakan login kembali.', 'error');
-            setTimeout(() => window.location.href = '/permen/pages/login.php', 2000);
+            setTimeout(() => window.location.href = '/permen/login.php', 2000);
             return;
         }
 

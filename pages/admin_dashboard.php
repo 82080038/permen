@@ -4,7 +4,7 @@ require '../helpers.php';
 
 // Guard: only admin
 if (empty($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'admin') {
-    header('Location: ../pages/login.php');
+    header('Location: login.php');
     exit;
 }
 
@@ -198,6 +198,14 @@ if (isset($_GET['tab']) && $_GET['tab'] === 'analytics') {
     } catch (Exception $e) {
         $topMaterials = [];
     }
+}
+
+// Tryout packages for event creation - fetch once to avoid N+1 in HTML rendering
+$tryoutPackages = [];
+try {
+    $tryoutPackages = $pdo->query("SELECT id, nama FROM tryout_packages WHERE aktif = 1 ORDER BY nama")->fetchAll();
+} catch (Exception $e) {
+    $tryoutPackages = [];
 }
 
 // Top questions answered incorrectly - only load when analytics tab is active
@@ -697,9 +705,7 @@ Halaman <?= $tryoutsCurrentPage ?> dari <?= $tryoutsTotalPages ?>
                 <label>Paket Soal</label>
                 <select id="eventPaketSoal">
                     <option value="">Default</option>
-                    <?php 
-                    $packages = $pdo->query("SELECT id, nama FROM tryout_packages WHERE aktif = 1")->fetchAll();
-                    foreach ($packages as $pkg): ?>
+                    <?php foreach ($tryoutPackages as $pkg): ?>
                     <option value="<?= $pkg['id'] ?>"><?= e($pkg['nama']) ?></option>
                     <?php endforeach; ?>
                 </select>
@@ -1945,7 +1951,7 @@ async function updateFeedback(feedbackId){
     formData.append('response', response);
     
     try {
-        const res = await fetch('../api/update_feedback.php', {
+        const res = await fetch('/permen/api/update_feedback.php', {
             method: 'POST',
             body: formData
         });
@@ -2953,7 +2959,7 @@ async function runGenerator(){
     log.innerHTML = '';
 
     try {
-        const url = '../api/generate_soal_smart.php?subtes=' + encodeURIComponent(subtes)
+        const url = '/permen/api/generate_soal_smart.php?subtes=' + encodeURIComponent(subtes)
             + '&tipe=' + encodeURIComponent(tipe)
             + '&topik=' + encodeURIComponent(topik)
             + '&jumlah=' + encodeURIComponent(jumlah)
@@ -2995,7 +3001,7 @@ async function uploadGambar(){
     if(!input.files[0]){ alert('Pilih file gambar terlebih dahulu'); return; }
     const form = new FormData();
     form.append('gambar', input.files[0]);
-    const res = await fetch('../api/upload_image.php', {method:'POST', body:form});
+    const res = await fetch('/permen/api/upload_image.php', {method:'POST', body:form});
     const data = await res.json();
     const out = document.getElementById('uploadResult');
     if(data.success){
@@ -3013,7 +3019,7 @@ async function loadSoalList(){
     const container = document.getElementById('soalList');
     container.innerHTML = '<p style="color:#666">Memuat...</p>';
 
-    let url = '../api/list_soal.php?limit=50';
+    let url = '/permen/api/list_soal.php?limit=50';
     if(keyword) url += '&q=' + encodeURIComponent(keyword);
     if(subtes) url += '&subtes=' + encodeURIComponent(subtes);
     if(tag) url += '&tag=' + encodeURIComponent(tag);
@@ -3123,7 +3129,7 @@ async function markRevised(id){
 
 async function toggleActive(id){
     try {
-        const res = await fetch('../api/update_revision.php', {
+        const res = await fetch('/permen/api/update_revision.php', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
             body:JSON.stringify({question_id:id, action:'toggle_active'})
@@ -3141,7 +3147,7 @@ async function toggleActive(id){
 
 // --- EDIT MODAL ---
 async function openEditModal(id){
-    const res = await fetch('../api/get_soal_detail.php?id=' + id);
+    const res = await fetch('/permen/api/get_soal_detail.php?id=' + id);
     const data = await res.json();
     if(data.error){ alert(data.error); return; }
     const s = data.soal;
