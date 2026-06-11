@@ -318,7 +318,7 @@ function renderNav() {
         else if (j?.jawaban) cls += ' answered';
         return `<button class="${cls}" onclick="goToSoal(${i})">${i+1}</button>`;
     }).join('');
-}ecapeHtml(s)l" oading="lazy" onerror="this.style.display='none'; this.parentElement.insertAdjacentHTML('beforeend', '<small style=\'color:#e74c3c;display:block;margin:0.5rem 0\'>Gambar tidak dapat dimuat</small>')" style="max-width:100%;max-height:250px;border:1px solid #ddd;border-radius:4px;margin:0.5rem 0;cursor:zoom-in" onclick="openZoom(this.src)
+}
 
 function renderSoal() {
     const s = soal[currentIndex];

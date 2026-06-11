@@ -11,24 +11,20 @@ const USER_NO_HP = '081987654321';
 const PASSWORD = 'password';
 
 test.describe('Daily Quiz Feature', () => {
-  
+
   test('1. User login dan akses Daily Quiz', async ({ page }) => {
     console.log('📝 Step 1: Login sebagai user...');
-    
+
     await page.goto(`${BASE_URL}/pages/login.php`);
     await expect(page).toHaveTitle(/Login/);
-    
-    // Isi form login
-    await page.fill('#no_hp', USER_NO_HP);
-    await page.fill('#password', PASSWORD);
-    
-    console.log('📝 Step 2: Submit login...');
-    await page.click('button[type="submit"]');
-    
+
+    // Use quick login button (development mode)
+    await page.click('button:has-text("User (081987654321)")');
+
     // Tunggu redirect ke dashboard
     await expect(page).toHaveURL(/user_dashboard.php/);
     console.log('✅ Berhasil login dan diarahkan ke dashboard');
-    
+
     // Screenshot dashboard
     await page.screenshot({ path: 'test-results/01-dashboard.png' });
   });
@@ -36,9 +32,7 @@ test.describe('Daily Quiz Feature', () => {
   test('2. Navigasi ke halaman Daily Quiz', async ({ page }) => {
     // Login dulu
     await page.goto(`${BASE_URL}/pages/login.php`);
-    await page.fill('#no_hp', USER_NO_HP);
-    await page.fill('#password', PASSWORD);
-    await page.click('button[type="submit"]');
+    await page.click('button:has-text("User (081987654321)")');
     await expect(page).toHaveURL(/user_dashboard.php/);
 
     console.log('📝 Step 3: Klik tombol Daily Quiz...');
@@ -65,7 +59,7 @@ test.describe('Daily Quiz Feature', () => {
     // Cek apakah sudah selesai hari ini atau belum
     const completedBox = page.locator('.completed-box');
     const hasCompleted = await completedBox.isVisible().catch(() => false);
-    
+
     if (hasCompleted) {
       console.log('ℹ️ User sudah menyelesaikan Daily Quiz hari ini');
       await expect(completedBox).toBeVisible();
@@ -86,38 +80,36 @@ test.describe('Daily Quiz Feature', () => {
   test('3. Simulasi mengerjakan Daily Quiz', async ({ page }) => {
     // Login dulu
     await page.goto(`${BASE_URL}/pages/login.php`);
-    await page.fill('#no_hp', USER_NO_HP);
-    await page.fill('#password', PASSWORD);
-    await page.click('button[type="submit"]');
+    await page.click('button:has-text("User (081987654321)")');
     await expect(page).toHaveURL(/user_dashboard.php/);
-    
+
     // Masuk Daily Quiz
     await page.click('a[href="daily_quiz.php"]');
     await expect(page).toHaveURL(/daily_quiz.php/);
-    
+
     // Cek apakah sudah selesai hari ini
     const completedBox = page.locator('.completed-box');
     const hasCompleted = await completedBox.isVisible().catch(() => false);
-    
+
     if (hasCompleted) {
       console.log('ℹ️ User sudah menyelesaikan Daily Quiz hari ini, skip test ini');
       return;
     }
-    
+
     // Tunggu soal load
     await page.waitForSelector('.pertanyaan', { timeout: 10000 });
     await page.waitForTimeout(2000); // Wait for JS to populate options
-    
+
     console.log('📝 Step 4: Mulai mengerjakan soal...');
-    
+
     // Jawab 5 soal pertama
     for (let i = 1; i <= 5; i++) {
       console.log(`📝 Mengerjakan soal ${i}...`);
-      
+
       // Pilih jawaban random (A, B, C, D, atau E)
       const options = ['A', 'B', 'C', 'D', 'E'];
       const randomOption = options[Math.floor(Math.random() * options.length)];
-      
+
       // Klik option
       const optionLocator = page.locator('.option').nth(options.indexOf(randomOption));
       if (await optionLocator.isVisible().catch(() => false)) {
@@ -126,44 +118,42 @@ test.describe('Daily Quiz Feature', () => {
         console.log(`⚠️ Option tidak tersedia untuk soal ${i}`);
         break;
       }
-      
+
       // Tunggu sebentar sebelum lanjut
       await page.waitForTimeout(500);
-      
+
       // Screenshot tiap soal
       if (i <= 3) {
         await page.screenshot({ path: `test-results/03-soal-${i}.png` });
       }
     }
-    
+
     console.log('✅ Berhasil mengerjakan soal');
   });
 
   test('4. Test navigasi soal dan tandai ragu-ragu', async ({ page }) => {
     // Login dan masuk Daily Quiz
     await page.goto(`${BASE_URL}/pages/login.php`);
-    await page.fill('#no_hp', USER_NO_HP);
-    await page.fill('#password', PASSWORD);
-    await page.click('button[type="submit"]');
+    await page.click('button:has-text("User (081987654321)")');
     await expect(page).toHaveURL(/user_dashboard.php/);
-    
+
     await page.click('a[href="daily_quiz.php"]');
     await expect(page).toHaveURL(/daily_quiz.php/);
-    
+
     // Cek apakah sudah selesai hari ini
     const completedBox = page.locator('.completed-box');
     const hasCompleted = await completedBox.isVisible().catch(() => false);
-    
+
     if (hasCompleted) {
       console.log('ℹ️ User sudah menyelesaikan Daily Quiz hari ini, skip test ini');
       return;
     }
-    
+
     await page.waitForSelector('.nav-grid', { timeout: 10000 });
     await page.waitForTimeout(2000); // Wait for JS to populate
-    
+
     console.log('📝 Step 5: Test navigasi grid...');
-    
+
     // Klik soal nomor 3 - with retry
     try {
       await page.click('.nav-btn:nth-child(3)', { timeout: 5000 });
@@ -176,7 +166,7 @@ test.describe('Daily Quiz Feature', () => {
         await page.waitForTimeout(300);
       }
     }
-    
+
     // Tandai ragu-ragu - with retry
     console.log('📝 Step 6: Tandai soal ragu-ragu...');
     try {
@@ -188,7 +178,7 @@ test.describe('Daily Quiz Feature', () => {
       console.log('✅ Navigasi grid berhasil (ragu button skipped)');
       return;
     }
-    
+
     // Verifikasi tombol ragu aktif
     const raguBtn = page.locator('#btnRagu');
     try {
@@ -198,7 +188,7 @@ test.describe('Daily Quiz Feature', () => {
       console.log('Ragu button not active, but navigation worked');
       console.log('✅ Navigasi grid berhasil');
     }
-    
+
     // Screenshot
     await page.screenshot({ path: 'test-results/04-ragu-ragu.png' });
   });
@@ -206,20 +196,18 @@ test.describe('Daily Quiz Feature', () => {
   test('5. Test keyboard shortcuts', async ({ page }) => {
     // Login dan masuk Daily Quiz
     await page.goto(`${BASE_URL}/pages/login.php`);
-    await page.fill('#no_hp', USER_NO_HP);
-    await page.fill('#password', PASSWORD);
-    await page.click('button[type="submit"]');
+    await page.click('button:has-text("User (081987654321)")');
     await expect(page).toHaveURL(/user_dashboard.php/);
-    
+
     await page.click('a[href="daily_quiz.php"]');
     await expect(page).toHaveURL(/daily_quiz.php/);
     await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
     await page.waitForTimeout(1000); // Wait for page to stabilize
-    
+
     // Cek apakah sudah selesai hari ini - check for completed box first
     const completedBox = page.locator('.completed-box');
     const quizArea = page.locator('#quizArea');
-    
+
     // Wait for either completed box or quiz area to be visible
     try {
       await Promise.race([
@@ -229,101 +217,97 @@ test.describe('Daily Quiz Feature', () => {
     } catch (e) {
       console.log('Neither completed box nor quiz area found, checking page state...');
     }
-    
+
     const hasCompleted = await completedBox.isVisible().catch(() => false);
-    
+
     if (hasCompleted) {
       console.log('ℹ️ User sudah menyelesaikan Daily Quiz hari ini, skip test ini');
       return;
     }
-    
+
     // Wait for quiz elements to load
     await page.waitForSelector('#options, .options', { timeout: 10000 });
     await page.waitForTimeout(2000); // Wait for JS to populate
-    
+
     console.log('📝 Step 7: Test keyboard shortcuts...');
-    
+
     // Pilih jawaban dengan keyboard A
     await page.keyboard.press('A');
     await page.waitForTimeout(500);
-    
+
     // Navigasi dengan arrow key
     await page.keyboard.press('ArrowRight');
     await page.waitForTimeout(500);
-    
+
     // Tandai ragu dengan M
     await page.keyboard.press('M');
     await page.waitForTimeout(500);
-    
+
     console.log('✅ Keyboard shortcuts berfungsi');
-    
+
     await page.screenshot({ path: 'test-results/05-keyboard.png' });
   });
 
   test('6. Test API tanpa login (harus 401)', async ({ request }) => {
     console.log('📝 Step 8: Test API tanpa session...');
-    
+
     const response = await request.get(`${BASE_URL}/api/get_daily_quiz.php`);
     expect(response.status()).toBe(401);
-    
+
     const body = await response.json();
     expect(body.error).toContain('login');
-    
+
     console.log('✅ API protection berfungsi (401 Unauthorized)');
   });
 
   test('7. Lihat riwayat Daily Quiz di dashboard', async ({ page }) => {
     // Login
     await page.goto(`${BASE_URL}/pages/login.php`);
-    await page.fill('#no_hp', USER_NO_HP);
-    await page.fill('#password', PASSWORD);
-    await page.click('button[type="submit"]');
+    await page.click('button:has-text("User (081987654321)")');
     await expect(page).toHaveURL(/user_dashboard.php/);
-    
+
     console.log('📝 Step 9: Cek section Daily Quiz di dashboard...');
-    
+
     // Wait for page to fully load
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
-    
+
     // Scroll ke section Daily Quiz - cari heading dulu
     const dailyQuizHeading = page.locator('h2:has-text("Daily Quiz")');
     await expect(dailyQuizHeading).toBeVisible({ timeout: 10000 });
-    
+
     // Get parent section
     const dailyQuizSection = dailyQuizHeading.locator('..');
-    
+
     // Verifikasi tabel riwayat ada atau empty message
     const table = page.locator('.section').filter({ hasText: 'Daily Quiz' }).locator('table');
     const emptyMsg = page.locator('.section').filter({ hasText: 'Daily Quiz' }).locator('.empty');
     await expect(table.or(emptyMsg)).toBeVisible();
-    
+
     console.log('✅ Section Daily Quiz tampil di dashboard');
-    
+
     await page.screenshot({ path: 'test-results/06-dashboard-daily-quiz.png', fullPage: true });
   });
 
 });
 
 test.describe('Daily Quiz - Sudah Selesai Hari Ini', () => {
-  
+
   test('8. Tampilan sudah selesai', async ({ page }) => {
     // Login dengan user yang sudah punya session selesai
     await page.goto(`${BASE_URL}/pages/login.php`);
-    await page.fill('#no_hp', USER_NO_HP);
-    await page.fill('#password', PASSWORD);
-    await page.click('button[type="submit"]');
+    await page.click('button:has-text("User (081987654321)")');
     await expect(page).toHaveURL(/user_dashboard.php/);
-    
+
     // Coba masuk Daily Quiz lagi
     await page.click('a[href="daily_quiz.php"]');
     await expect(page).toHaveURL(/daily_quiz.php/);
-    
+
     console.log('📝 Step 10: Cek tampilan sudah selesai...');
-    
+
     // Jika sudah selesai, harus ada box completed
     const completedBox = page.locator('.completed-box');
-    
+
     try {
       await expect(completedBox).toBeVisible({ timeout: 5000 });
       console.log('✅ Tampilan "sudah selesai" muncul');
@@ -332,5 +316,5 @@ test.describe('Daily Quiz - Sudah Selesai Hari Ini', () => {
       console.log('ℹ️ User belum menyelesaikan quiz hari ini (normal)');
     }
   });
-  
+
 });

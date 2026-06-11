@@ -23,9 +23,9 @@ test.describe('Tryout Simulation - Complete Flow', () => {
     console.log('Step 1: Logging in...');
     await page.goto('http://localhost/permen/pages/login.php');
     await expect(page).toHaveTitle(/Login/);
-    
+
     // Use quick login (development mode)
-    await page.click('button:has-text("User")');
+    await page.click('button:has-text("User (081987654321)")');
     await page.waitForURL(/user_dashboard\.php/, { timeout: 10000 });
     console.log('✓ Login successful');
 
@@ -50,7 +50,7 @@ test.describe('Tryout Simulation - Complete Flow', () => {
     console.log('Step 4: Answering questions...');
     for (let i = 0; i < 10; i++) {
       await page.waitForTimeout(1000);
-      
+
       const currentUrl = page.url();
       if (!currentUrl.includes('tryout.php')) {
         console.log('Tryout finished or redirected');
@@ -74,7 +74,7 @@ test.describe('Tryout Simulation - Complete Flow', () => {
     if (await finishButton.isVisible({ timeout: 5000 })) {
       await finishButton.click();
       console.log('✓ Finish button clicked');
-      
+
       const confirmButton = page.locator('button:has-text("Ya")').first();
       if (await confirmButton.isVisible({ timeout: 2000 })) {
         await confirmButton.click();
@@ -85,7 +85,7 @@ test.describe('Tryout Simulation - Complete Flow', () => {
     // Step 6: Wait for results
     console.log('Step 6: Waiting for results...');
     await page.waitForTimeout(3000);
-    
+
     const currentUrl = page.url();
     console.log('Current URL after finish:', currentUrl);
 
@@ -93,7 +93,7 @@ test.describe('Tryout Simulation - Complete Flow', () => {
     console.log('Step 7: Checking dashboard...');
     await page.goto('http://localhost/permen/pages/user_dashboard.php');
     await expect(page).toHaveTitle(/Dashboard/);
-    
+
     const pieChartSection = page.locator('h2:has-text("Distribusi Skor Subtes")');
     if (await pieChartSection.isVisible({ timeout: 5000 })) {
       console.log('✓ Pie chart section visible');
@@ -109,32 +109,32 @@ test.describe('Tryout Simulation - Complete Flow', () => {
 
   test('quick tryout with 10 questions', async ({ page }) => {
     console.log('Starting quick tryout simulation (10 questions)...');
-    
+
     // Login
     await page.goto('http://localhost/permen/pages/login.php');
-    await page.click('button:has-text("User")');
+    await page.click('button:has-text("User (081987654321)")');
     await page.waitForURL(/user_dashboard\.php/, { timeout: 10000 });
-    
+
     // Go to tryout
     await page.goto('http://localhost/permen/pages/tryout.php');
-    
+
     // Start tryout
     const startButton = page.locator('button:has-text("Mulai"), button:has-text("Start")');
     if (await startButton.isVisible({ timeout: 5000 })) {
       await startButton.click();
     }
-    
+
     // Answer 10 questions with random options
     const options = ['A', 'B', 'C', 'D', 'E'];
     for (let i = 0; i < 10; i++) {
       await page.waitForTimeout(800);
-      
+
       const currentUrl = page.url();
       if (!currentUrl.includes('tryout.php')) break;
-      
+
       const randomOption = options[Math.floor(Math.random() * options.length)];
       const optionButton = page.locator(`.options label input[type="radio"][value="${randomOption}"]`);
-      
+
       if (await optionButton.isVisible({ timeout: 2000 })) {
         await optionButton.click();
         console.log(`  Answered Q${i + 1}: ${randomOption}`);
@@ -143,7 +143,7 @@ test.describe('Tryout Simulation - Complete Flow', () => {
         break;
       }
     }
-    
+
     // Finish
     const finishButton = page.locator('button:has-text("Selesai"), button:has-text("Finish")');
     if (await finishButton.isVisible({ timeout: 5000 })) {
@@ -153,7 +153,7 @@ test.describe('Tryout Simulation - Complete Flow', () => {
         await confirmButton.click();
       }
     }
-    
+
     await page.waitForTimeout(2000);
     console.log('✓ Quick tryout simulation complete');
   });

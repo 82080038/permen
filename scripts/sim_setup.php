@@ -40,9 +40,12 @@ try {
     ];
 
     // ─────────────────────────────────────────
-    // 2. Ambil semua user non-admin
+    // 2. Ambil semua user non-admin (kecuali test users)
     // ─────────────────────────────────────────
-    $stmt = $pdo->query("SELECT id FROM users WHERE role != 'admin'");
+    $testPhones = ['081987654321', '081234567890'];
+    $placeholders = implode(',', array_fill(0, count($testPhones), '?'));
+    $stmt = $pdo->prepare("SELECT id FROM users WHERE role != 'admin' AND no_hp NOT IN ($placeholders)");
+    $stmt->execute($testPhones);
     $userIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
     $results['users_to_delete'] = count($userIds);
 
@@ -132,6 +135,43 @@ try {
         $del = $pdo->prepare("DELETE FROM users WHERE id IN ($placeholders)");
         $del->execute($userIds);
         $results['delete_users'] = $del->rowCount() . ' rows deleted';
+    }
+
+    // ─────────────────────────────────────────
+    // 3. Re-create test users (untuk testing)
+    // ─────────────────────────────────────────
+    $testUsers = [
+        [
+            'no_hp' => '081987654321',
+            'nama' => 'User Test',
+            'password' => 'password',
+            'role' => 'user'
+        ],
+        [
+            'no_hp' => '081234567890',
+            'nama' => 'Admin Test',
+            'password' => 'password',
+            'role' => 'admin'
+        ]
+    ];
+
+    foreach ($testUsers as $tu) {
+        $hash = password_hash($tu['password'], PASSWORD_BCRYPT);
+        $check = $pdo->prepare("SELECT id FROM users WHERE no_hp = ?");
+        $check->execute([$tu['no_hp']]);
+        $exists = $check->fetch();
+
+        if ($exists) {
+            // Update password hash
+            $upd = $pdo->prepare("UPDATE users SET password_hash = ? WHERE no_hp = ?");
+            $upd->execute([$hash, $tu['no_hp']]);
+            $results["update_test_user_{$tu['no_hp']}"] = 'password updated';
+        } else {
+            // Insert new
+            $ins = $pdo->prepare("INSERT INTO users (no_hp, nama, password_hash, role, created_at) VALUES (?, ?, ?, ?, NOW())");
+            $ins->execute([$tu['no_hp'], $tu['nama'], $hash, $tu['role']]);
+            $results["create_test_user_{$tu['no_hp']}"] = 'created';
+        }
     }
 
     $results['status'] = 'success';

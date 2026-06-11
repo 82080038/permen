@@ -22,8 +22,9 @@ class Database
         $user = $_ENV['DB_USER'] ?? 'root';
         $pass = $_ENV['DB_PASS'] ?? '';
         $charset = $_ENV['DB_CHARSET'] ?? 'utf8mb4';
+        $socket = $_ENV['DB_SOCKET'] ?? '/opt/lampp/var/mysql/mysql.sock';
 
-        $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+        $dsn = "mysql:host=$host;dbname=$db;charset=$charset;unix_socket=$socket";
         $options = [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
