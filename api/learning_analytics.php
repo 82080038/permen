@@ -23,8 +23,8 @@ if ($action === 'track_event') {
     $pageUrl = $_POST['page_url'] ?? null;
     $materiId = (int)($_POST['materi_id'] ?? 0) ?: null;
     $soalId = (int)($_POST['soal_id'] ?? 0) ?: null;
-    $subtes = sanitizeInput($_POST['subtes'] ?? null);
-    $topik = sanitizeInput($_POST['topik'] ?? null);
+    $subtes = !empty($_POST['subtes']) ? sanitizeInput($_POST['subtes']) : null;
+    $topik = !empty($_POST['topik']) ? sanitizeInput($_POST['topik']) : null;
     $timeSpent = (int)($_POST['time_spent_seconds'] ?? 0) ?: null;
     $sessionId = $_POST['session_id'] ?? session_id();
     $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
