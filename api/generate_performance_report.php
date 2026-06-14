@@ -37,9 +37,9 @@ if ($existingReport) {
 // Calculate statistics
 // Tryout stats
 $stmt = $pdo->prepare("
-    SELECT COUNT(*) as total, AVG(total_nilai) as avg_score
+    SELECT COUNT(*) as total, AVG(skor_total) as avg_score
     FROM tryout_sessions
-    WHERE user_id = ? AND status = 'selesai' AND created_at BETWEEN ? AND ?
+    WHERE user_id = ? AND status = 'completed' AND created_at BETWEEN ? AND ?
 ");
 $stmt->execute([$userId, $periodStart, $periodEnd]);
 $tryoutStats = $stmt->fetch();
@@ -48,7 +48,7 @@ $tryoutStats = $stmt->fetch();
 $stmt = $pdo->prepare("
     SELECT COUNT(*) as total, AVG(nilai_total) as avg_score
     FROM daily_quiz_sessions
-    WHERE user_id = ? AND status = 'selesai' AND quiz_date BETWEEN ? AND ?
+    WHERE user_id = ? AND status = 'completed' AND quiz_date BETWEEN ? AND ?
 ");
 $stmt->execute([$userId, $periodStart, $periodEnd]);
 $dailyQuizStats = $stmt->fetch();

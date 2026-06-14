@@ -72,7 +72,7 @@ try {
 
 // Get paginated tryouts
 try {
-    $tryouts = $pdo->prepare("SELECT ts.id, ts.nama, u.nama as peserta, ts.total_nilai, ts.status, ts.waktu_mulai
+    $tryouts = $pdo->prepare("SELECT ts.id, ts.nama, u.nama as peserta, ts.skor_total, ts.status, ts.waktu_mulai
     FROM tryout_sessions ts LEFT JOIN users u ON ts.user_id = u.id
     ORDER BY ts.id DESC LIMIT ? OFFSET ?");
     $tryouts->execute([$tryoutsLimit, $tryoutsOffset]);
@@ -96,7 +96,7 @@ try {
 
 // Subtes config
 try {
-    $subtesConfig = $pdo->query("SELECT * FROM subtes_config ORDER BY urutan")->fetchAll();
+    $subtesConfig = $pdo->query("SELECT * FROM subtes_config ORDER BY nama")->fetchAll();
 } catch (Exception $e) {
     $subtesConfig = [];
 }
@@ -124,7 +124,7 @@ try {
         SELECT
             COUNT(*) as total,
             SUM(CASE WHEN status='selesai' THEN 1 ELSE 0 END) as completed,
-            AVG(CASE WHEN status='selesai' THEN total_nilai ELSE NULL END) as avg_score
+            AVG(CASE WHEN status='selesai' THEN skor_total ELSE NULL END) as avg_score
         FROM tryout_sessions
     ")->fetch();
 } catch (Exception $e) {
@@ -135,9 +135,9 @@ try {
 try {
     $avgScores = $pdo->query("
         SELECT
-            AVG(nilai_tkp) as avg_tkp,
-            AVG(nilai_tiu) as avg_tiu,
-            AVG(nilai_twk) as avg_twk
+            AVG(skor_tkp) as avg_tkp,
+            AVG(skor_tiu) as avg_tiu,
+            AVG(skor_twk) as avg_twk
         FROM tryout_sessions
         WHERE status='selesai'
     ")->fetch();
@@ -203,7 +203,7 @@ if (isset($_GET['tab']) && $_GET['tab'] === 'analytics') {
 // Tryout packages for event creation - fetch once to avoid N+1 in HTML rendering
 $tryoutPackages = [];
 try {
-    $tryoutPackages = $pdo->query("SELECT id, nama FROM tryout_packages WHERE aktif = 1 ORDER BY nama")->fetchAll();
+    $tryoutPackages = $pdo->query("SELECT id, nama FROM tryout_packages WHERE is_active = 1 ORDER BY nama")->fetchAll();
 } catch (Exception $e) {
     $tryoutPackages = [];
 }
@@ -247,7 +247,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
         }
         $updateMsg = 'Konfigurasi berhasil diperbarui.';
         try {
-            $subtesConfig = $pdo->query("SELECT * FROM subtes_config ORDER BY urutan")->fetchAll();
+            $subtesConfig = $pdo->query("SELECT * FROM subtes_config ORDER BY nama")->fetchAll();
         } catch (Exception $e) {
             $subtesConfig = [];
         }
@@ -635,7 +635,7 @@ Halaman <?= $usersCurrentPage ?> dari <?= $usersTotalPages ?>
 <div id="panel-tryouts" class="section" style="display:none">
 <h2>Riwayat Tryout</h2>
 <p style="font-size:.85rem;color:#666;margin-bottom:.5rem">Total: <?= $tryoutsTotal ?> tryout</p>
-<a href="/permen/api/export_csv.php?type=tryouts" class="btn success" style="margin-bottom:1rem">Export CSV</a>
+<a href="/api/export_csv.php?type=tryouts" class="btn success" style="margin-bottom:1rem">Export CSV</a>
 <div class="table-wrap">
 <table>
 <thead><tr><th>ID</th><th>Nama</th><th>Peserta</th><th>Total Nilai</th><th>Status</th><th>Waktu Mulai</th></tr></thead>
@@ -645,7 +645,7 @@ Halaman <?= $usersCurrentPage ?> dari <?= $usersTotalPages ?>
 <td><?= $t['id'] ?></td>
 <td><?= e($t['nama']) ?></td>
 <td><?= e($t['peserta'] ?? 'Anonim') ?></td>
-<td><?= $t['total_nilai'] ?? 0 ?></td>
+<td><?= $t['skor_total'] ?? 0 ?></td>
 <td><span class="badge <?= $t['status'] ?>"><?= ucfirst($t['status']) ?></span></td>
 <td><?= $t['waktu_mulai'] ?></td>
 </tr>
@@ -738,7 +738,7 @@ Halaman <?= $tryoutsCurrentPage ?> dari <?= $tryoutsTotalPages ?>
 <div style="margin-bottom:1rem;display:flex;gap:.5rem;flex-wrap:wrap">
     <button onclick="showAddSoalForm()" class="btn success">+ Tambah Soal</button>
     <button onclick="showBulkImportForm()" class="btn" style="background:#8e44ad">📥 Bulk Import</button>
-    <a href="/permen/api/generate_soal_smart.php?subtes=TIU&tipe=numerik&topik=Deret+Angka&jumlah=5" target="_blank" class="btn">+ Generate Soal (Smart)</a>
+    <a href="/api/generate_soal_smart.php?subtes=TIU&tipe=numerik&topik=Deret+Angka&jumlah=5" target="_blank" class="btn">+ Generate Soal (Smart)</a>
 </div>
 
 <!-- Add Soal Form (hidden by default) -->
@@ -1249,7 +1249,7 @@ async function loadRevisionQueue() {
     const priority = document.getElementById('filterRevisionPriority').value;
     
     try {
-        let url = '/permen/api/admin_revision_queue.php?action=get_queue';
+        let url = '/api/admin_revision_queue.php?action=get_queue';
         if (status) url += '&status=' + encodeURIComponent(status);
         if (priority) url += '&priority=' + encodeURIComponent(priority);
         
@@ -1271,7 +1271,7 @@ async function loadRevisionQueue() {
 
 async function loadRevisionStats() {
     try {
-        const res = await fetch('/permen/api/admin_revision_queue.php?action=get_revision_stats');
+        const res = await fetch('/api/admin_revision_queue.php?action=get_revision_stats');
         const data = await res.json();
         
         if (data.success) {
@@ -1373,7 +1373,7 @@ async function updateRevisionStatus(queueId) {
     formData.append('status', status);
     
     try {
-        const res = await fetch('/permen/api/admin_revision_queue.php', {
+        const res = await fetch('/api/admin_revision_queue.php', {
             method: 'POST',
             body: formData
         });
@@ -1398,7 +1398,7 @@ async function updateRevisionPriority(queueId) {
     formData.append('priority', priority);
     
     try {
-        const res = await fetch('/permen/api/admin_revision_queue.php', {
+        const res = await fetch('/api/admin_revision_queue.php', {
             method: 'POST',
             body: formData
         });
@@ -1424,7 +1424,7 @@ function addRevisionNote(queueId) {
     formData.append('status', document.getElementById('status-' + queueId).value);
     formData.append('admin_notes', note);
     
-    fetch('/permen/api/admin_revision_queue.php', {
+    fetch('/api/admin_revision_queue.php', {
         method: 'POST',
         body: formData
     }).then(res => res.json()).then(data => {
@@ -1446,7 +1446,7 @@ async function removeFromQueue(queueId) {
     formData.append('queue_id', queueId);
     
     try {
-        const res = await fetch('/permen/api/admin_revision_queue.php', {
+        const res = await fetch('/api/admin_revision_queue.php', {
             method: 'POST',
             body: formData
         });
@@ -1464,7 +1464,7 @@ async function removeFromQueue(queueId) {
 
 async function detectRevisionCandidates() {
     try {
-        const res = await fetch('/permen/api/auto_detect_revision.php?action=detect_revision_candidates');
+        const res = await fetch('/api/auto_detect_revision.php?action=detect_revision_candidates');
         const data = await res.json();
         
         if (data.success) {
@@ -1512,7 +1512,7 @@ function renderCandidates(candidates) {
 
 async function addCandidateToQueue(soalId, priority, reason) {
     try {
-        const res = await fetch(`/permen/api/auto_detect_revision.php?action=add_candidate_to_queue&soal_id=${soalId}&priority=${priority}&reason=${encodeURIComponent(reason)}`);
+        const res = await fetch(`/api/auto_detect_revision.php?action=add_candidate_to_queue&soal_id=${soalId}&priority=${priority}&reason=${encodeURIComponent(reason)}`);
         const data = await res.json();
         
         if (data.success) {
@@ -1530,7 +1530,7 @@ async function addAllCandidates() {
     if (!confirm('Tambahkan semua kandidat terdeteksi ke revision queue?')) return;
     
     try {
-        const res = await fetch('/permen/api/auto_detect_revision.php?action=add_all_candidates');
+        const res = await fetch('/api/auto_detect_revision.php?action=add_all_candidates');
         const data = await res.json();
         
         if (data.success) {
@@ -1548,7 +1548,7 @@ async function addAllCandidates() {
 // --- ADMIN REPORTS ---
 async function loadReports() {
     try {
-        const res = await fetch('/permen/api/admin_reports.php?action=get_reports');
+        const res = await fetch('/api/admin_reports.php?action=get_reports');
         const data = await res.json();
         
         if (data.success) {
@@ -1594,7 +1594,7 @@ async function generateReport() {
     formData.append('report_type', reportType);
     
     try {
-        const res = await fetch('/permen/api/admin_reports.php', {
+        const res = await fetch('/api/admin_reports.php', {
             method: 'POST',
             body: formData
         });
@@ -1613,7 +1613,7 @@ async function generateReport() {
 
 async function loadSchedules() {
     try {
-        const res = await fetch('/permen/api/admin_reports.php?action=get_schedules');
+        const res = await fetch('/api/admin_reports.php?action=get_schedules');
         const data = await res.json();
         
         if (data.success) {
@@ -1685,7 +1685,7 @@ async function createSchedule() {
     formData.append('schedule_time', scheduleTime);
     
     try {
-        const res = await fetch('/permen/api/admin_reports.php', {
+        const res = await fetch('/api/admin_reports.php', {
             method: 'POST',
             body: formData
         });
@@ -1710,7 +1710,7 @@ async function toggleSchedule(scheduleId, isActive) {
     formData.append('is_active', isActive);
     
     try {
-        const res = await fetch('/permen/api/admin_reports.php', {
+        const res = await fetch('/api/admin_reports.php', {
             method: 'POST',
             body: formData
         });
@@ -1734,7 +1734,7 @@ async function deleteSchedule(scheduleId) {
     formData.append('schedule_id', scheduleId);
     
     try {
-        const res = await fetch('/permen/api/admin_reports.php', {
+        const res = await fetch('/api/admin_reports.php', {
             method: 'POST',
             body: formData
         });
@@ -1760,7 +1760,7 @@ async function loadFeedback(){
     if(category) params.append('category', category);
     
     try {
-        const res = await fetch('/permen/api/get_feedback.php?' + params.toString());
+        const res = await fetch('/api/get_feedback.php?' + params.toString());
         const data = await res.json();
         
         if(data.success){
@@ -1778,7 +1778,7 @@ async function loadModerationQueue() {
     const status = document.getElementById('moderationStatus').value;
     
     try {
-        const res = await fetch(`/permen/api/admin_content_moderation.php?action=get_moderation_queue&status=${status}`);
+        const res = await fetch(`/api/admin_content_moderation.php?action=get_moderation_queue&status=${status}`);
         const data = await res.json();
         
         if (data.success) {
@@ -1859,7 +1859,7 @@ async function moderateContent(moderationId, action) {
     formData.append('note', note);
     
     try {
-        const res = await fetch('/permen/api/admin_content_moderation.php', {
+        const res = await fetch('/api/admin_content_moderation.php', {
             method: 'POST',
             body: formData
         });
@@ -1951,7 +1951,7 @@ async function updateFeedback(feedbackId){
     formData.append('response', response);
     
     try {
-        const res = await fetch('/permen/api/update_feedback.php', {
+        const res = await fetch('/api/update_feedback.php', {
             method: 'POST',
             body: formData
         });
@@ -1980,7 +1980,7 @@ let selectedTags = [];
 
 async function loadTags() {
     try {
-        const res = await fetch('/permen/api/admin_soal_crud.php?action=get_all_tags');
+        const res = await fetch('/api/admin_soal_crud.php?action=get_all_tags');
         const data = await res.json();
         
         if (data.success) {
@@ -2060,7 +2060,7 @@ async function addSoal(e) {
     selectedTags.forEach(tag => formData.append('tags[]', tag));
     
     try {
-        const res = await fetch('/permen/api/admin_soal_crud.php', {
+        const res = await fetch('/api/admin_soal_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2141,7 +2141,7 @@ async function bulkImportSoal(e) {
             formData.append('pembahasan', values[10]?.replace(/"/g, '').trim() || '');
             
             try {
-                const res = await fetch('/permen/api/admin_soal_crud.php', {
+                const res = await fetch('/api/admin_soal_crud.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -2185,7 +2185,7 @@ async function deleteSoal(soalId) {
     formData.append('soal_id', soalId);
     
     try {
-        const res = await fetch('/permen/api/admin_soal_crud.php', {
+        const res = await fetch('/api/admin_soal_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2204,7 +2204,7 @@ async function deleteSoal(soalId) {
 
 async function viewSoalVersions(soalId) {
     try {
-        const res = await fetch(`/permen/api/admin_soal_crud.php?action=get_soal_versions&soal_id=${soalId}`);
+        const res = await fetch(`/api/admin_soal_crud.php?action=get_soal_versions&soal_id=${soalId}`);
         const data = await res.json();
         
         if (data.success) {
@@ -2249,7 +2249,7 @@ async function viewSoalVersions(soalId) {
 
 async function viewVersionDiff(soalId, version1, version2) {
     try {
-        const res = await fetch(`/permen/api/admin_soal_crud.php?action=get_version_diff&soal_id=${soalId}&version1=${version1}&version2=${version2}`);
+        const res = await fetch(`/api/admin_soal_crud.php?action=get_version_diff&soal_id=${soalId}&version1=${version1}&version2=${version2}`);
         const data = await res.json();
         
         if (data.success) {
@@ -2282,7 +2282,7 @@ async function restoreVersion(soalId, version) {
     formData.append('version', version);
     
     try {
-        const res = await fetch('/permen/api/admin_soal_crud.php', {
+        const res = await fetch('/api/admin_soal_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2304,7 +2304,7 @@ async function loadMateriList() {
     const subtes = document.getElementById('filterMateriSubtes').value;
     
     try {
-        let url = '/permen/api/admin_materi_crud.php?action=get_materi_list';
+        let url = '/api/admin_materi_crud.php?action=get_materi_list';
         if (subtes) url += '&subtes=' + encodeURIComponent(subtes);
         
         const res = await fetch(url);
@@ -2378,7 +2378,7 @@ async function addMateri(e) {
     formData.append('urutan', document.getElementById('addMateriUrutan').value);
     
     try {
-        const res = await fetch('/permen/api/admin_materi_crud.php', {
+        const res = await fetch('/api/admin_materi_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2398,7 +2398,7 @@ async function addMateri(e) {
 
 async function editMateri(materiId) {
     try {
-        const res = await fetch(`/permen/api/admin_materi_crud.php?action=get_materi_detail&materi_id=${materiId}`);
+        const res = await fetch(`/api/admin_materi_crud.php?action=get_materi_detail&materi_id=${materiId}`);
         const data = await res.json();
         
         if (data.success) {
@@ -2441,7 +2441,7 @@ async function updateMateri(materiId) {
     formData.append('is_active', '1');
     
     try {
-        const res = await fetch('/permen/api/admin_materi_crud.php', {
+        const res = await fetch('/api/admin_materi_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2479,7 +2479,7 @@ async function deleteMateri(materiId) {
     formData.append('materi_id', materiId);
     
     try {
-        const res = await fetch('/permen/api/admin_materi_crud.php', {
+        const res = await fetch('/api/admin_materi_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2498,7 +2498,7 @@ async function deleteMateri(materiId) {
 
 async function moveMateri(materiId, direction) {
     try {
-        const res = await fetch('/permen/api/admin_materi_crud.php?action=get_materi_list');
+        const res = await fetch('/api/admin_materi_crud.php?action=get_materi_list');
         const data = await res.json();
         
         if (data.success) {
@@ -2526,7 +2526,7 @@ async function moveMateri(materiId, direction) {
                 formData.append(`orders[${i}][urutan]`, order.urutan);
             });
             
-            const reorderRes = await fetch('/permen/api/admin_materi_crud.php', {
+            const reorderRes = await fetch('/api/admin_materi_crud.php', {
                 method: 'POST',
                 body: formData
             });
@@ -2548,7 +2548,7 @@ async function loadTipsList() {
     const subtes = document.getElementById('filterTipsSubtes').value;
     
     try {
-        let url = '/permen/api/admin_tips_crud.php?action=get_tips_list';
+        let url = '/api/admin_tips_crud.php?action=get_tips_list';
         if (subtes) url += '&subtes=' + encodeURIComponent(subtes);
         
         const res = await fetch(url);
@@ -2618,7 +2618,7 @@ async function addTips(e) {
     formData.append('penjelasan', document.getElementById('addTipsPenjelasan').value);
     
     try {
-        const res = await fetch('/permen/api/admin_tips_crud.php', {
+        const res = await fetch('/api/admin_tips_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2638,7 +2638,7 @@ async function addTips(e) {
 
 async function editTips(tipsId) {
     try {
-        const res = await fetch(`/permen/api/admin_tips_crud.php?action=get_tips_detail&tips_id=${tipsId}`);
+        const res = await fetch(`/api/admin_tips_crud.php?action=get_tips_detail&tips_id=${tipsId}`);
         const data = await res.json();
         
         if (data.success) {
@@ -2683,7 +2683,7 @@ async function updateTips(tipsId) {
     formData.append('is_active', '1');
     
     try {
-        const res = await fetch('/permen/api/admin_tips_crud.php', {
+        const res = await fetch('/api/admin_tips_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2721,7 +2721,7 @@ async function deleteTips(tipsId) {
     formData.append('tips_id', tipsId);
     
     try {
-        const res = await fetch('/permen/api/admin_tips_crud.php', {
+        const res = await fetch('/api/admin_tips_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2745,7 +2745,7 @@ async function loadMediaLibrary() {
     const search = document.getElementById('searchMedia').value;
     
     try {
-        let url = '/permen/api/admin_media_library.php?action=get_media_list';
+        let url = '/api/admin_media_library.php?action=get_media_list';
         if (fileType) url += '&file_type=' + encodeURIComponent(fileType);
         if (folder) url += '&folder=' + encodeURIComponent(folder);
         if (search) url += '&search=' + encodeURIComponent(search);
@@ -2768,7 +2768,7 @@ async function loadMediaLibrary() {
 
 async function loadFolders() {
     try {
-        const res = await fetch('/permen/api/admin_media_library.php?action=get_folders');
+        const res = await fetch('/api/admin_media_library.php?action=get_folders');
         const data = await res.json();
         
         if (data.success) {
@@ -2845,7 +2845,7 @@ async function uploadMedia(e) {
     formData.append('folder', document.getElementById('mediaFolder').value);
     
     try {
-        const res = await fetch('/permen/api/admin_media_library.php', {
+        const res = await fetch('/api/admin_media_library.php', {
             method: 'POST',
             body: formData
         });
@@ -2879,7 +2879,7 @@ async function deleteMedia(mediaId) {
     formData.append('media_id', mediaId);
     
     try {
-        const res = await fetch('/permen/api/admin_media_library.php', {
+        const res = await fetch('/api/admin_media_library.php', {
             method: 'POST',
             body: formData
         });
@@ -2959,7 +2959,7 @@ async function runGenerator(){
     log.innerHTML = '';
 
     try {
-        const url = '/permen/api/generate_soal_smart.php?subtes=' + encodeURIComponent(subtes)
+        const url = '/api/generate_soal_smart.php?subtes=' + encodeURIComponent(subtes)
             + '&tipe=' + encodeURIComponent(tipe)
             + '&topik=' + encodeURIComponent(topik)
             + '&jumlah=' + encodeURIComponent(jumlah)
@@ -3001,7 +3001,7 @@ async function uploadGambar(){
     if(!input.files[0]){ alert('Pilih file gambar terlebih dahulu'); return; }
     const form = new FormData();
     form.append('gambar', input.files[0]);
-    const res = await fetch('/permen/api/upload_image.php', {method:'POST', body:form});
+    const res = await fetch('/api/upload_image.php', {method:'POST', body:form});
     const data = await res.json();
     const out = document.getElementById('uploadResult');
     if(data.success){
@@ -3019,7 +3019,7 @@ async function loadSoalList(){
     const container = document.getElementById('soalList');
     container.innerHTML = '<p style="color:#666">Memuat...</p>';
 
-    let url = '/permen/api/list_soal.php?limit=50';
+    let url = '/api/list_soal.php?limit=50';
     if(keyword) url += '&q=' + encodeURIComponent(keyword);
     if(subtes) url += '&subtes=' + encodeURIComponent(subtes);
     if(tag) url += '&tag=' + encodeURIComponent(tag);
@@ -3081,7 +3081,7 @@ async function loadRevisionList(){
     const container = document.getElementById('soalList');
     container.innerHTML = '<p style="color:#666">Memuat soal perlu revisi...</p>';
     try {
-        const res = await fetch('/permen/api/list_soal.php?needs_revision=1&limit=50');
+        const res = await fetch('/api/list_soal.php?needs_revision=1&limit=50');
         const data = await res.json();
         if(data.error){ container.innerHTML='<p style="color:#e74c3c">'+data.error+'</p>'; return; }
         if(!data.soal || data.soal.length===0){ container.innerHTML='<p style="color:#666">Tidak ada soal yang perlu direvisi. Bagus!</p>'; return; }
@@ -3110,7 +3110,7 @@ async function loadRevisionList(){
 async function markRevised(id){
     if(!confirm('Tandai soal ini sudah direvisi?')) return;
     try {
-        const res = await fetch('/permen/api/update_revision.php', {
+        const res = await fetch('/api/update_revision.php', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
             body:JSON.stringify({question_id:id, action:'mark_revised'})
@@ -3129,7 +3129,7 @@ async function markRevised(id){
 
 async function toggleActive(id){
     try {
-        const res = await fetch('/permen/api/update_revision.php', {
+        const res = await fetch('/api/update_revision.php', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
             body:JSON.stringify({question_id:id, action:'toggle_active'})
@@ -3147,7 +3147,7 @@ async function toggleActive(id){
 
 // --- EDIT MODAL ---
 async function openEditModal(id){
-    const res = await fetch('/permen/api/get_soal_detail.php?id=' + id);
+    const res = await fetch('/api/get_soal_detail.php?id=' + id);
     const data = await res.json();
     if(data.error){ alert(data.error); return; }
     const s = data.soal;
@@ -3188,7 +3188,7 @@ async function saveSoalEdit(){
     form.append('pembahasan', document.getElementById('editPembahasan').value);
     if(fileInput.files[0]) form.append('gambar', fileInput.files[0]);
 
-    const res = await fetch('/permen/api/update_soal.php', {method:'POST', body:form});
+    const res = await fetch('/api/update_soal.php', {method:'POST', body:form});
     const data = await res.json();
     if(data.success){
         alert('Soal berhasil diperbarui!');
@@ -3213,7 +3213,7 @@ async function resetUserPassword(userId, userName){
         const formData = new FormData();
         formData.append('user_id', userId);
         
-        const res = await fetch('/permen/api/reset_user_password.php', {
+        const res = await fetch('/api/reset_user_password.php', {
             method: 'POST',
             body: formData
         });
@@ -3256,7 +3256,7 @@ async function bulkAction(action) {
         formData.append('reason', action === 'suspend' ? 'Bulk suspend' : '');
         
         try {
-            await fetch('/permen/api/admin_user_management.php', {
+            await fetch('/api/admin_user_management.php', {
                 method: 'POST',
                 body: formData
             });
@@ -3283,7 +3283,7 @@ async function editUser(userId) {
     formData.append('no_hp', noHp);
     
     try {
-        const res = await fetch('/permen/api/admin_user_management.php', {
+        const res = await fetch('/api/admin_user_management.php', {
             method: 'POST',
             body: formData
         });
@@ -3302,7 +3302,7 @@ async function editUser(userId) {
 
 async function viewActivity(userId, userName) {
     try {
-        const res = await fetch(`/permen/api/admin_user_management.php?action=get_user_activity&user_id=${userId}`);
+        const res = await fetch(`/api/admin_user_management.php?action=get_user_activity&user_id=${userId}`);
         const data = await res.json();
         
         if (data.success) {
@@ -3362,7 +3362,7 @@ async function manageUserStatus(userId, userName, currentStatus) {
     formData.append('reason', reason);
     
     try {
-        const res = await fetch('/permen/api/admin_user_management.php', {
+        const res = await fetch('/api/admin_user_management.php', {
             method: 'POST',
             body: formData
         });
@@ -3382,7 +3382,7 @@ async function manageUserStatus(userId, userName, currentStatus) {
 // --- EVENT MANAGEMENT ---
 async function loadEvents() {
     try {
-        const res = await fetch('/permen/api/admin_tryout_events.php?action=get_events');
+        const res = await fetch('/api/admin_tryout_events.php?action=get_events');
         const data = await res.json();
         
         if (data.success) {
@@ -3454,7 +3454,7 @@ async function createEvent(e) {
     formData.append('passing_grade', document.getElementById('eventPassingGrade').value);
     
     try {
-        const res = await fetch('/permen/api/admin_tryout_events.php', {
+        const res = await fetch('/api/admin_tryout_events.php', {
             method: 'POST',
             body: formData
         });
@@ -3480,7 +3480,7 @@ async function toggleEventStatus(eventId, currentStatus) {
     formData.append('aktif', currentStatus ? '0' : '1');
     
     try {
-        const res = await fetch('/permen/api/admin_tryout_events.php', {
+        const res = await fetch('/api/admin_tryout_events.php', {
             method: 'POST',
             body: formData
         });
@@ -3504,7 +3504,7 @@ async function deleteEvent(eventId) {
     formData.append('event_id', eventId);
     
     try {
-        const res = await fetch('/permen/api/admin_tryout_events.php', {
+        const res = await fetch('/api/admin_tryout_events.php', {
             method: 'POST',
             body: formData
         });
@@ -3523,7 +3523,7 @@ async function deleteEvent(eventId) {
 
 async function viewEventParticipants(eventId) {
     try {
-        const res = await fetch(`/permen/api/admin_tryout_events.php?action=get_event_participants&event_id=${eventId}`);
+        const res = await fetch(`/api/admin_tryout_events.php?action=get_event_participants&event_id=${eventId}`);
         const data = await res.json();
         
         if (data.success) {
@@ -3543,14 +3543,14 @@ async function viewEventParticipants(eventId) {
 
 async function viewEventResults(eventId) {
     try {
-        const res = await fetch(`/permen/api/admin_tryout_events.php?action=get_event_results&event_id=${eventId}`);
+        const res = await fetch(`/api/admin_tryout_events.php?action=get_event_results&event_id=${eventId}`);
         const data = await res.json();
         
         if (data.success) {
             let html = `Hasil Event:\n\n`;
             data.results.forEach((r, i) => {
                 html += `${i + 1}. ${r.peserta} (${r.instansi || '-'})\n`;
-                html += `   Total: ${r.total_nilai} | Status: ${r.status}\n\n`;
+                html += `   Total: ${r.skor_total} | Status: ${r.status}\n\n`;
             });
             alert(html);
         } else {

@@ -51,7 +51,7 @@ if ($action === 'upload_media') {
     }
     
     $filePath = $uploadDir . $filename;
-    $fileUrl = '/permen/uploads/media/' . $folder . '/' . $filename;
+    $fileUrl = '/uploads/media/' . $folder . '/' . $filename;
     
     if (!move_uploaded_file($file['tmp_name'], $filePath)) {
         echo json_encode(['error' => 'Failed to move uploaded file']);

@@ -3,13 +3,13 @@ require '../config.php';
 require '../helpers.php';
 
 // Ambil daftar instansi aktif untuk dropdown
-$instansiList = $pdo->query("SELECT id, kode, nama FROM instansi WHERE aktif = 1 ORDER BY urutan, nama")->fetchAll();
+$instansiList = $pdo->query("SELECT id, nama FROM instansi WHERE is_active = 1 ORDER BY nama")->fetchAll();
 
 $period = $_GET['period'] ?? 'all'; // all, week, month
 $subtes = $_GET['subtes'] ?? '';   // TWK, TIU, TKP (optional filter)
 $instansiFilter = $_GET['instansi'] ?? ''; // instansi filter
 
-$where = "ts.status = 'selesai' AND (u.show_leaderboard = 1 OR u.show_leaderboard IS NULL)";
+$where = "ts.status = 'completed'";
 $params = [];
 
 if ($period === 'week') {
@@ -19,8 +19,7 @@ if ($period === 'week') {
 }
 
 if ($instansiFilter) {
-    $where .= " AND (u.instansi = ? OR u.instansi_id = (SELECT id FROM instansi WHERE kode = ? LIMIT 1))";
-    $params[] = $instansiFilter;
+    $where .= " AND u.target_instansi = ?";
     $params[] = $instansiFilter;
 }
 
@@ -28,14 +27,14 @@ if ($instansiFilter) {
 $sqlTotal = "
     SELECT 
         u.id as user_id,
-        u.nama, u.instansi,
-        ts.total_nilai,
-        ts.nilai_twk, ts.nilai_tiu, ts.nilai_tkp,
+        u.nama, u.target_instansi,
+        ts.skor_total,
+        ts.skor_twk, ts.skor_tiu, ts.skor_tkp,
         ts.waktu_mulai
     FROM tryout_sessions ts
     JOIN users u ON ts.user_id = u.id
     WHERE $where
-    ORDER BY ts.total_nilai DESC
+    ORDER BY ts.skor_total DESC
     LIMIT 20
 ";
 $totalStmt = $pdo->prepare($sqlTotal);
@@ -64,18 +63,17 @@ if (!empty($userIds)) {
 // Get top 10 per subtes
 $topSubtes = [];
 foreach (['TWK','TIU','TKP'] as $s) {
-    $col = "nilai_" . strtolower($s);
-    $whereSubtes = "ts.status = 'selesai' AND ts.$col > 0 AND (u.show_leaderboard = 1 OR u.show_leaderboard IS NULL)";
+    $col = "skor_" . strtolower($s);
+    $whereSubtes = "ts.status = 'completed' AND ts.$col > 0";
     $paramsSubtes = [];
     
     if ($instansiFilter) {
-        $whereSubtes .= " AND (u.instansi = ? OR u.instansi_id = (SELECT id FROM instansi WHERE kode = ? LIMIT 1))";
-        $paramsSubtes[] = $instansiFilter;
+        $whereSubtes .= " AND u.target_instansi = ?";
         $paramsSubtes[] = $instansiFilter;
     }
     
     $stmt = $pdo->prepare("
-        SELECT u.nama, u.instansi, ts.$col as nilai, ts.waktu_mulai
+        SELECT u.nama, u.target_instansi, ts.$col as nilai, ts.waktu_mulai
         FROM tryout_sessions ts
         JOIN users u ON ts.user_id = u.id
         WHERE $whereSubtes
@@ -157,8 +155,8 @@ foreach (['TWK','TIU','TKP'] as $s) {
         <div><strong><?= e($r['nama']) ?></strong><?= $badgeHtml ?></div>
         <div style="font-size:.8rem;color:#888"><?= e($r['instansi'] ?: '-') ?></div>
     </div>
-    <div class="rank-score"><?= $r['total_nilai'] ?></div>
-    <div class="rank-detail">TWK <?= $r['nilai_twk'] ?> · TIU <?= $r['nilai_tiu'] ?> · TKP <?= $r['nilai_tkp'] ?></div>
+    <div class="rank-score"><?= $r['skor_total'] ?></div>
+    <div class="rank-detail">TWK <?= $r['skor_twk'] ?> · TIU <?= $r['skor_tiu'] ?> · TKP <?= $r['skor_tkp'] ?></div>
 </div>
 <?php endforeach; ?>
 <?php endif; ?>

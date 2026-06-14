@@ -25,7 +25,7 @@ $practiceHistory = $historyStmt->fetchAll(PDO::FETCH_ASSOC);
 $subtes = $_GET['subtes'] ?? '';
 if ($subtes && in_array($subtes, ['TWK','TIU','TKP'])) {
     $nama = "Latihan $subtes";
-    $cfg = $pdo->prepare("SELECT durasi_menit, jumlah_soal, passing_grade, urutan FROM subtes_config WHERE subtes = ? AND aktif = 1");
+    $cfg = $pdo->prepare("SELECT durasi_menit, jumlah_soal, passing_grade, urutan FROM subtes_config WHERE subtes = ? AND is_active = 1");
     $cfg->execute([$subtes]);
     $c = $cfg->fetch();
     $durasi = (int)($c['durasi_menit'] ?? ($subtes === 'TWK' ? 30 : ($subtes === 'TIU' ? 35 : 45)));
@@ -266,7 +266,7 @@ async function loadAdaptiveRecommendations() {
     const container = document.getElementById('adaptiveRecommendations');
     
     try {
-        const response = await fetch('/permen/api/get_adaptive_recommendations.php');
+        const response = await fetch('/api/get_adaptive_recommendations.php');
         const data = await response.json();
         
         if (!data.success) {
@@ -373,7 +373,7 @@ async function startPersonalPractice() {
     resultDiv.innerHTML = '<p style="color:#666;text-align:center">Memuat soal...</p>';
     
     try {
-        const response = await fetch('/permen/api/generate_user_soal.php?subtes=' + encodeURIComponent(subtes) + '&topik=' + encodeURIComponent(topik) + '&jumlah=' + encodeURIComponent(jumlah));
+        const response = await fetch('/api/generate_user_soal.php?subtes=' + encodeURIComponent(subtes) + '&topik=' + encodeURIComponent(topik) + '&jumlah=' + encodeURIComponent(jumlah));
         const data = await response.json();
         
         if (data.error) {
@@ -627,7 +627,7 @@ async function checkPersonalPractice(subtes, topik, jumlah, kesulitan) {
     formData.append('csrf_token', '<?= csrfToken() ?>');
     
     try {
-        await fetch('/permen/api/save_practice_session.php', {
+        await fetch('/api/save_practice_session.php', {
             method: 'POST',
             body: formData
         });

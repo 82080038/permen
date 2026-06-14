@@ -154,8 +154,8 @@ if ($action === 'create_event') {
         FROM tryout_sessions ts
         JOIN users u ON ts.user_id = u.id
         JOIN tryout_event_registrations r ON r.user_id = u.id
-        WHERE r.event_id = ? AND ts.status = 'selesai'
-        ORDER BY ts.total_nilai DESC
+        WHERE r.event_id = ? AND ts.status = 'completed'
+        ORDER BY ts.skor_total DESC
     ");
     $stmt->execute([$eventId]);
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);

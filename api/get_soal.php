@@ -113,7 +113,7 @@ try {
     }
 
     // Ambil session + validasi kepemilikan
-    $stmt = $pdo->prepare("SELECT id, nama, user_id, waktu_mulai, waktu_selesai, status, nilai_twk, nilai_tiu, nilai_tkp, total_nilai, strict_mode FROM tryout_sessions WHERE id = ? AND user_id = ?");
+    $stmt = $pdo->prepare("SELECT id, nama, user_id, waktu_mulai, waktu_selesai, status, skor_twk, skor_tiu, skor_tkp, skor_total, strict_mode FROM tryout_sessions WHERE id = ? AND user_id = ?");
     $stmt->execute([$sessionId, $userId]);
     $session = $stmt->fetch();
 
@@ -131,7 +131,7 @@ try {
     }
 
     // Ambil konfigurasi subtes dari tabel normalisasi
-    $stmt = $pdo->prepare("SELECT subtes, durasi_menit, jumlah_soal, passing_grade, nilai FROM session_subtes WHERE session_id = ? ORDER BY urutan");
+    $stmt = $pdo->prepare("SELECT subtes, durasi_menit, jumlah_soal, passing_grade, nilai FROM session_subtes WHERE session_id = ? ORDER BY nama");
     $stmt->execute([$sessionId]);
     $subtesRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $subtesConfig = [];
@@ -146,9 +146,9 @@ try {
     // Jika belum ada (session lama sebelum normalisasi), fallback ke kolom flat
     if (empty($subtesConfig)) {
         $subtesConfig = [
-            'TWK' => ['durasi_menit'=>$session['durasi_twk'],'jumlah_soal'=>$session['jumlah_twk'],'passing_grade'=>$session['passing_twk'],'nilai'=>$session['nilai_twk']],
-            'TIU' => ['durasi_menit'=>$session['durasi_tiu'],'jumlah_soal'=>$session['jumlah_tiu'],'passing_grade'=>$session['passing_tiu'],'nilai'=>$session['nilai_tiu']],
-            'TKP' => ['durasi_menit'=>$session['durasi_tkp'],'jumlah_soal'=>$session['jumlah_tkp'],'passing_grade'=>$session['passing_tkp'],'nilai'=>$session['nilai_tkp']],
+            'TWK' => ['durasi_menit'=>$session['durasi_twk'],'jumlah_soal'=>$session['jumlah_twk'],'passing_grade'=>$session['passing_twk'],'nilai'=>$session['skor_twk']],
+            'TIU' => ['durasi_menit'=>$session['durasi_tiu'],'jumlah_soal'=>$session['jumlah_tiu'],'passing_grade'=>$session['passing_tiu'],'nilai'=>$session['skor_tiu']],
+            'TKP' => ['durasi_menit'=>$session['durasi_tkp'],'jumlah_soal'=>$session['jumlah_tkp'],'passing_grade'=>$session['passing_tkp'],'nilai'=>$session['skor_tkp']],
         ];
     }
 
@@ -162,7 +162,7 @@ try {
         $stmtLimit = $pdo->prepare("SELECT COUNT(DISTINCT ts.id) as tryout_count 
                                     FROM tryout_sessions ts 
                                     WHERE ts.user_id = ? 
-                                    AND ts.status = 'selesai' 
+                                    AND ts.status = 'completed' 
                                     AND DATE(ts.waktu_mulai) = CURDATE()");
         $stmtLimit->execute([$userId]);
         $dailyTryoutCount = $stmtLimit->fetchColumn();
@@ -184,7 +184,7 @@ try {
                 // Get questions user has already answered (exclusion)
                 $stmtExcl = $pdo->prepare("SELECT DISTINCT question_id FROM answers a 
                                           INNER JOIN tryout_sessions ts ON a.session_id = ts.id 
-                                          WHERE ts.user_id = ? AND ts.status = 'selesai'");
+                                          WHERE ts.user_id = ? AND ts.status = 'completed'");
                 $stmtExcl->execute([$userId]);
                 $excludedIds = $stmtExcl->fetchAll(PDO::FETCH_COLUMN);
                 

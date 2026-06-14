@@ -9,7 +9,7 @@
  *   php api/generate_soal_smart.php?subtes=TIU&tipe=numerik&topik=Deret+Angka&jumlah=10
  * 
  * Atau via browser:
- *   http://localhost/permen/api/generate_soal_smart.php?subtes=TIU&tipe=numerik&topik=Deret+Angka&jumlah=10
+ *   http://localhost/api/generate_soal_smart.php?subtes=TIU&tipe=numerik&topik=Deret+Angka&jumlah=10
  */
 
 require '../config.php';

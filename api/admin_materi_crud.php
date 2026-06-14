@@ -103,7 +103,7 @@ if ($action === 'add_materi') {
         $params[] = $subtes;
     }
     
-    $stmt = $pdo->prepare("SELECT * FROM materi $whereClause ORDER BY urutan ASC, id ASC");
+    $stmt = $pdo->prepare("SELECT * FROM materi $whereClause ORDER BY nama ASC, id ASC");
     $stmt->execute($params);
     $materiList = $stmt->fetchAll(PDO::FETCH_ASSOC);
     

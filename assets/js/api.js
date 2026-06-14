@@ -8,7 +8,7 @@
  * - Base URL configuration
  */
 class ApiClient {
-    constructor(baseUrl = '/permen/api') {
+    constructor(baseUrl = '/api') {
         this.baseUrl = baseUrl;
         this.csrfToken = this.getCsrfToken();
         

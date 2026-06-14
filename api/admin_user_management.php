@@ -99,8 +99,8 @@ if ($action === 'suspend_user') {
         exit;
     }
     
-    $hash = password_hash($newPassword, PASSWORD_BCRYPT);
-    $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+    $hash = password($newPassword, PASSWORD_BCRYPT);
+    $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
     $stmt->execute([$hash, $userId]);
     
     // Log action

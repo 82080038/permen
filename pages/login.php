@@ -41,11 +41,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = "Akun terkunci karena terlalu banyak percobaan gagal. Silakan coba lagi dalam $remainingMinutes menit.";
             } else {
                 // Try no_hp first, fallback to email for backward compatibility
-                $stmt = $pdo->prepare("SELECT id, nama, no_hp, email, role, password_hash FROM users WHERE no_hp = ? OR email = ?");
+                $stmt = $pdo->prepare("SELECT id, nama, no_hp, email, role, password FROM users WHERE no_hp = ? OR email = ?");
                 $stmt->execute([$noHp, $noHp]);
                 $user = $stmt->fetch();
 
-                if ($user && password_verify($password, $user['password_hash'])) {
+                if ($user && password_verify($password, $user['password'])) {
                     // Reset failed attempts on successful login
                     resetFailedAttempts($noHp, $pdo);
 
@@ -57,9 +57,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     session_regenerate_id(true);
 
                     if ($user['role'] === 'admin') {
-                        header('Location: /permen/admin_dashboard.php');
+                        header('Location: /admin_dashboard.php');
                     } else {
-                        header('Location: /permen/user_dashboard.php');
+                        header('Location: /user_dashboard.php');
                     }
                     exit;
                 } else {
@@ -78,9 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Jika sudah login, redirect
 if (!empty($_SESSION['user_id'])) {
     if ($_SESSION['user_role'] === 'admin') {
-        header('Location: /permen/admin_dashboard.php');
+        header('Location: /admin_dashboard.php');
     } else {
-        header('Location: /permen/user_dashboard.php');
+        header('Location: /user_dashboard.php');
     }
     exit;
 }
@@ -91,7 +91,7 @@ if (!empty($_SESSION['user_id'])) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
-<base href="/permen/">
+<base href="/">
 <title>Login — SKD CAT-BKN</title>
 <link rel="stylesheet" href="assets/css/bootstrap.min.css">
 <link rel="stylesheet" href="assets/css/bootstrap-icons.min.css">

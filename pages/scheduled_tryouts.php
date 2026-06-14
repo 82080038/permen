@@ -65,7 +65,7 @@ try {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
-<base href="/permen/">
+<base href="/">
 <title>Scheduled Tryouts — SKD CAT-BKN</title>
 <link rel="stylesheet" href="assets/style.css">
 </head>

@@ -145,7 +145,7 @@ try {
         'success' => true,
         'data' => [
             'filename' => $filename,
-            'url' => '/permen/uploads/profile_photos/' . $filename
+            'url' => '/uploads/profile_photos/' . $filename
         ]
     ]);
 

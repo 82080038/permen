@@ -101,7 +101,7 @@ foreach ($nilai as $sub => $val) {
 }
 
 // Fallback: update juga kolom flat untuk backward compatibility
-$stmt = $pdo->prepare("UPDATE tryout_sessions SET nilai_tkp=?, nilai_tiu=?, nilai_twk=?, total_nilai=?, status='selesai', waktu_selesai=NOW() WHERE id=?");
+$stmt = $pdo->prepare("UPDATE tryout_sessions SET skor_tkp=?, skor_tiu=?, skor_twk=?, skor_total=?, status='selesai', waktu_selesai=NOW() WHERE id=?");
 $stmt->execute([$nilai['TKP'], $nilai['TIU'], $nilai['TWK'], $total, $sessionId]);
 
 echo json_encode(['success' => true, 'data' => ['nilai' => $nilai, 'total' => $total]]);

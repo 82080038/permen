@@ -399,42 +399,15 @@
     </div>
 </div>
 
-<!-- Testimonials Section -->
+<!-- Testimonials Section (Coming Soon) -->
 <div class="landing-testimonials">
     <div class="testimonials-container">
         <h2 class="section-title">Apa Kata Peserta?</h2>
-        <p class="section-subtitle">Pengalaman dari peserta yang telah menggunakan platform kami</p>
-        <div class="testimonials-grid">
-            <div class="testimonial-card">
-                <div class="testimonial-text">"Platform ini sangat membantu persiapan saya. Simulasi CAT BKN-nya sangat akurat dengan ujian asli. Saya berhasil lulus SKD IPDN!"</div>
-                <div class="testimonial-author">
-                    <div class="testimonial-avatar">A</div>
-                    <div>
-                        <div class="testimonial-name">Ahmad R.</div>
-                        <div class="testimonial-instansi">Lulusan IPDN 2024</div>
-                    </div>
-                </div>
-            </div>
-            <div class="testimonial-card">
-                <div class="testimonial-text">"Materi lengkap dan soal-soalnya relevan dengan Permen PANRB. Dashboard analisisnya membantu saya fokus di topik yang lemah."</div>
-                <div class="testimonial-author">
-                    <div class="testimonial-avatar">S</div>
-                    <div>
-                        <div class="testimonial-name">Siti M.</div>
-                        <div class="testimonial-instansi">Lulusan STAN 2024</div>
-                    </div>
-                </div>
-            </div>
-            <div class="testimonial-card">
-                <div class="testimonial-text">"Fitur latihan per subtes sangat berguna untuk pemahaman mendalam. Timer sinkron database membuat simulasi lebih realistis."</div>
-                <div class="testimonial-author">
-                    <div class="testimonial-avatar">B</div>
-                    <div>
-                        <div class="testimonial-name">Budi P.</div>
-                        <div class="testimonial-instansi">Peserta SKD 2025</div>
-                    </div>
-                </div>
-            </div>
+        <p class="section-subtitle">Testimonial dari peserta akan ditampilkan di sini setelah platform berjalan</p>
+        <div style="text-align: center; padding: 2rem; color: #777;">
+            <p style="font-size: 1.1rem; margin-bottom: 1rem;">📝 Belum ada testimonial</p>
+            <p>Jadilah yang pertama! Daftar dan mulai latihan sekarang.</p>
+            <a href="pages/register.php" style="display: inline-block; margin-top: 1rem; padding: 0.8rem 2rem; background: #1a5276; color: #fff; text-decoration: none; border-radius: 6px;">Daftar Sekarang</a>
         </div>
     </div>
 </div>
@@ -470,7 +443,7 @@ if (hamburger && mobileMenu) {
 // Fetch and animate statistics
 async function fetchStats() {
     try {
-        const response = await fetch('/permen/api/get_landing_stats.php');
+        const response = await fetch('/api/get_landing_stats.php');
         const data = await response.json();
         if (data.success) {
             animateCounter('user-count', data.data.user_count);

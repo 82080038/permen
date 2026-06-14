@@ -9,7 +9,7 @@ try {
     $userCount = $pdo->query("SELECT COUNT(*) as count FROM users")->fetch()['count'];
     
     // Get completed tryout count
-    $tryoutCount = $pdo->query("SELECT COUNT(*) as count FROM tryout_sessions WHERE status = 'selesai'")->fetch()['count'];
+    $tryoutCount = $pdo->query("SELECT COUNT(*) as count FROM tryout_sessions WHERE status = 'completed'")->fetch()['count'];
     
     // Get question count
     $questionCount = $pdo->query("SELECT COUNT(*) as count FROM questions WHERE is_active = 1")->fetch()['count'];

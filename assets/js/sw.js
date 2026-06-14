@@ -13,20 +13,20 @@ const DYNAMIC_CACHE = 'skd-dynamic-v1';
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
-    '/permen/assets/css/base.css',
-    '/permen/assets/js/app.js',
-    '/permen/assets/js/api.js',
-    '/permen/assets/icon-192.png',
-    '/permen/assets/icon-512.png',
-    '/permen/assets/favicon.ico',
+    '/assets/css/base.css',
+    '/assets/js/app.js',
+    '/assets/js/api.js',
+    '/assets/icon-192.png',
+    '/assets/icon-512.png',
+    '/assets/favicon.ico',
 ];
 
 // Routes that should use network-first strategy
 const API_ROUTES = [
-    '/permen/api/get_soal.php',
-    '/permen/api/submit_jawaban.php',
-    '/permen/api/finish_tryout.php',
-    '/permen/api/get_notifications.php',
+    '/api/get_soal.php',
+    '/api/submit_jawaban.php',
+    '/api/finish_tryout.php',
+    '/api/get_notifications.php',
 ];
 
 // Install event - cache static assets

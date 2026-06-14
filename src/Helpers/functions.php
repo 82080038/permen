@@ -77,7 +77,7 @@ if (!function_exists('requireAuth')) {
     function requireAuth(): void
     {
         if (!isLoggedIn()) {
-            Response::redirect('/permen/pages/login.php');
+            Response::redirect('/pages/login.php');
         }
     }
 }

@@ -32,12 +32,12 @@ if (!empty($_GET['session_id'])) {
     
     if ($scheduledTryout) {
         // Create tryout session from scheduled tryout
-        $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai, strict_mode) VALUES (?, ?, NOW(), 0)");
+        $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai, status) VALUES (?, ?, NOW(), 'ongoing')");
         $stmt->execute([$userId, $scheduledTryout['nama']]);
         $sessionId = $pdo->lastInsertId();
         
         // Insert session_subtes from scheduled tryout duration
-        $cfg = $pdo->query("SELECT subtes, durasi_menit, jumlah_soal, passing_grade, urutan FROM subtes_config WHERE aktif = 1 ORDER BY urutan");
+        $cfg = $pdo->query("SELECT subtes, durasi_menit, jumlah_soal, passing_grade FROM subtes_config WHERE is_active = 1 ORDER BY id");
         $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade, urutan) VALUES (?,?,?,?,?,?)");
         foreach ($cfg as $c) {
             // Use scheduled tryout duration divided by 3 for each subtest
@@ -78,30 +78,32 @@ if (!$sessionId) {
             }
         }
 
-        $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai, strict_mode, package_id) VALUES (?, ?, NOW(), ?, ?)");
-        $stmt->execute([$userId, $packageName, $strictMode, $packageId > 0 ? $packageId : null]);
+        $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai, status) VALUES (?, ?, NOW(), 'ongoing')");
+        $stmt->execute([$userId, $packageName]);
         $sessionId = $pdo->lastInsertId();
         
         // Insert ke tabel normalisasi session_subtes dari package atau konfigurasi global
         if ($packageId > 0 && isset($package)) {
             // Use package configuration
-            $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade, urutan) VALUES (?,?,?,?,?,?)");
-            $ins->execute([$sessionId, 'TWK', $package['durasi_twk'], $package['jumlah_soal_twk'], $package['passing_grade_twk'], 1]);
-            $ins->execute([$sessionId, 'TIU', $package['durasi_tiu'], $package['jumlah_soal_tiu'], $package['passing_grade_tiu'], 2]);
-            $ins->execute([$sessionId, 'TKP', $package['durasi_tkp'], $package['jumlah_soal_tkp'], $package['passing_grade_tkp'], 3]);
+            $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade) VALUES (?,?,?,?,?)");
+            $ins->execute([$sessionId, 'TWK', $package['durasi_twk'], $package['jumlah_soal_twk'], $package['passing_grade_twk']]);
+            $ins->execute([$sessionId, 'TIU', $package['durasi_tiu'], $package['jumlah_soal_tiu'], $package['passing_grade_tiu']]);
+            $ins->execute([$sessionId, 'TKP', $package['durasi_tkp'], $package['jumlah_soal_tkp'], $package['passing_grade_tkp']]);
         } else {
             // Use global configuration
-            $cfg = $pdo->query("SELECT subtes, durasi_menit, jumlah_soal, passing_grade, urutan FROM subtes_config WHERE aktif = 1 ORDER BY urutan");
-            $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade, urutan) VALUES (?,?,?,?,?,?)");
+            $cfg = $pdo->query("SELECT subtes, durasi_menit, jumlah_soal, passing_grade FROM subtes_config WHERE is_active = 1 ORDER BY id");
+            $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade) VALUES (?,?,?,?,?)");
+            $urutan = 1;
             foreach ($cfg as $c) {
-                $ins->execute([$sessionId, $c['subtes'], $c['durasi_menit'], $c['jumlah_soal'], $c['passing_grade'], $c['urutan']]);
+                $ins->execute([$sessionId, $c['subtes'], $c['durasi_menit'], $c['jumlah_soal'], $c['passing_grade']]);
+                $urutan++;
             }
         }
     }
 }
 
 // Ambil data session untuk timer dari session_subtes (normalisasi)
-$stmt = $pdo->prepare("SELECT subtes, durasi_menit FROM session_subtes WHERE session_id = ? ORDER BY urutan");
+$stmt = $pdo->prepare("SELECT subtes, durasi_menit FROM session_subtes WHERE session_id = ? ORDER BY id");
 $stmt->execute([$sessionId]);
 $subtesRows = $stmt->fetchAll();
 $durasiMap = ['TWK'=>30,'TIU'=>35,'TKP'=>45];
@@ -111,7 +113,7 @@ foreach ($subtesRows as $row) {
 $totalDuration = array_sum($durasiMap);
 
 // Ambil waktu mulai per subtes untuk timer per subtes
-$stmt = $pdo->prepare("SELECT subtes, UNIX_TIMESTAMP(waktu_mulai_subtes) as start_ts, durasi_menit FROM session_subtes WHERE session_id = ? ORDER BY urutan");
+$stmt = $pdo->prepare("SELECT subtes, UNIX_TIMESTAMP(waktu_mulai) as start_ts, durasi_menit FROM session_subtes WHERE session_id = ? ORDER BY id");
 $stmt->execute([$sessionId]);
 $subtesTimers = [];
 $currentSubtes = '';
@@ -150,10 +152,8 @@ foreach ($subtesTimers as $sub => $t) {
 $timerM = str_pad(floor($remainingSeconds / 60), 2, '0', STR_PAD_LEFT);
 $timerS = str_pad($remainingSeconds % 60, 2, '0', STR_PAD_LEFT);
 
-// Get strict_mode setting for this session
-$stmt = $pdo->prepare("SELECT strict_mode FROM tryout_sessions WHERE id = ?");
-$stmt->execute([$sessionId]);
-$strictMode = (int)($stmt->fetchColumn() ?? 0);
+// Session info
+$strictMode = 0; // Default non-strict
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -233,7 +233,7 @@ $strictMode = (int)($stmt->fetchColumn() ?? 0);
 <?php require '../includes/navigation.php'; ?>
 <?php 
 $breadcrumbs = [
-    ['label' => 'Beranda', 'url' => '/permen/index.php'],
+    ['label' => 'Beranda', 'url' => '/index.php'],
     ['label' => 'Try Out', 'url' => '']
 ];
 require '../includes/breadcrumbs.php'; 
@@ -339,7 +339,7 @@ subtesOrder.forEach(sub => {
  */
 async function loadSoal(){
     try {
-        const res = await fetch('/permen/api/get_soal.php?session_id='+sessionId, {
+        const res = await fetch('/api/get_soal.php?session_id='+sessionId, {
             credentials: 'include',
             headers: {
                 'Accept': 'application/json',
@@ -349,7 +349,7 @@ async function loadSoal(){
 
         if (res.status === 401 || res.status === 403) {
             alert('Sesi Anda telah berakhir. Silakan login kembali.');
-            window.location.href = '/permen/login.php';
+            window.location.href = '/login.php';
             return;
         }
 
@@ -501,7 +501,7 @@ function advanceToNextSubtes(){
     const currentSub = subtesOrder[activeSubtesIdx];
 
     // Call API to record subtes transition
-    fetch('/permen/api/next_subtes.php',{
+    fetch('/api/next_subtes.php',{
         method:'POST',
         headers:{
             'Content-Type':'application/json',
@@ -549,7 +549,7 @@ function renderSoal(idx){
                 return;
             }
             // Call API to record transition
-            fetch('/permen/api/next_subtes.php',{
+            fetch('/api/next_subtes.php',{
                 method:'POST',
                 headers:{
                     'Content-Type':'application/json',
@@ -626,7 +626,7 @@ function pilihJawaban(answerId, opt, el){
     // save to localStorage
     saveLocalAnswers();
     // submit ke server
-    fetch('/permen/api/submit_jawaban.php',{
+    fetch('/api/submit_jawaban.php',{
         method:'POST',
         headers:{
             'Content-Type':'application/json',
@@ -636,7 +636,7 @@ function pilihJawaban(answerId, opt, el){
     }).then(r=>{
         if(r.status === 401 || r.status === 403){
             alert('Sesi Anda telah berakhir. Silakan login kembali.');
-            window.location.href = '/permen/login.php';
+            window.location.href = '/login.php';
         }
     }).catch(e=>{
         console.error('Error submitting answer:', e);
@@ -675,7 +675,7 @@ function pilihJawaban(answerId, opt, el){
                         'Waktu ' + currentSub + ' yang tersisa tidak bisa digunakan untuk subtes lain.\n\n' +
                         'Yakin ingin lanjut?';
             if (!confirm(msg)) return;
-            fetch('/permen/api/next_subtes.php',{
+            fetch('/api/next_subtes.php',{
                 method:'POST',
                 headers:{
                     'Content-Type':'application/json',
@@ -715,7 +715,7 @@ function nextSoal(){
                     'Yakin ingin lanjut?';
         if (!confirm(msg)) return;
         // Record transition via API
-        fetch('/permen/api/next_subtes.php',{
+        fetch('/api/next_subtes.php',{
             method:'POST',
             headers:{
                 'Content-Type':'application/json',
@@ -802,7 +802,7 @@ function toggleMark(){
         btn.title = 'Tandai ragu-ragu';
     }
     // Send revision flag to server
-    fetch('/permen/api/mark_revision.php',{
+    fetch('/api/mark_revision.php',{
         method:'POST',
         headers:{
             'Content-Type':'application/json',
@@ -838,7 +838,7 @@ async function togglePause(){
     if (!isPaused) {
         // Pause the tryout
         try {
-            const res = await fetch('/permen/api/pause_tryout.php',{
+            const res = await fetch('/api/pause_tryout.php',{
                 method:'POST',
                 headers:{
                     'Content-Type':'application/json',
@@ -849,7 +849,7 @@ async function togglePause(){
             
             if (res.status === 401 || res.status === 403) {
                 alert('Sesi Anda telah berakhir. Silakan login kembali.');
-                window.location.href = '/permen/login.php';
+                window.location.href = '/login.php';
                 return;
             }
             
@@ -870,7 +870,7 @@ async function togglePause(){
     } else {
         // Resume the tryout
         try {
-            const res = await fetch('/permen/api/resume_tryout.php',{
+            const res = await fetch('/api/resume_tryout.php',{
                 method:'POST',
                 headers:{
                     'Content-Type':'application/json',
@@ -881,7 +881,7 @@ async function togglePause(){
             
             if (res.status === 401 || res.status === 403) {
                 alert('Sesi Anda telah berakhir. Silakan login kembali.');
-                window.location.href = '/permen/login.php';
+                window.location.href = '/login.php';
                 return;
             }
             
@@ -919,7 +919,7 @@ async function toggleBookmark(){
     formData.append('action', action);
 
     try {
-        const res = await fetch('/permen/api/bookmark_question.php', {
+        const res = await fetch('/api/bookmark_question.php', {
             method: 'POST',
             headers: {
                 'X-CSRF-Token': csrfToken
@@ -929,7 +929,7 @@ async function toggleBookmark(){
 
         if (res.status === 401 || res.status === 403) {
             showToast('Sesi telah berakhir. Silakan login kembali.', 'error');
-            setTimeout(() => window.location.href = '/permen/login.php', 2000);
+            setTimeout(() => window.location.href = '/login.php', 2000);
             return;
         }
 
@@ -1041,7 +1041,7 @@ function finishTryout(){
     if(!confirm(msg)) return;
     clearInterval(timerInterval);
     clearLocalAnswers();
-    fetch('/permen/api/finish_tryout.php',{
+    fetch('/api/finish_tryout.php',{
         method:'POST',
         headers:{
             'Content-Type':'application/json',
@@ -1063,7 +1063,7 @@ function finishTryout(){
     <div class="zoom-hint">Ketuk gambar atau di luar area untuk menutup</div>
 </div>
 
-<base href="/permen/">
+<base href="/">
 <script src="assets/app.js"></script>
 <script>
 /**

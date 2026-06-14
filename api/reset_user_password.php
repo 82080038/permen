@@ -45,10 +45,10 @@ try {
     
     // Generate new random password
     $newPassword = generateRandomPassword();
-    $hash = password_hash($newPassword, PASSWORD_BCRYPT);
+    $hash = password($newPassword, PASSWORD_BCRYPT);
     
     // Update password
-    $stmt = $pdo->prepare("UPDATE users SET password_hash = ?, failed_attempts = 0, lockout_until = NULL WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE users SET password = ?, failed_attempts = 0, lockout_until = NULL WHERE id = ?");
     $stmt->execute([$hash, $userId]);
     
     // Mark reset request as completed if exists

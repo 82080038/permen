@@ -12,7 +12,7 @@ $error = '';
 $success = '';
 
 // Ambil daftar instansi aktif untuk dropdown
-$instansiList = $pdo->query("SELECT id, kode, nama FROM instansi WHERE aktif = 1 ORDER BY urutan, nama")->fetchAll();
+$instansiList = $pdo->query("SELECT id, nama FROM instansi WHERE is_active = 1 ORDER BY nama")->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!validateCsrf($_POST['csrf_token'] ?? '')) {
@@ -45,13 +45,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'Nomor HP sudah terdaftar. Silakan login.';
                 } else {
                     $hash = password_hash($password, PASSWORD_BCRYPT);
-                    $stmt = $pdo->prepare("INSERT INTO users (nama, no_hp, sekolah_asal, tahun_tamat, password_hash, instansi_id, instansi, role) VALUES (?, ?, ?, ?, ?, ?, ?, 'user')");
-                    // Ambil nama instansi untuk backward compatibility
-                    $instansiNama = '';
+                    $targetInstansi = '';
                     foreach ($instansiList as $i) {
-                        if ($i['id'] == $instansiId) { $instansiNama = $i['kode']; break; }
+                        if ($i['id'] == $instansiId) { $targetInstansi = $i['nama']; break; }
                     }
-                    $stmt->execute([$nama, $noHp, $sekolahAsal ?: null, $tahunTamat ?: null, $hash, $instansiId ?: null, $instansiNama ?: null]);
+                    $stmt = $pdo->prepare("INSERT INTO users (nama, no_hp, email, password, role, target_instansi, status, created_at) VALUES (?, ?, ?, ?, 'user', ?, 'active', NOW())");
+                    $stmt->execute([$nama, $noHp, null, $hash, $targetInstansi ?: null]);
                     $success = 'Pendaftaran berhasil! Silakan login dengan nomor HP dan password Anda.';
                 }
             }
@@ -65,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
-<base href="/permen/">
+<base href="/">
 <title>Register — SKD CAT-BKN</title>
 <link rel="stylesheet" href="assets/form.css">
 <link rel="stylesheet" href="assets/style.css">
@@ -105,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <select id="instansi_id" name="instansi_id" aria-describedby="instansi-help">
 <option value="">-- Pilih Instansi --</option>
 <?php foreach ($instansiList as $i): ?>
-<option value="<?= $i['id'] ?>" <?= (($_POST['instansi_id'] ?? '') == $i['id']) ? 'selected' : '' ?>><?= e($i['kode']) ?> — <?= e($i['nama']) ?></option>
+<option value="<?= $i['id'] ?>" <?= (($_POST['instansi_id'] ?? '') == $i['id']) ? 'selected' : '' ?>><?= e($i['nama']) ?></option>
 <?php endforeach; ?>
 </select>
 <small id="instansi-help" style="color:#777;font-size:.8rem">Pilih instansi yang ingin dilamar (opsional)</small>

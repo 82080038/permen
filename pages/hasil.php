@@ -3,14 +3,14 @@ require '../config.php';
 require '../helpers.php';
 $sessionId = $_GET['session_id'] ?? 0;
 if (!$sessionId) {
-    header('Location: /permen/index.php');
+    header('Location: /index.php');
     exit;
 }
 $stmt = $pdo->prepare("SELECT * FROM tryout_sessions WHERE id = ?");
 $stmt->execute([$sessionId]);
 $session = $stmt->fetch();
 if (!$session) {
-    header('Location: /permen/index.php');
+    header('Location: /index.php');
     exit;
 }
 
@@ -26,9 +26,9 @@ foreach ($subDataRows as $row) {
 if (empty($subData)) {
     // Fallback: data dari kolom flat (session lama)
     $subData = [
-        'TKP' => ['nilai'=>$session['nilai_tkp'],'passing_grade'=>$session['passing_tkp'],'jumlah_soal'=>$session['jumlah_tkp']],
-        'TIU' => ['nilai'=>$session['nilai_tiu'],'passing_grade'=>$session['passing_tiu'],'jumlah_soal'=>$session['jumlah_tiu']],
-        'TWK' => ['nilai'=>$session['nilai_twk'],'passing_grade'=>$session['passing_twk'],'jumlah_soal'=>$session['jumlah_twk']],
+        'TKP' => ['nilai'=>$session['skor_tkp'],'passing_grade'=>$session['passing_tkp'],'jumlah_soal'=>$session['jumlah_tkp']],
+        'TIU' => ['nilai'=>$session['skor_tiu'],'passing_grade'=>$session['passing_tiu'],'jumlah_soal'=>$session['jumlah_tiu']],
+        'TWK' => ['nilai'=>$session['skor_twk'],'passing_grade'=>$session['passing_twk'],'jumlah_soal'=>$session['jumlah_twk']],
     ];
 }
 
@@ -40,7 +40,7 @@ $passingTotal = $session['passing_total'] ?? 271;
 $nilaiTkp = $subData['TKP']['nilai'] ?? 0;
 $nilaiTiu = $subData['TIU']['nilai'] ?? 0;
 $nilaiTwk = $subData['TWK']['nilai'] ?? 0;
-$totalNilai = $session['total_nilai'] ?? ($nilaiTkp + $nilaiTiu + $nilaiTwk);
+$totalNilai = $session['skor_total'] ?? ($nilaiTkp + $nilaiTiu + $nilaiTwk);
 
 $statusTkp = $nilaiTkp >= $passingTkp ? 'LULUS' : 'TIDAK LULUS';
 $statusTiu = $nilaiTiu >= $passingTiu ? 'LULUS' : 'TIDAK LULUS';
@@ -64,7 +64,7 @@ $comparisonData = null;
 if (!$isLatihan && !empty($_SESSION['user_id'])) {
     $stmt = $pdo->prepare("
         SELECT * FROM tryout_sessions 
-        WHERE user_id = ? AND id < ? AND status = 'selesai'
+        WHERE user_id = ? AND id < ? AND status = 'completed'
         ORDER BY id DESC LIMIT 1
     ");
     $stmt->execute([$_SESSION['user_id'], $sessionId]);
@@ -81,7 +81,7 @@ if (!$isLatihan && !empty($_SESSION['user_id'])) {
         
         // Calculate differences
         $comparisonData = [
-            'total_diff' => $totalNilai - ($previousSession['total_nilai'] ?? 0),
+            'total_diff' => $totalNilai - ($previousSession['skor_total'] ?? 0),
             'tkp_diff' => $nilaiTkp - ($prevSubData['TKP'] ?? 0),
             'tiu_diff' => $nilaiTiu - ($prevSubData['TIU'] ?? 0),
             'twk_diff' => $nilaiTwk - ($prevSubData['TWK'] ?? 0),
@@ -91,12 +91,12 @@ if (!$isLatihan && !empty($_SESSION['user_id'])) {
     
     // Fetch institution average for comparison
     $stmt = $pdo->prepare("
-        SELECT AVG(total_nilai) as avg_total, 
+        SELECT AVG(skor_total) as avg_total, 
                AVG((SELECT nilai FROM session_subtes ss WHERE ss.session_id = ts.id AND ss.subtes = 'TKP')) as avg_tkp,
                AVG((SELECT nilai FROM session_subtes ss WHERE ss.session_id = ts.id AND ss.subtes = 'TIU')) as avg_tiu,
                AVG((SELECT nilai FROM session_subtes ss WHERE ss.session_id = ts.id AND ss.subtes = 'TWK')) as avg_twk
         FROM tryout_sessions ts
-        WHERE ts.status = 'selesai' AND ts.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        WHERE ts.status = 'completed' AND ts.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
     ");
     $stmt->execute();
     $instansiAvg = $stmt->fetch();
@@ -166,9 +166,9 @@ else { $nilaiSubtes = $nilaiTwk; $passingSubtes = $passingTwk; $statusSubtes = $
 <a href="latihan.php?subtes=<?= $latihanSubtes ?>" class="btn">Latihan <?= $latihanSubtes ?> Lagi</a>
 <a href="latihan.php" class="btn" style="background:#27ae60;margin-left:.5rem">Latihan Subtes Lain</a>
 <a href="tryout.php" class="btn" style="background:#e67e22;margin-left:.5rem">Try Out Penuh</a>
-<a href="/permen/index.php" class="btn" style="background:#7f8c8d;margin-left:.5rem">Beranda</a>
+<a href="/index.php" class="btn" style="background:#7f8c8d;margin-left:.5rem">Beranda</a>
 <div style="margin-top:1rem">
-<a href="/permen/api/export_result.php?session_id=<?= $sessionId ?>&format=csv" class="btn" style="background:#2980b9;font-size:.8rem;padding:.5rem 1rem">📄 Export CSV</a>
+<a href="/api/export_result.php?session_id=<?= $sessionId ?>&format=csv" class="btn" style="background:#2980b9;font-size:.8rem;padding:.5rem 1rem">📄 Export CSV</a>
 <a href="javascript:window.print()" class="btn" style="background:#8e44ad;font-size:.8rem;padding:.5rem 1rem;margin-left:.5rem">🖨️ Cetak/PDF</a>
 </div>
 </div>
@@ -328,7 +328,7 @@ Sumber: BKN (Badan Kepegawaian Negara) - Seleksi Sekolah Kedinasan 2024
 <div class="card no-print" style="text-align:center">
 <h2>Export Hasil</h2>
 <div style="display:flex;justify-content:center;gap:.5rem;flex-wrap:wrap">
-<a href="/permen/api/export_result.php?session_id=<?= $sessionId ?>&format=csv" class="btn" style="background:#2980b9;font-size:.9rem;padding:.6rem 1.2rem">📄 Export CSV</a>
+<a href="/api/export_result.php?session_id=<?= $sessionId ?>&format=csv" class="btn" style="background:#2980b9;font-size:.9rem;padding:.6rem 1.2rem">📄 Export CSV</a>
 <a href="javascript:window.print()" class="btn" style="background:#8e44ad;font-size:.9rem;padding:.6rem 1.2rem">🖨️ Cetak/PDF</a>
 <button onclick="sendEmailResult()" class="btn" style="background:#27ae60;font-size:.9rem;padding:.6rem 1.2rem">� Kirim Notifikasi</button>
 </div>
@@ -342,7 +342,7 @@ async function sendEmailResult(){
     formData.append('session_id', <?= $sessionId ?>);
     
     try {
-        const res = await fetch('/permen/api/send_result_notification.php', {
+        const res = await fetch('/api/send_result_notification.php', {
             method: 'POST',
             body: formData
         });
@@ -400,7 +400,7 @@ const reviewSessionId = <?= (int)$sessionId ?>;
 let allQuestions = [];
 
 async function loadReview(){
-    const res = await fetch('/permen/api/get_review.php?session_id='+reviewSessionId);
+    const res = await fetch('/api/get_review.php?session_id='+reviewSessionId);
     const data = await res.json();
     if(data.error){document.getElementById('reviewContainer').innerHTML='<p style="color:#e74c3c">'+data.error+'</p>';return;}
 
@@ -594,7 +594,7 @@ document.addEventListener('DOMContentLoaded', loadReview);
 <a href="tryout.php" class="btn">Coba Lagi</a>
 <a href="latihan.php" class="btn" style="background:#27ae60;margin-left:.5rem">Latihan per Subtes</a>
 <a href="materi.php?subtes=TWK" class="btn" style="background:#2980b9;margin-left:.5rem">Pelajari Materi</a>
-<a href="/permen/index.php" class="btn" style="background:#7f8c8d;margin-left:.5rem">Beranda</a>
+<a href="/index.php" class="btn" style="background:#7f8c8d;margin-left:.5rem">Beranda</a>
 <button onclick="window.print()" class="btn" style="background:#8e44ad;margin-left:.5rem" aria-label="Simpan atau cetak hasil sebagai PDF">Simpan/Cetak PDF</button>
 </div>
 <?php endif; ?>

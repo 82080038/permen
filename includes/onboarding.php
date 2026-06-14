@@ -134,7 +134,7 @@ function prevOnboardingStep() {
 function closeOnboarding() {
     document.getElementById('onboarding-overlay').style.display = 'none';
     // Mark as seen
-    fetch('/permen/api/mark_onboarding_seen.php', { method: 'POST' });
+    fetch('/api/mark_onboarding_seen.php', { method: 'POST' });
 }
 </script>
 <?php endif; ?>

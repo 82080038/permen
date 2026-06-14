@@ -17,5 +17,5 @@ if (isset($_COOKIE[session_name()])) {
 
 session_destroy();
 
-header('Location: /permen/login.php');
+header('Location: /login.php');
 exit;

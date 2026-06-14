@@ -46,9 +46,9 @@ $stmt = $pdo->prepare("
         SUM(CASE WHEN dqa.jawaban_user IS NOT NULL THEN 1 ELSE 0 END) as answered,
         SUM(CASE WHEN dqa.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) as benar,
         SUM(CASE WHEN dqa.jawaban_user IS NOT NULL AND dqa.jawaban_user != q.jawaban_benar THEN 1 ELSE 0 END) as salah,
-        SUM(CASE WHEN q.subtes = 'TKP' AND dqa.jawaban_user = q.jawaban_benar THEN q.bobot_tkp ELSE 0 END) as nilai_tkp,
-        SUM(CASE WHEN q.subtes = 'TIU' AND dqa.jawaban_user = q.jawaban_benar THEN 5 ELSE 0 END) as nilai_tiu,
-        SUM(CASE WHEN q.subtes = 'TWK' AND dqa.jawaban_user = q.jawaban_benar THEN 5 ELSE 0 END) as nilai_twk
+        SUM(CASE WHEN q.subtes = 'TKP' AND dqa.jawaban_user = q.jawaban_benar THEN q.bobot_tkp ELSE 0 END) as skor_tkp,
+        SUM(CASE WHEN q.subtes = 'TIU' AND dqa.jawaban_user = q.jawaban_benar THEN 5 ELSE 0 END) as skor_tiu,
+        SUM(CASE WHEN q.subtes = 'TWK' AND dqa.jawaban_user = q.jawaban_benar THEN 5 ELSE 0 END) as skor_twk
     FROM daily_quiz_questions dq
     JOIN questions q ON dq.question_id = q.id
     LEFT JOIN daily_quiz_answers dqa ON dqa.session_id = dq.session_id AND dqa.question_id = dq.question_id
@@ -62,15 +62,15 @@ $answered = (int)$hasil['answered'];
 $benar = (int)$hasil['benar'];
 $salah = (int)$hasil['salah'];
 $kosong = $totalSoal - $answered;
-$nilaiTkp = (int)($hasil['nilai_tkp'] ?? 0);
-$nilaiTiu = (int)($hasil['nilai_tiu'] ?? 0);
-$nilaiTwk = (int)($hasil['nilai_twk'] ?? 0);
+$nilaiTkp = (int)($hasil['skor_tkp'] ?? 0);
+$nilaiTiu = (int)($hasil['skor_tiu'] ?? 0);
+$nilaiTwk = (int)($hasil['skor_twk'] ?? 0);
 $nilaiTotal = $nilaiTkp + $nilaiTiu + $nilaiTwk;
 
 // Update session
 $stmt = $pdo->prepare("
     UPDATE daily_quiz_sessions 
-    SET status = 'selesai', waktu_selesai = NOW(),
+    SET status = 'completed', waktu_selesai = NOW(),
         benar = ?, salah = ?, kosong = ?, nilai_total = ?
     WHERE id = ?
 ");
@@ -168,9 +168,9 @@ echo json_encode([
         'benar' => $benar,
         'salah' => $salah,
         'kosong' => $kosong,
-        'nilai_twk' => $nilaiTwk,
-        'nilai_tiu' => $nilaiTiu,
-        'nilai_tkp' => $nilaiTkp,
+        'skor_twk' => $nilaiTwk,
+        'skor_tiu' => $nilaiTiu,
+        'skor_tkp' => $nilaiTkp,
         'nilai_total' => $nilaiTotal
     ]
 ]);

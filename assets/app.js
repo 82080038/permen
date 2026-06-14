@@ -809,37 +809,37 @@ function initKeyboardShortcuts() {
         // Alt + H: Go to homepage
         if (e.altKey && e.key === 'h') {
             e.preventDefault();
-            window.location.href = '/permen/index.php';
+            window.location.href = '/index.php';
         }
 
         // Alt + L: Go to login
         if (e.altKey && e.key === 'l') {
             e.preventDefault();
-            window.location.href = '/permen/login.php';
+            window.location.href = '/login.php';
         }
 
         // Alt + D: Go to dashboard (if logged in)
         if (e.altKey && e.key === 'd') {
             e.preventDefault();
-            window.location.href = '/permen/user_dashboard.php';
+            window.location.href = '/user_dashboard.php';
         }
 
         // Alt + T: Go to tryout
         if (e.altKey && e.key === 't') {
             e.preventDefault();
-            window.location.href = '/permen/tryout.php';
+            window.location.href = '/tryout.php';
         }
 
         // Alt + M: Go to materi
         if (e.altKey && e.key === 'm') {
             e.preventDefault();
-            window.location.href = '/permen/materi.php?subtes=TWK';
+            window.location.href = '/materi.php?subtes=TWK';
         }
 
         // Alt + L: Go to latihan
         if (e.altKey && e.key === 'L') {
             e.preventDefault();
-            window.location.href = '/permen/latihan.php';
+            window.location.href = '/latihan.php';
         }
 
         // Escape: Close modals/menus
@@ -949,9 +949,9 @@ function trackEvent(eventType, data = {}, sendBeacon = false) {
 
     if (sendBeacon && navigator.sendBeacon) {
         const formData = new URLSearchParams(payload);
-        navigator.sendBeacon('/permen/api/learning_analytics.php', formData);
+        navigator.sendBeacon('/api/learning_analytics.php', formData);
     } else {
-        fetch('/permen/api/learning_analytics.php', {
+        fetch('/api/learning_analytics.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams(payload)
@@ -1013,7 +1013,7 @@ function trackTryoutComplete(tryoutId = null, score = null) {
 
 async function getLearningInsights() {
     try {
-        const response = await fetch('/permen/api/learning_analytics.php?action=get_learning_insights');
+        const response = await fetch('/api/learning_analytics.php?action=get_learning_insights');
         const data = await response.json();
 
         if (data.success) {
@@ -1028,7 +1028,7 @@ async function getLearningInsights() {
 
 async function markInsightRead(insightId) {
     try {
-        await fetch(`/permen/api/learning_analytics.php?action=mark_insight_read&insight_id=${insightId}`);
+        await fetch(`/api/learning_analytics.php?action=mark_insight_read&insight_id=${insightId}`);
     } catch (e) {
         console.error('Failed to mark insight as read:', e);
     }
@@ -1036,7 +1036,7 @@ async function markInsightRead(insightId) {
 
 async function getLearningStats() {
     try {
-        const response = await fetch('/permen/api/learning_analytics.php?action=get_learning_stats');
+        const response = await fetch('/api/learning_analytics.php?action=get_learning_stats');
         const data = await response.json();
 
         if (data.success) {

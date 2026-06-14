@@ -16,9 +16,9 @@ $userId = $_SESSION['user_id'] ?? null;
 $userRole = $_SESSION['role'] ?? '';
 
 // Detect if navigation is included from pages/ directory or root
-// Since base href="/permen/" is set in all pages, use empty basePath
+// Since base href="/" is set in all pages, use empty basePath
 $basePath = '';
-$apiPath = '/permen/api/'; // Use absolute path for API calls
+$apiPath = '/api/'; // Use absolute path for API calls
 
 // Helper untuk menentukan apakah menu aktif
 function isActive($page, $active) {
@@ -29,8 +29,8 @@ function isActive($page, $active) {
 // Inject Bootstrap hanya sekali — cegah duplikasi jika navigation di-include lebih dari sekali
 if (!defined('BOOTSTRAP_LOADED')) {
     define('BOOTSTRAP_LOADED', true);
-    echo '<link rel="stylesheet" href="/permen/assets/css/bootstrap.min.css">';
-    echo '<link rel="stylesheet" href="/permen/assets/css/bootstrap-icons.min.css">';
+    echo '<link rel="stylesheet" href="/assets/css/bootstrap.min.css">';
+    echo '<link rel="stylesheet" href="/assets/css/bootstrap-icons.min.css">';
 }
 ?>
 <style>
@@ -178,7 +178,7 @@ window.isLoggedIn = <?= $userId ? 'true' : 'false' ?>;
 <script>
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/permen/assets/js/sw.js')
+        navigator.serviceWorker.register('/assets/js/sw.js')
             .then((registration) => {
                 console.log('[SW] Registered:', registration.scope);
                 
@@ -201,5 +201,5 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <?php if (defined('BOOTSTRAP_LOADED')): ?>
-<script src="/permen/assets/js/bootstrap.bundle.min.js" defer></script>
+<script src="/assets/js/bootstrap.bundle.min.js" defer></script>
 <?php endif; ?>

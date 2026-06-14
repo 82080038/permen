@@ -17,7 +17,7 @@ $userName = e($_SESSION['user_nama'] ?? 'User');
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
 <title>Feedback — SKD CAT-BKN</title>
-<base href="/permen/">
+<base href="/">
 <link rel="stylesheet" href="assets/form.css">
 <link rel="stylesheet" href="assets/style.css">
 <style>
@@ -81,7 +81,7 @@ textarea{min-height:120px;resize:vertical}
 </div>
 </div>
 
-<base href="/permen/">
+<base href="/">
 <script src="assets/app.js"></script>
 <script>
 let selectedCategory = 'lainnya';
@@ -106,7 +106,7 @@ async function submitFeedback(e) {
     formData.append('message', document.getElementById('message').value);
     
     try {
-        const res = await fetch('/permen/api/submit_feedback.php', {
+        const res = await fetch('/api/submit_feedback.php', {
             method: 'POST',
             body: formData
         });
@@ -121,7 +121,7 @@ async function submitFeedback(e) {
             // Tampilkan opsi redirect setelah 2 detik
             setTimeout(() => {
                 if (confirm('Feedback berhasil dikirim! Terima kasih atas kontribusi Anda.\n\nKlik OK untuk kembali ke Beranda, atau Cancel untuk tetap di halaman ini.')) {
-                    window.location.href = '/permen/index.php';
+                    window.location.href = '/index.php';
                 }
             }, 1500);
         } else {
@@ -134,7 +134,7 @@ async function submitFeedback(e) {
 
 async function loadFeedbackHistory() {
     try {
-        const res = await fetch('/permen/api/get_my_feedback.php');
+        const res = await fetch('/api/get_my_feedback.php');
         const data = await res.json();
         
         if (data.success) {

@@ -30,7 +30,7 @@ $stmt->execute([$userId]);
 $badges = $stmt->fetchAll();
 
 // Ambil daftar instansi aktif untuk dropdown
-$instansiList = $pdo->query("SELECT id, kode, nama FROM instansi WHERE aktif = 1 ORDER BY urutan, nama")->fetchAll();
+$instansiList = $pdo->query("SELECT id, nama FROM instansi WHERE is_active = 1 ORDER BY nama")->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!validateCsrf($_POST['csrf_token'] ?? '')) {
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if (!$currentPassword || !$newPassword || !$confirmPassword) {
                 $error = 'Semua field password wajib diisi.';
-            } elseif (!password_verify($currentPassword, $user['password_hash'])) {
+            } elseif (!password_verify($currentPassword, $user['password'])) {
                 $error = 'Password saat ini salah.';
             } else {
                 $pwdValidation = validatePasswordStrength($newPassword);
@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'Password baru dan konfirmasi tidak cocok.';
                 } else {
                     $hash = password_hash($newPassword, PASSWORD_BCRYPT);
-                    $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+                    $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
                     $stmt->execute([$hash, $userId]);
                     $success = 'Password berhasil diubah!';
                 }
@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
-<base href="/permen/">
+<base href="/">
 <title>Profil — SKD CAT-BKN</title>
 <link rel="stylesheet" href="assets/form.css">
 <link rel="stylesheet" href="assets/style.css">
@@ -163,7 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div style="text-align:center;margin-bottom:2rem;padding:1.5rem;background:#f8f9fa;border-radius:8px">
     <div style="margin-bottom:1rem">
         <?php if ($user['foto_profil']): ?>
-            <img src="/permen/uploads/profile_photos/<?= e($user['foto_profil']) ?>" alt="Foto Profil" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:3px solid #2980b9">
+            <img src="/uploads/profile_photos/<?= e($user['foto_profil']) ?>" alt="Foto Profil" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:3px solid #2980b9">
         <?php else: ?>
             <div style="width:120px;height:120px;border-radius:50%;background:#e9ecef;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:3rem;color:#999">👤</div>
         <?php endif; ?>
@@ -338,7 +338,7 @@ async function uploadPhoto() {
     formData.append('photo', input.files[0]);
     
     try {
-        const response = await fetch('/permen/api/upload_profile_photo.php', {
+        const response = await fetch('/api/upload_profile_photo.php', {
             method: 'POST',
             body: formData
         });

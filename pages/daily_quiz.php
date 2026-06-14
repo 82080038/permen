@@ -56,7 +56,7 @@ $hasCompleted = $session && $session['status'] === 'selesai';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Daily Quiz - SKD CAT-BKN</title>
-<base href="/permen/">
+<base href="/">
 <link rel="stylesheet" href="assets/style.css">
 <style>
 .quiz-container{max-width:900px;margin:2rem auto;padding:0 1rem}
@@ -281,7 +281,7 @@ function escapeHtml(text) {
 // Load soal saat halaman dimuat
 async function loadQuiz() {
     try {
-        const res = await fetch('/permen/api/get_daily_quiz.php');
+        const res = await fetch('/api/get_daily_quiz.php');
         const data = await res.json();
         
         if (!data.success) {
@@ -378,7 +378,7 @@ function selectJawaban(opt) {
 
 async function submitAnswer(qid, jawab, ragu) {
     try {
-        await fetch('/permen/api/submit_daily_answer.php', {
+        await fetch('/api/submit_daily_answer.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -441,7 +441,7 @@ async function finishQuiz() {
     if (!confirm('Yakin ingin menyelesaikan Daily Quiz?')) return;
     
     try {
-        const res = await fetch('/permen/api/finish_daily_quiz.php', {
+        const res = await fetch('/api/finish_daily_quiz.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: sessionId })
@@ -468,9 +468,9 @@ function showResults(hasil) {
         <div class="stat-item"><div class="stat-label">Benar</div><div class="stat-value" style="color:#27ae60">${hasil.benar}</div></div>
         <div class="stat-item"><div class="stat-label">Salah</div><div class="stat-value" style="color:#e74c3c">${hasil.salah}</div></div>
         <div class="stat-item"><div class="stat-label">Kosong</div><div class="stat-value" style="color:#95a5a6">${hasil.kosong}</div></div>
-        <div class="stat-item"><div class="stat-label">TWK</div><div class="stat-value">${hasil.nilai_twk}</div></div>
-        <div class="stat-item"><div class="stat-label">TIU</div><div class="stat-value">${hasil.nilai_tiu}</div></div>
-        <div class="stat-item"><div class="stat-label">TKP</div><div class="stat-value">${hasil.nilai_tkp}</div></div>
+        <div class="stat-item"><div class="stat-label">TWK</div><div class="stat-value">${hasil.skor_twk}</div></div>
+        <div class="stat-item"><div class="stat-label">TIU</div><div class="stat-value">${hasil.skor_tiu}</div></div>
+        <div class="stat-item"><div class="stat-label">TKP</div><div class="stat-value">${hasil.skor_tkp}</div></div>
     `;
 }
 
@@ -514,7 +514,7 @@ async function loadLeaderboard(type) {
     container.innerHTML = '<p style="text-align:center;color:#666;font-size:.9rem">Memuat leaderboard...</p>';
     
     try {
-        const res = await fetch('/permen/api/get_daily_quiz_leaderboard.php');
+        const res = await fetch('/api/get_daily_quiz_leaderboard.php');
         const data = await res.json();
         
         if (!data.success) {
