@@ -1,2 +1,0 @@
-Test file for upload verification
-If you see this file, upload was successful!

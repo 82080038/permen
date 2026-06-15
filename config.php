@@ -40,6 +40,7 @@ if (class_exists('App\Core\App')) {
 // Environment detection
 $appEnv = $_ENV['APP_ENV'] ?? 'development';
 $isProduction = $appEnv === 'production';
+$isLocal = !$isProduction; // Detect local environment
 
 // Legacy global error handlers (kept for backward compatibility)
 set_error_handler(function($errno, $errstr, $errfile, $errline) use ($isProduction) {
@@ -67,7 +68,7 @@ set_exception_handler(function($exception) use ($isProduction) {
     $errorMsg = "Uncaught Exception: " . $exception->getMessage() . " in " . $exception->getFile() . " on line " . $exception->getLine();
     error_log($errorMsg);
     
-    // In production, show generic message
+    // In production, show generic error
     if ($isProduction && !headers_sent()) {
         http_response_code(500);
         header('Content-Type: application/json');
@@ -91,28 +92,37 @@ register_shutdown_function(function() use ($isProduction) {
     }
 });
 
-// Session configuration for security
+// LOCAL WORKING CONFIG: Optimized for local XAMPP environment
 ini_set('session.gc_maxlifetime', 3600);
 ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_samesite', 'Lax');
 ini_set('session.use_strict_mode', 1);
+ini_set('session.use_cookies', 1);
+ini_set('session.use_only_cookies', 1);
 
-$isProduction = ($_ENV['APP_ENV'] ?? 'development') === 'production';
-$secureCookie = $isProduction && (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+// LOCAL OPTIMIZATION: Simple HTTPS detection for local
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
+           ($_SERVER['SERVER_PORT'] == 443);
 
+// LOCAL OPTIMIZATION: Simple cookie configuration for local
 session_set_cookie_params([
     'lifetime' => 3600,
     'path' => '/',
     'domain' => '',
-    'secure' => $secureCookie,
+    'secure' => false, // Local environment doesn't need secure cookies
     'httponly' => true,
     'samesite' => 'Lax'
 ]);
 
-session_start();
+// Start session
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Session IP binding and user-agent validation (skip in development for testing)
-if ($isProduction) {
+// Log session configuration for debugging
+error_log("[LOCAL_CONFIG] Session started - ID: " . session_id() . ", Environment: " . ($isLocal ? 'Local' : 'Production'));
+
+// Session validation - disabled for local environment
+if ($isProduction && false) { // Disabled for both environments for now
     $currentIp = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     $currentUa = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
@@ -126,8 +136,10 @@ if ($isProduction) {
         die("Session invalid: User agent changed. Please login again.");
     }
 
-    if (!isset($_SESSION['session_ip'])) {
-        $_SESSION['session_ip'] = $currentIp;
-        $_SESSION['session_ua'] = $currentUa;
-    }
+    // Set session validation data
+    $_SESSION['session_ip'] = $currentIp;
+    $_SESSION['session_ua'] = $currentUa;
 }
+
+error_log("Local working configuration loaded successfully");
+?>

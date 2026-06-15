@@ -10,58 +10,75 @@ if (!empty($_SESSION['user_id'])) {
 
 $error = '';
 
-// Proses login form - simplified version
+// Quick login for testing (development only) - REMOVED FOR SECURITY
+// Use the actual login form instead.
+
+// Proses login form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $noHp = sanitizeInput($_POST['no_hp'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     
-    // CSRF validation
+    // CSRF validation ALWAYS required (security critical)
     if (!validateCsrf($_POST['csrf_token'] ?? '')) {
         $error = 'Sesi tidak valid. Silakan muat ulang halaman.';
-    } elseif ($noHp && $password) {
-        try {
-            // Simple database query
-            $stmt = $pdo->prepare("SELECT id, nama, no_hp, email, role, password_hash FROM users WHERE no_hp = ? OR email = ?");
-            $stmt->execute([$noHp, $noHp]);
-            $user = $stmt->fetch();
-
-            if ($user && password_verify($password, $user['password_hash'])) {
-                // Set ALL session variables
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['user_nama'] = $user['nama'];
-                $_SESSION['user_no_hp'] = $user['no_hp'];
-                $_SESSION['user_email'] = $user['email'] ?? '';
-                $_SESSION['user_role'] = $user['role'];
-                
-                // Compatibility variables
-                $_SESSION['nama'] = $user['nama'];
-                $_SESSION['email'] = $user['email'] ?? '';
-                $_SESSION['role'] = $user['role'];
-                $_SESSION['no_hp'] = $user['no_hp'];
-                
-                // Force session write
-                session_write_close();
-                session_start();
-                
-                // Debug: Log session data
-                error_log("[LOGIN_DEBUG] Session data after login: " . json_encode($_SESSION));
-                
-                // Redirect based on role
-                if ($user['role'] === 'admin') {
-                    header('Location: /admin_dashboard.php');
-                } else {
-                    header('Location: /user_dashboard.php');
-                }
-                exit;
-            } else {
-                $error = 'Nomor HP atau password salah.';
-            }
-        } catch (Exception $e) {
-            error_log("Login error: " . $e->getMessage());
-            $error = 'Terjadi kesalahan sistem. Silakan coba lagi.';
+    }
+    
+    // Rate limiting: always in production, optional in development
+    if (!$error && ($_ENV['APP_ENV'] ?? 'development') === 'production') {
+        if (!checkRateLimit($ip, $pdo)) {
+            $error = 'Terlalu banyak percobaan login. Silakan coba lagi dalam 15 menit.';
         }
-    } else {
-        $error = 'Nomor HP dan password wajib diisi.';
+    }
+    
+    if (!$error) {
+        $noHp = sanitizeInput($_POST['no_hp'] ?? '');
+        $password = $_POST['password'] ?? '';
+
+        if ($noHp && $password) {
+            // Check account lockout
+            $lockoutStatus = checkAccountLockout($noHp, $pdo);
+            if ($lockoutStatus['locked']) {
+                $remainingMinutes = ceil($lockoutStatus['remaining_time'] / 60);
+                $error = "Akun terkunci karena terlalu banyak percobaan gagal. Silakan coba lagi dalam $remainingMinutes menit.";
+            } else {
+                // Try no_hp first, fallback to email for backward compatibility
+                $stmt = $pdo->prepare("SELECT id, nama, no_hp, email, role, password_hash FROM users WHERE no_hp = ? OR email = ?");
+                $stmt->execute([$noHp, $noHp]);
+                $user = $stmt->fetch();
+
+                if ($user && password_verify($password, $user['password_hash'])) {
+                    // Reset failed attempts on successful login
+                    resetFailedAttempts($noHp, $pdo);
+
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['user_nama'] = $user['nama'];
+                    $_SESSION['user_no_hp'] = $user['no_hp'];
+                    $_SESSION['user_email'] = $user['email'] ?? '';
+                    $_SESSION['user_role'] = $user['role'];
+                    
+                    // Add compatibility variables for dashboard
+                    $_SESSION['nama'] = $user['nama'];
+                    $_SESSION['email'] = $user['email'] ?? '';
+                    $_SESSION['role'] = $user['role'];
+                    $_SESSION['no_hp'] = $user['no_hp'];
+                    
+                    session_regenerate_id(true);
+
+                    if ($user['role'] === 'admin') {
+                        header('Location: /admin_dashboard.php');
+                    } else {
+                        header('Location: /user_dashboard.php');
+                    }
+                    exit;
+                } else {
+                    incrementRateLimit($ip, $pdo);
+                    incrementFailedAttempts($noHp, $pdo);
+                    $error = 'Nomor HP atau password salah.';
+                }
+            }
+        } else {
+            incrementRateLimit($ip, $pdo);
+            $error = 'Nomor HP dan password wajib diisi.';
+        }
     }
 }
 
@@ -106,7 +123,7 @@ if (!empty($_SESSION['user_id'])) {
 <div class="form-group">
 <label for="password">Password</label>
 <input type="password" id="password" name="password" placeholder="Password" required aria-required="true" aria-describedby="password-help" aria-label="Password" autocomplete="current-password">
-<small id="password-help" style="color:#777;font-size:.8rem">Masukkan password Anda</small>
+<small id="password-help" style="color:#777;font-size:.8rem">Minimal 8 karakter, 1 huruf besar, 1 huruf kecil, 1 angka</small>
 </div>
 <button type="submit" class="btn" aria-label="Masuk ke akun">Masuk</button>
 </form>
@@ -115,9 +132,10 @@ if (!empty($_SESSION['user_id'])) {
 <div style="margin-top:1.5rem;padding:1rem;background:#fff3cd;border:1px solid #ffeeba;border-radius:6px;text-align:center">
 <p style="color:#856404;font-size:.85rem;margin-bottom:.5rem"><strong>⚠️ Development Mode - Quick Login</strong></p>
 <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap">
-<button onclick="quickLogin('081987654321', 'Sihaloho1982')" style="background:#2980b9;color:#fff;border:none;padding:.4rem .8rem;border-radius:4px;cursor:pointer;font-size:.8rem">User (081987654321)</button>
+<button onclick="quickLogin('081234567890', 'password')" style="background:#e74c3c;color:#fff;border:none;padding:.4rem .8rem;border-radius:4px;cursor:pointer;font-size:.8rem">Admin (081234567890)</button>
+<button onclick="quickLogin('081987654321', 'password')" style="background:#2980b9;color:#fff;border:none;padding:.4rem .8rem;border-radius:4px;cursor:pointer;font-size:.8rem">User (081987654321)</button>
 </div>
-<p style="color:#856404;font-size:.75rem;margin-top:.5rem">Password: <code>Sihaloho1982</code></p>
+<p style="color:#856404;font-size:.75rem;margin-top:.5rem">Password: <code>password</code></p>
 </div>
 <script>
 function quickLogin(noHp, password) {

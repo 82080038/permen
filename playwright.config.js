@@ -17,9 +17,8 @@ module.exports = defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    // Jalankan dalam mode headless untuk testing otomatis
-    // Gunakan flag --headed untuk mode dengan tampilan browser
-    headless: true,
+    // Jalankan dalam mode headed untuk testing dengan tampilan browser
+    headless: false,
     launchOptions: {
       slowMo: 0,
     },
