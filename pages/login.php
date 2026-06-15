@@ -86,9 +86,10 @@ if (!empty($_SESSION['user_id'])) {
 <meta name="theme-color" content="#1a5276">
 <base href="/">
 <title>Login — SKD CAT-BKN</title>
-<link rel="stylesheet" href="/assets/css/bootstrap.min.css">
-<link rel="stylesheet" href="/assets/css/bootstrap-icons.min.css">
-<link rel="stylesheet" href="/assets/login.css">
+<?php $baseUrl = $_ENV['BASE_URL'] ?? '/permen'; ?>
+<link rel="stylesheet" href="<?php echo $baseUrl; ?>/assets/css/bootstrap.min.css">
+<link rel="stylesheet" href="<?php echo $baseUrl; ?>/assets/css/bootstrap-icons.min.css">
+<link rel="stylesheet" href="<?php echo $baseUrl; ?>/assets/login.css">
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
@@ -140,7 +141,7 @@ function quickLogin(noHp, password) {
 <p style="color:#0c5460;font-size:.8rem;margin:.5rem 0 0 0">Reset password dilakukan oleh Admin. Silakan hubungi Admin melalui kontak pribadi atau hubungan langsung untuk permintaan reset password.</p>
 </div>
 </div>
-<script src="/assets/js/bootstrap.bundle.min.js"></script>
-<script src="/assets/app.js"></script>
+<script src="<?php echo $baseUrl; ?>/assets/js/bootstrap.bundle.min.js"></script>
+<script src="<?php echo $baseUrl; ?>/assets/app.js"></script>
 </body>
 </html>

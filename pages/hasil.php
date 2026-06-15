@@ -1,5 +1,6 @@
 <?php
 require '../config.php';
+$baseUrl = $_ENV['BASE_URL'] ?? '/permen';
 require '../helpers.php';
 $sessionId = $_GET['session_id'] ?? 0;
 if (!$sessionId) {

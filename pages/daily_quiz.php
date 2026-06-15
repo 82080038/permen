@@ -57,7 +57,7 @@ $hasCompleted = $session && $session['status'] === 'selesai';
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Daily Quiz - SKD CAT-BKN</title>
 <base href="/">
-<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/style.css">
 <style>
 .quiz-container{max-width:900px;margin:2rem auto;padding:0 1rem}
 .quiz-header{background:linear-gradient(135deg,#1a5276,#2980b9);color:#fff;padding:1.5rem;border-radius:8px;margin-bottom:1.5rem;text-align:center}

@@ -619,7 +619,7 @@ document.addEventListener('DOMContentLoaded', drawPieChart);
 </script>
 <?php endif; ?>
 
-<script src="/assets/chart.umd.min.js"></script>
+<script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/chart.umd.min.js"></script>
 <script>
 const chartData = <?= json_encode(array_map(fn($r)=>[
     'date'=>date('d M',strtotime($r['waktu_mulai'])),

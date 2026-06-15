@@ -1,5 +1,6 @@
 <?php
 require '../config.php';
+$baseUrl = $_ENV['BASE_URL'] ?? '/permen';
 require '../helpers.php';
 if (empty($_SESSION['user_id'])) {
     header('Location: login.php');

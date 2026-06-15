@@ -15,44 +15,55 @@ $userId = (int)$_SESSION['user_id'];
 
 try {
     // Analyze user performance per topic
-    $stmt = $pdo->prepare("
-        SELECT 
-            q.subtes,
-            q.topik,
-            COUNT(*) as total_attempts,
-            SUM(CASE WHEN a.jawaban = q.jawaban_benar THEN 1 ELSE 0 END) as correct,
-            ROUND(SUM(CASE WHEN a.jawaban = q.jawaban_benar THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as accuracy
-        FROM answers a
-        JOIN questions q ON a.question_id = q.id
-        JOIN tryout_sessions ts ON a.session_id = ts.id
-        WHERE ts.user_id = ? AND a.jawaban IS NOT NULL AND a.jawaban != ''
-        GROUP BY q.subtes, q.topik
-        HAVING COUNT(*) >= 3
-        ORDER BY accuracy ASC, total_attempts DESC
-    ");
-    $stmt->execute([$userId]);
-    $topicPerformance = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $topicPerformance = [];
+    try {
+        $stmt = $pdo->prepare("
+            SELECT
+                q.subtes,
+                q.topik,
+                COUNT(*) as total_attempts,
+                SUM(CASE WHEN a.jawaban = q.jawaban_benar THEN 1 ELSE 0 END) as correct,
+                ROUND(SUM(CASE WHEN a.jawaban = q.jawaban_benar THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as accuracy
+            FROM answers a
+            JOIN questions q ON a.question_id = q.id
+            JOIN tryout_sessions ts ON a.session_id = ts.id
+            WHERE ts.user_id = ? AND a.jawaban IS NOT NULL AND a.jawaban != ''
+            GROUP BY q.subtes, q.topik
+            HAVING COUNT(*) >= 3
+            ORDER BY accuracy ASC, total_attempts DESC
+        ");
+        $stmt->execute([$userId]);
+        $topicPerformance = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        // If query fails (e.g., missing tables), return empty data
+        error_log("Adaptive recommendations query failed: " . $e->getMessage());
+        $topicPerformance = [];
+    }
 
     // Identify weak topics (accuracy < 60%)
     $weakTopics = array_filter($topicPerformance, fn($t) => $t['accuracy'] < 60);
-    
+
     // Get strong topics (accuracy >= 80%) for comparison
     $strongTopics = array_filter($topicPerformance, fn($t) => $t['accuracy'] >= 80);
 
     // If no data yet, recommend based on subtes balance
     if (empty($topicPerformance)) {
         // Check which subtes has been attempted
-        $stmt = $pdo->prepare("
-            SELECT q.subtes, COUNT(*) as attempts
-            FROM answers a
-            JOIN questions q ON a.question_id = q.id
-            JOIN tryout_sessions ts ON a.session_id = ts.id
-            WHERE ts.user_id = ? AND a.jawaban IS NOT NULL
-            GROUP BY q.subtes
-        ");
-        $stmt->execute([$userId]);
-        $subtesAttempts = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
-        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT q.subtes, COUNT(*) as attempts
+                FROM answers a
+                JOIN questions q ON a.question_id = q.id
+                JOIN tryout_sessions ts ON a.session_id = ts.id
+                WHERE ts.user_id = ? AND a.jawaban IS NOT NULL
+                GROUP BY q.subtes
+            ");
+            $stmt->execute([$userId]);
+            $subtesAttempts = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+        } catch (PDOException $e) {
+            $subtesAttempts = [];
+        }
+
         // Recommend subtes with least attempts
         $recommendedSubtes = [];
         foreach (['TWK', 'TIU', 'TKP'] as $subtes) {
@@ -64,7 +75,7 @@ try {
             ];
         }
         usort($recommendedSubtes, fn($a, $b) => $a['attempts'] <=> $b['attempts']);
-        
+
         echo json_encode([
             'success' => true,
             'data' => [
@@ -102,7 +113,7 @@ try {
             }
             $subtesPractice[$subtes] += $t['total_attempts'];
         }
-        
+
         foreach (['TWK', 'TIU', 'TKP'] as $subtes) {
             $attempts = $subtesPractice[$subtes] ?? 0;
             $recommendations[] = [
@@ -114,7 +125,7 @@ try {
                 'reason' => 'balanced_practice'
             ];
         }
-        
+
         usort($recommendations, fn($a, $b) => $a['attempts'] <=> $b['attempts']);
         $recommendations = array_slice($recommendations, 0, 3);
     }

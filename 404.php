@@ -11,7 +11,7 @@ header('Content-Type: text/html; charset=utf-8');
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
-<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/style.css">
 <title>Halaman Tidak Ditemukan - SKD CAT-BKN</title>
 <style>
 .error-404 {

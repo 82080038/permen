@@ -1,5 +1,6 @@
 <?php
 require '../config.php';
+$baseUrl = $_ENV['BASE_URL'] ?? '/permen';
 require '../helpers.php';
 
 // Guard: only admin

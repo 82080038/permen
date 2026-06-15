@@ -2,6 +2,8 @@
 require '../config.php';
 require '../helpers.php';
 
+$baseUrl = $_ENV['BASE_URL'] ?? '/permen';
+
 // Guard: only logged in
 if (empty($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -65,8 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="theme-color" content="#1a5276">
 <base href="/">
 <title>Pengaturan — SKD CAT-BKN</title>
-<link rel="stylesheet" href="/assets/form.css">
-<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/form.css">
+<link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/style.css">
 <style>
 .settings-section {
     background: #fff;
@@ -290,7 +292,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 </div>
 <div class="footer">SKD CAT-BKN Try Out & Bimbel</div>
-<script src="/assets/app.js"></script>
+<script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/app.js"></script>
 <script>
 // Apply theme preview
 document.querySelectorAll('input[name="theme"]').forEach(radio => {

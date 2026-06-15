@@ -1064,7 +1064,7 @@ function finishTryout(){
 </div>
 
 <base href="/">
-<script src="/assets/app.js"></script>
+<script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/app.js"></script>
 <script>
 /**
  * ================================

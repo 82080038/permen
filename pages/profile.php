@@ -141,8 +141,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="theme-color" content="#1a5276">
 <base href="/">
 <title>Profil — SKD CAT-BKN</title>
-<link rel="stylesheet" href="/assets/form.css">
-<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/form.css">
+<link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/style.css">
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
@@ -291,7 +291,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 </div>
 <div class="footer">SKD CAT-BKN Try Out & Bimbel</div>
-<script src="/assets/app.js"></script>
+<script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/app.js"></script>
 <script>
 function previewPhoto(input) {
     const errorDiv = document.getElementById('photoError');

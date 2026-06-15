@@ -355,7 +355,7 @@ function checkMiniQuiz() {
 </div>
 
 <base href="/">
-<script src="/assets/app.js"></script>
+<script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/app.js"></script>
 <script>
 const topikBySubtes = {
     'TWK': ['Nasionalisme','Integritas','Bela Negara','Pilar Negara','Bahasa Indonesia'],
