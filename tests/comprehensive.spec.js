@@ -284,14 +284,12 @@ test.describe('SKD CAT-BKN Comprehensive Test Suite', () => {
     const bodyExists = await page.locator('body').count() > 0;
     expect(bodyExists).toBeTruthy();
 
-    // Filter out expected errors
+    // Filter only bootstrap external library errors (from external library, not our code)
     const filteredErrors = errors.filter(e =>
-      !e.includes('404') &&
-      !e.includes('bootstrap') &&
-      !e.includes('assets/css') &&
-      !e.includes('assets/js') &&
-      !e.includes('app.js') &&
-      !e.includes('loadSoal')
+      !e.includes('Content Security Policy') &&
+      !e.includes('font-awesome') &&
+      !e.includes('facebook') &&
+      !e.includes('jquery')
     );
     expect(filteredErrors).toHaveLength(0);
   });
@@ -310,14 +308,12 @@ test.describe('SKD CAT-BKN Comprehensive Test Suite', () => {
     const bodyExists = await page.locator('body').count() > 0;
     expect(bodyExists).toBeTruthy();
 
-    // Filter out expected errors
+    // Filter only bootstrap external library errors (from external library, not our code)
     const filteredErrors = errors.filter(e =>
-      !e.includes('404') &&
-      !e.includes('bootstrap') &&
-      !e.includes('assets/css') &&
-      !e.includes('assets/js') &&
-      !e.includes('app.js') &&
-      !e.includes('loadSoal')
+      !e.includes('Content Security Policy') &&
+      !e.includes('font-awesome') &&
+      !e.includes('facebook') &&
+      !e.includes('jquery')
     );
     expect(filteredErrors).toHaveLength(0);
   });
@@ -349,18 +345,12 @@ test.describe('SKD CAT-BKN Comprehensive Test Suite', () => {
       console.log('Admin quick login button not available');
     }
 
-    // Filter out expected errors
+    // Filter only bootstrap external library errors (from external library, not our code)
     const filteredErrors = errors.filter(e =>
-      !e.includes('404') &&
-      !e.includes('bootstrap') &&
-      !e.includes('assets/css') &&
-      !e.includes('assets/js') &&
-      !e.includes('app.js') &&
       !e.includes('Content Security Policy') &&
       !e.includes('font-awesome') &&
       !e.includes('facebook') &&
-      !e.includes('jquery') &&
-      !e.includes('Unexpected token')
+      !e.includes('jquery')
     );
     expect(filteredErrors).toHaveLength(0);
   });
@@ -410,14 +400,12 @@ test.describe('SKD CAT-BKN Comprehensive Test Suite', () => {
     const bodyExists = await page.locator('body').count() > 0;
     expect(bodyExists).toBeTruthy();
 
-    // Filter out expected errors
+    // Filter only bootstrap external library errors (from external library, not our code)
     const filteredErrors = errors.filter(e =>
-      !e.includes('404') &&
-      !e.includes('bootstrap') &&
-      !e.includes('assets/css') &&
-      !e.includes('assets/js') &&
-      !e.includes('app.js') &&
-      !e.includes('loadSoal')
+      !e.includes('Content Security Policy') &&
+      !e.includes('font-awesome') &&
+      !e.includes('facebook') &&
+      !e.includes('jquery')
     );
     expect(filteredErrors).toHaveLength(0);
   });
@@ -439,14 +427,12 @@ test.describe('SKD CAT-BKN Comprehensive Test Suite', () => {
     const bodyExists = await page.locator('body').count() > 0;
     expect(bodyExists).toBeTruthy();
 
-    // Filter out expected errors
+    // Filter only bootstrap external library errors (from external library, not our code)
     const filteredErrors = errors.filter(e =>
-      !e.includes('404') &&
-      !e.includes('bootstrap') &&
-      !e.includes('assets/css') &&
-      !e.includes('assets/js') &&
-      !e.includes('app.js') &&
-      !e.includes('loadSoal')
+      !e.includes('Content Security Policy') &&
+      !e.includes('font-awesome') &&
+      !e.includes('facebook') &&
+      !e.includes('jquery')
     );
     expect(filteredErrors).toHaveLength(0);
   });
@@ -499,14 +485,12 @@ test.describe('SKD CAT-BKN Comprehensive Test Suite', () => {
     const bodyExists = await page.locator('body').count() > 0;
     expect(bodyExists).toBeTruthy();
 
-    // Filter out expected errors
+    // Filter only bootstrap external library errors (from external library, not our code)
     const filteredErrors = errors.filter(e =>
-      !e.includes('404') &&
-      !e.includes('bootstrap') &&
-      !e.includes('assets/css') &&
-      !e.includes('assets/js') &&
-      !e.includes('app.js') &&
-      !e.includes('loadSoal')
+      !e.includes('Content Security Policy') &&
+      !e.includes('font-awesome') &&
+      !e.includes('facebook') &&
+      !e.includes('jquery')
     );
     expect(filteredErrors).toHaveLength(0);
   });
@@ -536,18 +520,12 @@ test.describe('SKD CAT-BKN Comprehensive Test Suite', () => {
     const bodyExists = await page.locator('body').count() > 0;
     expect(bodyExists).toBeTruthy();
 
-    // Filter out expected errors
+    // Filter only bootstrap external library errors (from external library, not our code)
     const filteredErrors = errors.filter(e =>
-      !e.includes('404') &&
-      !e.includes('bootstrap') &&
-      !e.includes('assets/css') &&
-      !e.includes('assets/js') &&
-      !e.includes('app.js') &&
       !e.includes('Content Security Policy') &&
       !e.includes('font-awesome') &&
       !e.includes('facebook') &&
-      !e.includes('jquery') &&
-      !e.includes('Unexpected token')
+      !e.includes('jquery')
     );
     expect(filteredErrors).toHaveLength(0);
   });
@@ -592,18 +570,12 @@ test.describe('SKD CAT-BKN Comprehensive Test Suite', () => {
     const bodyExists = await page.locator('body').count() > 0;
     expect(bodyExists).toBeTruthy();
 
-    // Filter out expected errors
+    // Filter only bootstrap external library errors (from external library, not our code)
     const filteredErrors = errors.filter(e =>
-      !e.includes('404') &&
-      !e.includes('bootstrap') &&
-      !e.includes('assets/css') &&
-      !e.includes('assets/js') &&
-      !e.includes('app.js') &&
       !e.includes('Content Security Policy') &&
       !e.includes('font-awesome') &&
       !e.includes('facebook') &&
-      !e.includes('jquery') &&
-      !e.includes('Unexpected token')
+      !e.includes('jquery')
     );
     expect(filteredErrors).toHaveLength(0);
   });
@@ -628,17 +600,16 @@ test.describe('SKD CAT-BKN Comprehensive Test Suite', () => {
       // Results are displayed
     }
 
-    // Filter out expected errors
+    // Filter out external library errors (bootstrap, XAMPP dashboard, etc.)
     const filteredErrors = errors.filter(e =>
-      !e.includes('404') &&
-      !e.includes('bootstrap') &&
-      !e.includes('assets/css') &&
-      !e.includes('assets/js') &&
-      !e.includes('app.js') &&
       !e.includes('Content Security Policy') &&
       !e.includes('font-awesome') &&
       !e.includes('facebook') &&
       !e.includes('jquery') &&
+      !e.includes('dashboard') &&
+      !e.includes('XAMPP') &&
+      !e.includes('modernizr') &&
+      !e.includes('all.js') &&
       !e.includes('Unexpected token')
     );
     expect(filteredErrors).toHaveLength(0);
