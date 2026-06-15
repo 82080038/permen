@@ -115,12 +115,18 @@ session_set_cookie_params([
     'samesite' => 'Lax'
 ]);
 
-// Initialize database session handler as fallback
+// Force database session handler initialization
 if (function_exists('initializeDatabaseSession')) {
     $dbSessionInitialized = initializeDatabaseSession();
     error_log("Database Session Handler: " . ($dbSessionInitialized ? "Initialized" : "Failed to initialize"));
+    
+    // Force session handler to database
+    if ($dbSessionInitialized) {
+        ini_set('session.save_handler', 'user');
+    }
 }
 
+// Start session with database handler
 session_start();
 
 // Session IP binding and user-agent validation (skip in development for testing)
