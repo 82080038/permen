@@ -35,9 +35,9 @@ $passingMap = $pdo->query("SELECT subtes, passing_grade FROM subtes_config WHERE
 if (empty($subData)) {
     // Fallback: data dari kolom flat (session lama)
     $subData = [
-        'TKP' => ['nilai'=>$session['skor_tkp'],'passing_grade'=>$passingMap['TKP']??126,'jumlah_soal'=>30],
-        'TIU' => ['nilai'=>$session['skor_tiu'],'passing_grade'=>$passingMap['TIU']??80,'jumlah_soal'=>35],
-        'TWK' => ['nilai'=>$session['skor_twk'],'passing_grade'=>$passingMap['TWK']??65,'jumlah_soal'=>30],
+        'TKP' => ['nilai'=>$session['nilai_tkp'],'passing_grade'=>$passingMap['TKP']??126,'jumlah_soal'=>30],
+        'TIU' => ['nilai'=>$session['nilai_tiu'],'passing_grade'=>$passingMap['TIU']??80,'jumlah_soal'=>35],
+        'TWK' => ['nilai'=>$session['nilai_twk'],'passing_grade'=>$passingMap['TWK']??65,'jumlah_soal'=>30],
     ];
 }
 
@@ -49,7 +49,7 @@ $passingTotal = ($passingTkp + $passingTiu + $passingTwk) ?? 271;
 $nilaiTkp = $subData['TKP']['nilai'] ?? 0;
 $nilaiTiu = $subData['TIU']['nilai'] ?? 0;
 $nilaiTwk = $subData['TWK']['nilai'] ?? 0;
-$totalNilai = $session['skor_total'] ?? ($nilaiTkp + $nilaiTiu + $nilaiTwk);
+$totalNilai = $session['total_nilai'] ?? ($nilaiTkp + $nilaiTiu + $nilaiTwk);
 
 $statusTkp = $nilaiTkp >= $passingTkp ? 'LULUS' : 'TIDAK LULUS';
 $statusTiu = $nilaiTiu >= $passingTiu ? 'LULUS' : 'TIDAK LULUS';
@@ -90,7 +90,7 @@ if (!$isLatihan && !empty($_SESSION['user_id'])) {
         
         // Calculate differences
         $comparisonData = [
-            'total_diff' => $totalNilai - ($previousSession['skor_total'] ?? 0),
+            'total_diff' => $totalNilai - ($previousSession['total_nilai'] ?? 0),
             'tkp_diff' => $nilaiTkp - ($prevSubData['TKP'] ?? 0),
             'tiu_diff' => $nilaiTiu - ($prevSubData['TIU'] ?? 0),
             'twk_diff' => $nilaiTwk - ($prevSubData['TWK'] ?? 0),
@@ -100,7 +100,7 @@ if (!$isLatihan && !empty($_SESSION['user_id'])) {
     
     // Fetch institution average for comparison
     $stmt = $pdo->prepare("
-        SELECT AVG(skor_total) as avg_total, 
+        SELECT AVG(total_nilai) as avg_total, 
                AVG((SELECT nilai FROM session_subtes ss WHERE ss.session_id = ts.id AND ss.subtes = 'TKP')) as avg_tkp,
                AVG((SELECT nilai FROM session_subtes ss WHERE ss.session_id = ts.id AND ss.subtes = 'TIU')) as avg_tiu,
                AVG((SELECT nilai FROM session_subtes ss WHERE ss.session_id = ts.id AND ss.subtes = 'TWK')) as avg_twk

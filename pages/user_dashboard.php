@@ -44,14 +44,14 @@ if (!empty($selesai)) {
 }
 
 if (count($selesai) > 0) {
-    $totalNilai = array_sum(array_column($selesai, 'skor_total'));
+    $totalNilai = array_sum(array_column($selesai, 'total_nilai'));
     $rataNilai = round($totalNilai / count($selesai));
-    $bestScore = max(array_column($selesai, 'skor_total'));
+    $bestScore = max(array_column($selesai, 'total_nilai'));
 
     // Cari subtes terlemah (rata-rata nilai per subtes)
-    $tkpScores = array_column($selesai, 'skor_tkp');
-    $tiuScores = array_column($selesai, 'skor_tiu');
-    $twkScores = array_column($selesai, 'skor_twk');
+    $tkpScores = array_column($selesai, 'nilai_tkp');
+    $tiuScores = array_column($selesai, 'nilai_tiu');
+    $twkScores = array_column($selesai, 'nilai_twk');
     $avgTkp = count($tkpScores) ? round(array_sum($tkpScores) / count($tkpScores)) : 0;
     $avgTiu = count($tiuScores) ? round(array_sum($tiuScores) / count($tiuScores)) : 0;
     $avgTwk = count($twkScores) ? round(array_sum($twkScores) / count($twkScores)) : 0;
@@ -392,19 +392,19 @@ function startTryoutWithOptions(e) {
 <!-- Subtes Distribution Pie Chart -->
 <div class="section">
 <h2>Distribusi Skor Subtes (Tryout Terakhir)</h2>
-<?php if (!empty($latestScore) && ($latestScore['skor_twk'] > 0 || $latestScore['skor_tiu'] > 0 || $latestScore['skor_tkp'] > 0)): ?>
+<?php if (!empty($latestScore) && ($latestScore['nilai_twk'] > 0 || $latestScore['nilai_tiu'] > 0 || $latestScore['nilai_tkp'] > 0)): ?>
 <canvas id="pieChart" width="400" height="400" style="max-width:100%;height:auto;margin:0 auto;display:block"></canvas>
 <div style="display:flex;justify-content:center;gap:1.5rem;margin-top:1rem;flex-wrap:wrap">
-    <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:16px;height:16px;background:#2980b9;border-radius:3px"></span><span style="font-size:.9rem">TWK: <?= $latestScore['skor_twk'] ?></span></div>
-    <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:16px;height:16px;background:#e67e22;border-radius:3px"></span><span style="font-size:.9rem">TIU: <?= $latestScore['skor_tiu'] ?></span></div>
-    <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:16px;height:16px;background:#27ae60;border-radius:3px"></span><span style="font-size:.9rem">TKP: <?= $latestScore['skor_tkp'] ?></span></div>
+    <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:16px;height:16px;background:#2980b9;border-radius:3px"></span><span style="font-size:.9rem">TWK: <?= $latestScore['nilai_twk'] ?></span></div>
+    <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:16px;height:16px;background:#e67e22;border-radius:3px"></span><span style="font-size:.9rem">TIU: <?= $latestScore['nilai_tiu'] ?></span></div>
+    <div style="display:flex;align-items:center;gap:0.5rem"><span style="width:16px;height:16px;background:#27ae60;border-radius:3px"></span><span style="font-size:.9rem">TKP: <?= $latestScore['nilai_tkp'] ?></span></div>
 </div>
 <?php else: ?>
 <div style="text-align:center;padding:2rem;color:#777">
 <p>Data skor tryout terakhir tidak tersedia atau bernilai 0.</p>
 <p style="font-size:.85rem">User ID: <?= $userId ?> | Selesai count: <?= count($selesai) ?> | Latest: <?= $latestScore ? 'exists' : 'null' ?></p>
 <?php if ($latestScore): ?>
-<p style="font-size:.85rem">Latest scores - TWK: <?= $latestScore['skor_twk'] ?>, TIU: <?= $latestScore['skor_tiu'] ?>, TKP: <?= $latestScore['skor_tkp'] ?></p>
+<p style="font-size:.85rem">Latest scores - TWK: <?= $latestScore['nilai_twk'] ?>, TIU: <?= $latestScore['nilai_tiu'] ?>, TKP: <?= $latestScore['nilai_tkp'] ?></p>
 <?php else: ?>
 <p style="font-size:.85rem">Debug: selesai array count = <?= count($selesai) ?>, first element exists = <?= isset($selesai[0]) ? 'yes' : 'no' ?></p>
 <?php endif; ?>
@@ -548,9 +548,9 @@ document.addEventListener('DOMContentLoaded', loadNotifications);
 // $latestScore is already set above after array_values re-index
 ?>
 const pieData = {
-    twk: <?= (int)($latestScore['skor_twk'] ?? 0) ?>,
-    tiu: <?= (int)($latestScore['skor_tiu'] ?? 0) ?>,
-    tkp: <?= (int)($latestScore['skor_tkp'] ?? 0) ?>
+    twk: <?= (int)($latestScore['nilai_twk'] ?? 0) ?>,
+    tiu: <?= (int)($latestScore['nilai_tiu'] ?? 0) ?>,
+    tkp: <?= (int)($latestScore['nilai_tkp'] ?? 0) ?>
 };
 
 function drawPieChart(){
@@ -623,10 +623,10 @@ document.addEventListener('DOMContentLoaded', drawPieChart);
 <script>
 const chartData = <?= json_encode(array_map(fn($r)=>[
     'date'=>date('d M',strtotime($r['waktu_mulai'])),
-    'total'=>(int)($r['skor_total']??0),
-    'tkp'=>(int)($r['skor_tkp']??0),
-    'tiu'=>(int)($r['skor_tiu']??0),
-    'twk'=>(int)($r['skor_twk']??0)
+    'total'=>(int)($r['total_nilai']??0),
+    'tkp'=>(int)($r['nilai_tkp']??0),
+    'tiu'=>(int)($r['nilai_tiu']??0),
+    'twk'=>(int)($r['nilai_twk']??0)
 ], array_reverse(array_slice($selesai,-10)))) ?>;
 
 function drawChart(mode){
@@ -715,7 +715,7 @@ function initLineChart(scoreData) {
     const datasets = [
         {
             label: 'Total',
-            data: scoreData.map(d => d.skor_total),
+            data: scoreData.map(d => d.total_nilai),
             borderColor: '#2980b9',
             backgroundColor: 'rgba(41, 128, 185, 0.1)',
             tension: 0.3,
@@ -723,7 +723,7 @@ function initLineChart(scoreData) {
         },
         {
             label: 'TKP',
-            data: scoreData.map(d => d.skor_tkp),
+            data: scoreData.map(d => d.nilai_tkp),
             borderColor: '#27ae60',
             backgroundColor: 'rgba(39, 174, 96, 0.1)',
             tension: 0.3,
@@ -732,7 +732,7 @@ function initLineChart(scoreData) {
         },
         {
             label: 'TIU',
-            data: scoreData.map(d => d.skor_tiu),
+            data: scoreData.map(d => d.nilai_tiu),
             borderColor: '#e67e22',
             backgroundColor: 'rgba(230, 126, 34, 0.1)',
             tension: 0.3,
@@ -741,7 +741,7 @@ function initLineChart(scoreData) {
         },
         {
             label: 'TWK',
-            data: scoreData.map(d => d.skor_twk),
+            data: scoreData.map(d => d.nilai_twk),
             borderColor: '#8e44ad',
             backgroundColor: 'rgba(142, 68, 173, 0.1)',
             tension: 0.3,
@@ -987,10 +987,10 @@ if (!empty($rekomSub)):
 
 <?php if (!empty($selesai)): 
     $latest = reset($selesai); // Tryout terakhir yang selesai
-    $latestTkp = $latest['skor_tkp'] ?? 0;
-    $latestTiu = $latest['skor_tiu'] ?? 0;
-    $latestTwk = $latest['skor_twk'] ?? 0;
-    $latestTotal = $latest['skor_total'] ?? 0;
+    $latestTkp = $latest['nilai_tkp'] ?? 0;
+    $latestTiu = $latest['nilai_tiu'] ?? 0;
+    $latestTwk = $latest['nilai_twk'] ?? 0;
+    $latestTotal = $latest['total_nilai'] ?? 0;
 ?>
 <div class="section" style="margin-top:1.2rem">
 <h2>Kelayakan SKD</h2>
@@ -1092,17 +1092,17 @@ $dailyHistory = $dailyQuizHistory->fetchAll();
 </thead>
 <tbody>
 <?php foreach ($riwayat as $r):
-    $tkpStatus = ($r['skor_tkp'] ?? 0) >= $passingTkp ? 'lulus' : 'gagal';
-    $tiuStatus = ($r['skor_tiu'] ?? 0) >= $passingTiu ? 'lulus' : 'gagal';
-    $twkStatus = ($r['skor_twk'] ?? 0) >= $passingTwk ? 'lulus' : 'gagal';
+    $tkpStatus = ($r['nilai_tkp'] ?? 0) >= $passingTkp ? 'lulus' : 'gagal';
+    $tiuStatus = ($r['nilai_tiu'] ?? 0) >= $passingTiu ? 'lulus' : 'gagal';
+    $twkStatus = ($r['nilai_twk'] ?? 0) >= $passingTwk ? 'lulus' : 'gagal';
 ?>
 <tr style="cursor:pointer" onclick="window.location.href='hasil.php?session_id=<?= $r['id'] ?>'">
 <td><?= e($r['nama']) ?></td>
 <td><span class="badge <?= $r['status'] ?>"><?= ucfirst($r['status']) ?></span></td>
-<td><span class="badge <?= $tkpStatus ?>"><?= $r['skor_tkp'] ?? 0 ?></span></td>
-<td><span class="badge <?= $tiuStatus ?>"><?= $r['skor_tiu'] ?? 0 ?></span></td>
-<td><span class="badge <?= $twkStatus ?>"><?= $r['skor_twk'] ?? 0 ?></span></td>
-<td><?= $r['skor_total'] ?? 0 ?></td>
+<td><span class="badge <?= $tkpStatus ?>"><?= $r['nilai_tkp'] ?? 0 ?></span></td>
+<td><span class="badge <?= $tiuStatus ?>"><?= $r['nilai_tiu'] ?? 0 ?></span></td>
+<td><span class="badge <?= $twkStatus ?>"><?= $r['nilai_twk'] ?? 0 ?></span></td>
+<td><?= $r['total_nilai'] ?? 0 ?></td>
 <td><?= date('d M Y H:i', strtotime($r['waktu_mulai'])) ?></td>
 </tr>
 <?php endforeach; ?>

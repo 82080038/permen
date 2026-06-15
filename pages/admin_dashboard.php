@@ -73,7 +73,7 @@ try {
 
 // Get paginated tryouts
 try {
-    $tryouts = $pdo->prepare("SELECT ts.id, ts.nama, u.nama as peserta, ts.skor_total, ts.status, ts.waktu_mulai
+    $tryouts = $pdo->prepare("SELECT ts.id, ts.nama, u.nama as peserta, ts.total_nilai, ts.status, ts.waktu_mulai
     FROM tryout_sessions ts LEFT JOIN users u ON ts.user_id = u.id
     ORDER BY ts.id DESC LIMIT ? OFFSET ?");
     $tryouts->execute([$tryoutsLimit, $tryoutsOffset]);
@@ -125,7 +125,7 @@ try {
         SELECT
             COUNT(*) as total,
             SUM(CASE WHEN status='selesai' THEN 1 ELSE 0 END) as completed,
-            AVG(CASE WHEN status='selesai' THEN skor_total ELSE NULL END) as avg_score
+            AVG(CASE WHEN status='selesai' THEN total_nilai ELSE NULL END) as avg_score
         FROM tryout_sessions
     ")->fetch();
 } catch (Exception $e) {
@@ -136,9 +136,9 @@ try {
 try {
     $avgScores = $pdo->query("
         SELECT
-            AVG(skor_tkp) as avg_tkp,
-            AVG(skor_tiu) as avg_tiu,
-            AVG(skor_twk) as avg_twk
+            AVG(nilai_tkp) as avg_tkp,
+            AVG(nilai_tiu) as avg_tiu,
+            AVG(nilai_twk) as avg_twk
         FROM tryout_sessions
         WHERE status='selesai'
     ")->fetch();
@@ -646,7 +646,7 @@ Halaman <?= $usersCurrentPage ?> dari <?= $usersTotalPages ?>
 <td><?= $t['id'] ?></td>
 <td><?= e($t['nama']) ?></td>
 <td><?= e($t['peserta'] ?? 'Anonim') ?></td>
-<td><?= $t['skor_total'] ?? 0 ?></td>
+<td><?= $t['total_nilai'] ?? 0 ?></td>
 <td><span class="badge <?= $t['status'] ?>"><?= ucfirst($t['status']) ?></span></td>
 <td><?= $t['waktu_mulai'] ?></td>
 </tr>
@@ -3551,7 +3551,7 @@ async function viewEventResults(eventId) {
             let html = `Hasil Event:\n\n`;
             data.results.forEach((r, i) => {
                 html += `${i + 1}. ${r.peserta} (${r.instansi || '-'})\n`;
-                html += `   Total: ${r.skor_total} | Status: ${r.status}\n\n`;
+                html += `   Total: ${r.total_nilai} | Status: ${r.status}\n\n`;
             });
             alert(html);
         } else {

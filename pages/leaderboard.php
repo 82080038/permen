@@ -29,13 +29,13 @@ $sqlTotal = "
     SELECT 
         u.id as user_id,
         u.nama, u.target_instansi,
-        ts.skor_total,
-        ts.skor_twk, ts.skor_tiu, ts.skor_tkp,
+        ts.total_nilai,
+        ts.nilai_twk, ts.nilai_tiu, ts.nilai_tkp,
         ts.waktu_mulai
     FROM tryout_sessions ts
     JOIN users u ON ts.user_id = u.id
     WHERE $where
-    ORDER BY ts.skor_total DESC
+    ORDER BY ts.total_nilai DESC
     LIMIT 20
 ";
 $totalStmt = $pdo->prepare($sqlTotal);
@@ -156,8 +156,8 @@ foreach (['TWK','TIU','TKP'] as $s) {
         <div><strong><?= e($r['nama']) ?></strong><?= $badgeHtml ?></div>
         <div style="font-size:.8rem;color:#888"><?= e($r['instansi'] ?: '-') ?></div>
     </div>
-    <div class="rank-score"><?= $r['skor_total'] ?></div>
-    <div class="rank-detail">TWK <?= $r['skor_twk'] ?> · TIU <?= $r['skor_tiu'] ?> · TKP <?= $r['skor_tkp'] ?></div>
+    <div class="rank-score"><?= $r['total_nilai'] ?></div>
+    <div class="rank-detail">TWK <?= $r['nilai_twk'] ?> · TIU <?= $r['nilai_tiu'] ?> · TKP <?= $r['nilai_tkp'] ?></div>
 </div>
 <?php endforeach; ?>
 <?php endif; ?>
