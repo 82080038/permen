@@ -1,6 +1,9 @@
 <?php
 require __DIR__ . '/env_loader.php';
 
+// Load database session handler for fallback session storage
+require __DIR__ . '/database_session_handler.php';
+
 // Composer autoloading (PSR-4)
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     require_once __DIR__ . '/vendor/autoload.php';
@@ -97,8 +100,11 @@ ini_set('session.cookie_httponly', 1);
 ini_set('session.cookie_samesite', 'Lax');
 ini_set('session.use_strict_mode', 1);
 
+// Detect HTTPS properly
 $isProduction = ($_ENV['APP_ENV'] ?? 'development') === 'production';
-$secureCookie = $isProduction && (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+$secureCookie = $isProduction && ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
+                                  (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
+                                  (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on'));
 
 session_set_cookie_params([
     'lifetime' => 3600,
@@ -108,6 +114,12 @@ session_set_cookie_params([
     'httponly' => true,
     'samesite' => 'Lax'
 ]);
+
+// Initialize database session handler as fallback
+if (function_exists('initializeDatabaseSession')) {
+    $dbSessionInitialized = initializeDatabaseSession();
+    error_log("Database Session Handler: " . ($dbSessionInitialized ? "Initialized" : "Failed to initialize"));
+}
 
 session_start();
 

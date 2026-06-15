@@ -1,9 +1,5 @@
 <?php
-// Start session FIRST - before any output
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
+// Load configuration first (includes session_start())
 require '../config.php';
 require '../helpers.php';
 
