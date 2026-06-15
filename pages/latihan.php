@@ -25,13 +25,12 @@ $practiceHistory = $historyStmt->fetchAll(PDO::FETCH_ASSOC);
 $subtes = $_GET['subtes'] ?? '';
 if ($subtes && in_array($subtes, ['TWK','TIU','TKP'])) {
     $nama = "Latihan $subtes";
-    $cfg = $pdo->prepare("SELECT durasi_menit, jumlah_soal, passing_grade, urutan FROM subtes_config WHERE subtes = ? AND is_active = 1");
+    $cfg = $pdo->prepare("SELECT durasi_menit, jumlah_soal, passing_grade FROM subtes_config WHERE subtes = ? AND is_active = 1");
     $cfg->execute([$subtes]);
     $c = $cfg->fetch();
     $durasi = (int)($c['durasi_menit'] ?? ($subtes === 'TWK' ? 30 : ($subtes === 'TIU' ? 35 : 45)));
     $jumlah = (int)($c['jumlah_soal'] ?? ($subtes === 'TWK' ? 30 : ($subtes === 'TIU' ? 35 : 45)));
     $passing = (int)($c['passing_grade'] ?? ($subtes === 'TWK' ? 65 : ($subtes === 'TIU' ? 80 : 126)));
-    $urutan = (int)($c['urutan'] ?? ($subtes === 'TWK' ? 1 : ($subtes === 'TIU' ? 2 : 3)));
 
     // Insert session minimal (tanpa kolom flat berulang)
     $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai) VALUES (?, ?, NOW())");
@@ -39,8 +38,8 @@ if ($subtes && in_array($subtes, ['TWK','TIU','TKP'])) {
     $sessionId = $pdo->lastInsertId();
 
     // Insert ke tabel normalisasi session_subtes
-    $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade, urutan) VALUES (?, ?, ?, ?, ?, ?)");
-    $ins->execute([$sessionId, $subtes, $durasi, $jumlah, $passing, $urutan]);
+    $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade) VALUES (?, ?, ?, ?, ?)");
+    $ins->execute([$sessionId, $subtes, $durasi, $jumlah, $passing]);
 
     header("Location: tryout.php?session_id=$sessionId");
     exit;

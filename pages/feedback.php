@@ -18,8 +18,8 @@ $userName = e($_SESSION['user_nama'] ?? 'User');
 <meta name="theme-color" content="#1a5276">
 <title>Feedback — SKD CAT-BKN</title>
 <base href="/">
-<link rel="stylesheet" href="assets/form.css">
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="/assets/form.css">
+<link rel="stylesheet" href="/assets/style.css">
 <style>
 .feedback-container{max-width:600px;margin:2rem auto;padding:0 1rem}
 .category-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:.5rem;margin-bottom:1rem}
@@ -82,7 +82,7 @@ textarea{min-height:120px;resize:vertical}
 </div>
 
 <base href="/">
-<script src="assets/app.js"></script>
+<script src="/assets/app.js"></script>
 <script>
 let selectedCategory = 'lainnya';
 

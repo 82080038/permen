@@ -13,8 +13,8 @@ $activePage = 'help';
     <meta name="theme-color" content="#1a5276">
     <base href="/">
     <title><?= $pageTitle ?></title>
-    <link rel="stylesheet" href="assets/style.css">
-    <link rel="stylesheet" href="assets/form.css">
+    <link rel="stylesheet" href="/assets/style.css">
+    <link rel="stylesheet" href="/assets/form.css">
 </head>
 <body>
     <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
@@ -127,6 +127,6 @@ $activePage = 'help';
     </div>
     
     <div class="footer" style="text-align:center;padding:1.5rem;color:#777;font-size:.85rem">SKD CAT-BKN Try Out &amp; Bimbel</div>
-<script src="assets/app.js"></script>
+<script src="/assets/app.js"></script>
 </body>
 </html>
