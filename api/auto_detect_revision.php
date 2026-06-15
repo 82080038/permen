@@ -20,7 +20,7 @@ if ($action === 'detect_revision_candidates') {
     $stmt = $pdo->query("
         SELECT q.id, q.pertanyaan, q.subtes, q.tipe,
             COUNT(DISTINCT a.user_id) as total_attempts,
-            SUM(CASE WHEN a.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) as correct_answers
+            SUM(CASE WHEN a.jawaban = q.jawaban_benar THEN 1 ELSE 0 END) as correct_answers
         FROM questions q
         LEFT JOIN answers a ON q.id = a.soal_id
         WHERE q.is_active = 1
@@ -46,7 +46,7 @@ if ($action === 'detect_revision_candidates') {
     $stmt = $pdo->query("
         SELECT q.id, q.pertanyaan, q.subtes, q.tipe,
             COUNT(DISTINCT a.user_id) as total_attempts,
-            SUM(CASE WHEN a.jawaban_user = 'M' THEN 1 ELSE 0 END) as ragu_count
+            SUM(CASE WHEN a.jawaban = 'M' THEN 1 ELSE 0 END) as ragu_count
         FROM questions q
         LEFT JOIN answers a ON q.id = a.soal_id
         WHERE q.is_active = 1
@@ -145,8 +145,8 @@ if ($action === 'detect_revision_candidates') {
     $stmt = $pdo->query("
         SELECT q.id, q.pertanyaan, q.subtes, q.tipe,
             COUNT(DISTINCT a.user_id) as total_attempts,
-            SUM(CASE WHEN a.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) as correct_answers,
-            SUM(CASE WHEN a.jawaban_user = 'M' THEN 1 ELSE 0 END) as ragu_count,
+            SUM(CASE WHEN a.jawaban = q.jawaban_benar THEN 1 ELSE 0 END) as correct_answers,
+            SUM(CASE WHEN a.jawaban = 'M' THEN 1 ELSE 0 END) as ragu_count,
             MAX(sv.edited_at) as last_revision,
             q.created_at as created_at
         FROM questions q

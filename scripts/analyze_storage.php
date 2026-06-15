@@ -50,7 +50,7 @@ $difference = ($avgTotalLen - $char1Storage) * $stats['total_questions'];
 echo "Storage difference: ~" . number_format($difference) . " bytes (" . number_format($difference / 1024 / 1024, 2) . " MB)\n\n";
 
 // Analyze user answers storage
-$stmt = $pdo->query("SELECT COUNT(*) as total_answers, AVG(LENGTH(jawaban_user)) as avg_user_answer FROM answers");
+$stmt = $pdo->query("SELECT COUNT(*) as total_answers, AVG(LENGTH(jawaban)) as avg_user_answer FROM answers");
 $answerStats = $stmt->fetch();
 
 echo "User Answers Storage:\n";

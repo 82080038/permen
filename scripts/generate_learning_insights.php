@@ -34,7 +34,7 @@ foreach ($users as $userId) {
     $stmt = $pdo->prepare("
         SELECT 
             q.subtes,
-            COUNT(CASE WHEN a.jawaban_user = q.jawaban_benar THEN 1 END) as correct,
+            COUNT(CASE WHEN a.jawaban = q.jawaban_benar THEN 1 END) as correct,
             COUNT(*) as total
         FROM answers a
         JOIN questions q ON a.soal_id = q.id

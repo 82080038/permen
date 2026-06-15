@@ -138,7 +138,7 @@ if ($soal['subtes'] === 'TKP') {
 // Use database transaction to prevent race conditions
 try {
     $pdo->beginTransaction();
-    $stmt = $pdo->prepare("UPDATE answers SET jawaban_user = ?, skor = ?, is_ragu = ? WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE answers SET jawaban = ?, skor = ?, is_ragu = ? WHERE id = ?");
     $stmt->execute([$jawaban, $skor, $isRagu, $answerId]);
     
     // Log answer submission for audit trail

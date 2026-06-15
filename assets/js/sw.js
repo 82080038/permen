@@ -7,18 +7,19 @@
  * - Fallback for API requests
  */
 
-const CACHE_NAME = 'skd-cat-bkn-v1';
-const STATIC_CACHE = 'skd-static-v1';
-const DYNAMIC_CACHE = 'skd-dynamic-v1';
+const CACHE_NAME = 'skd-cat-bkn-v2';
+const STATIC_CACHE = 'skd-static-v2';
+const DYNAMIC_CACHE = 'skd-dynamic-v2';
 
-// Static assets to cache on install
+// Static assets to cache on install - only cache files that actually exist
 const STATIC_ASSETS = [
-    '/assets/css/base.css',
-    '/assets/js/app.js',
+    '/assets/style.css',
+    '/assets/login.css',
+    '/assets/app.js',
     '/assets/js/api.js',
-    '/assets/icon-192.png',
-    '/assets/icon-512.png',
-    '/assets/favicon.ico',
+    '/assets/js/bootstrap.bundle.min.js',
+    '/assets/css/bootstrap.min.css',
+    '/assets/css/bootstrap-icons.min.css',
 ];
 
 // Routes that should use network-first strategy
@@ -32,19 +33,21 @@ const API_ROUTES = [
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
     console.log('[SW] Installing...');
-    
+
     event.waitUntil(
         caches.open(STATIC_CACHE)
-            .then((cache) => {
+            .then(async (cache) => {
                 console.log('[SW] Caching static assets');
-                return cache.addAll(STATIC_ASSETS);
-            })
-            .then(() => {
-                console.log('[SW] Static assets cached');
+                const promises = STATIC_ASSETS.map(async (url) => {
+                    try {
+                        await cache.add(url);
+                    } catch (e) {
+                        console.warn('[SW] Failed to cache:', url, e.message);
+                    }
+                });
+                await Promise.all(promises);
+                console.log('[SW] Static assets cached (some may have failed)');
                 return self.skipWaiting();
-            })
-            .catch((err) => {
-                console.error('[SW] Failed to cache static assets:', err);
             })
     );
 });
@@ -52,16 +55,16 @@ self.addEventListener('install', (event) => {
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
     console.log('[SW] Activating...');
-    
+
     event.waitUntil(
         caches.keys()
             .then((cacheNames) => {
                 return Promise.all(
                     cacheNames
                         .filter((name) => {
-                            return name.startsWith('skd-') && 
-                                   name !== STATIC_CACHE && 
-                                   name !== DYNAMIC_CACHE;
+                            return name.startsWith('skd-') &&
+                                name !== STATIC_CACHE &&
+                                name !== DYNAMIC_CACHE;
                         })
                         .map((name) => {
                             console.log('[SW] Deleting old cache:', name);
@@ -80,35 +83,35 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
-    
+
     // Skip non-GET requests
     if (request.method !== 'GET') {
         return;
     }
-    
+
     // Skip cross-origin requests
     if (url.origin !== self.location.origin) {
         return;
     }
-    
+
     // Strategy for static assets
     if (isStaticAsset(url.pathname)) {
         event.respondWith(cacheFirst(request));
         return;
     }
-    
+
     // Strategy for API routes
     if (isApiRoute(url.pathname)) {
         event.respondWith(networkFirstWithCacheFallback(request));
         return;
     }
-    
+
     // Strategy for HTML pages
     if (request.headers.get('accept')?.includes('text/html')) {
         event.respondWith(networkFirstWithOfflineFallback(request));
         return;
     }
-    
+
     // Default: network first
     event.respondWith(networkFirst(request));
 });
@@ -133,7 +136,7 @@ function isApiRoute(pathname) {
 async function cacheFirst(request) {
     const cache = await caches.open(STATIC_CACHE);
     const cached = await cache.match(request);
-    
+
     if (cached) {
         // Return cached version and update cache in background
         fetch(request)
@@ -142,11 +145,11 @@ async function cacheFirst(request) {
                     cache.put(request, response);
                 }
             })
-            .catch(() => {}); // Ignore background update errors
-        
+            .catch(() => { }); // Ignore background update errors
+
         return cached;
     }
-    
+
     // Not in cache, fetch and cache
     try {
         const response = await fetch(request);
@@ -165,33 +168,33 @@ async function cacheFirst(request) {
  */
 async function networkFirstWithCacheFallback(request) {
     const cache = await caches.open(DYNAMIC_CACHE);
-    
+
     try {
         const networkResponse = await fetch(request);
-        
+
         if (networkResponse.ok) {
             // Update cache with fresh data
             cache.put(request, networkResponse.clone());
         }
-        
+
         return networkResponse;
     } catch (error) {
         console.log('[SW] Network failed, trying cache:', request.url);
-        
+
         const cached = await cache.match(request);
-        
+
         if (cached) {
             // Return cached with stale indicator
             const headers = new Headers(cached.headers);
             headers.set('X-SW-Cache', 'stale');
-            
+
             return new Response(cached.body, {
                 status: cached.status,
                 statusText: cached.statusText,
                 headers: headers
             });
         }
-        
+
         // No cache, return offline error
         return new Response(
             JSON.stringify({
@@ -216,7 +219,7 @@ async function networkFirstWithOfflineFallback(request) {
         return networkResponse;
     } catch (error) {
         console.log('[SW] Page fetch failed, showing offline page');
-        
+
         // Return offline page
         return new Response(
             `<!DOCTYPE html>
@@ -291,22 +294,22 @@ async function networkFirstWithOfflineFallback(request) {
  */
 async function networkFirst(request) {
     const cache = await caches.open(DYNAMIC_CACHE);
-    
+
     try {
         const networkResponse = await fetch(request);
-        
+
         if (networkResponse.ok) {
             cache.put(request, networkResponse.clone());
         }
-        
+
         return networkResponse;
     } catch (error) {
         const cached = await cache.match(request);
-        
+
         if (cached) {
             return cached;
         }
-        
+
         throw error;
     }
 }

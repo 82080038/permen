@@ -46,9 +46,9 @@ if (!$stmt->fetch()) {
 
 // Simpan jawaban (upsert)
 $stmt = $pdo->prepare("
-    INSERT INTO daily_quiz_answers (session_id, question_id, jawaban_user, is_ragu)
+    INSERT INTO daily_quiz_answers (session_id, question_id, jawaban, is_ragu)
     VALUES (?, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE jawaban_user = VALUES(jawaban_user), is_ragu = VALUES(is_ragu)
+    ON DUPLICATE KEY UPDATE jawaban = VALUES(jawaban), is_ragu = VALUES(is_ragu)
 ");
 $stmt->execute([$sessionId, $questionId, $jawaban ?: null, $isRagu]);
 

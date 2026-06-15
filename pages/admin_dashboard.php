@@ -217,9 +217,9 @@ if (isset($_GET['tab']) && $_GET['tab'] === 'analytics') {
                    COUNT(*) as wrong_count
             FROM answers a
             JOIN questions q ON a.question_id = q.id
-            WHERE a.jawaban_user != q.jawaban_benar
-              AND a.jawaban_user IS NOT NULL
-              AND a.jawaban_user != ''
+            WHERE a.jawaban != q.jawaban_benar
+              AND a.jawaban IS NOT NULL
+              AND a.jawaban != ''
             GROUP BY q.id, q.subtes, q.topik, q.pertanyaan
             ORDER BY wrong_count DESC
             LIMIT 10

@@ -270,7 +270,7 @@ try {
     }
 
     // Ambil soal dengan jawaban user + passage (bacaan) - optimized with index usage
-    $stmt = $pdo->prepare("SELECT a.id as answer_id, a.jawaban_user, a.is_ragu, q.id, q.subtes, q.topik, q.pertanyaan, q.pilihan_a, q.pilihan_b, q.pilihan_c, q.pilihan_d, q.pilihan_e, q.jawaban_benar, q.pembahasan, q.passage_id, q.passage_order, q.image_url, p.id as passage_id_real, p.judul as passage_judul, p.bacaan as passage_bacaan FROM answers a INNER JOIN questions q ON a.question_id = q.id LEFT JOIN passages p ON q.passage_id = p.id WHERE a.session_id = ? AND q.is_active = 1 ORDER BY FIELD(q.subtes,'TKP','TIU','TWK'), q.passage_id, q.passage_order, a.id");
+    $stmt = $pdo->prepare("SELECT a.id as answer_id, a.jawaban, a.is_ragu, q.id, q.subtes, q.topik, q.pertanyaan, q.pilihan_a, q.pilihan_b, q.pilihan_c, q.pilihan_d, q.pilihan_e, q.jawaban_benar, q.pembahasan, q.passage_id, q.passage_order, q.image_url, p.id as passage_id_real, p.judul as passage_judul, p.bacaan as passage_bacaan FROM answers a INNER JOIN questions q ON a.question_id = q.id LEFT JOIN passages p ON q.passage_id = p.id WHERE a.session_id = ? AND q.is_active = 1 ORDER BY FIELD(q.subtes,'TKP','TIU','TWK'), q.passage_id, q.passage_order, a.id");
     $stmt->execute([$sessionId]);
     $soal = $stmt->fetchAll();
 

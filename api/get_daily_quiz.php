@@ -121,7 +121,7 @@ $stmt = $pdo->prepare("
     SELECT dq.id as dq_id, dq.question_id, dq.subtes, dq.urutan,
            q.pertanyaan, q.pilihan_a, q.pilihan_b, q.pilihan_c, q.pilihan_d, q.pilihan_e,
            q.jawaban_benar, q.bobot_tkp, q.pembahasan, q.image_url,
-           dqa.jawaban_user, dqa.is_ragu
+           dqa.jawaban, dqa.is_ragu
     FROM daily_quiz_questions dq
     JOIN questions q ON dq.question_id = q.id
     LEFT JOIN daily_quiz_answers dqa ON dqa.session_id = dq.session_id AND dqa.question_id = dq.question_id
@@ -132,7 +132,7 @@ $stmt->execute([$sessionId]);
 $soal = $stmt->fetchAll();
 
 // Hitung progress
-$answered = count(array_filter($soal, fn($s) => $s['jawaban_user'] !== null));
+$answered = count(array_filter($soal, fn($s) => $s['jawaban'] !== null));
 $marked = count(array_filter($soal, fn($s) => $s['is_ragu']));
 
 echo json_encode([
@@ -157,7 +157,7 @@ echo json_encode([
         'pilihan_d' => $s['pilihan_d'],
         'pilihan_e' => $s['pilihan_e'],
         'image_url' => $s['image_url'],
-        'jawaban_user' => $s['jawaban_user'],
+        'jawaban' => $s['jawaban'],
         'is_ragu' => (bool)$s['is_ragu']
     ], $soal)
 ]);

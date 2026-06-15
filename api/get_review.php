@@ -23,7 +23,7 @@ if (!$stmt->fetch()) {
 // Ambil soal dengan jawaban user + passage
 $stmt = $pdo->prepare("
     SELECT 
-        a.id as answer_id, a.jawaban_user, a.skor,
+        a.id as answer_id, a.jawaban, a.skor,
         q.id as question_id, q.subtes, q.tipe, q.topik, q.pertanyaan,
         q.pilihan_a, q.pilihan_b, q.pilihan_c, q.pilihan_d, q.pilihan_e,
         q.jawaban_benar, q.pembahasan, q.tips_trick, q.image_url, q.related_links,
@@ -60,9 +60,9 @@ foreach ($soal as $s) {
     $sub = $s['subtes'];
     $stats[$sub]['total']++;
     $stats[$sub]['skor'] += (int)($s['skor'] ?? 0);
-    if (empty($s['jawaban_user'])) {
+    if (empty($s['jawaban'])) {
         $stats[$sub]['kosong']++;
-    } elseif ($s['jawaban_user'] === $s['jawaban_benar']) {
+    } elseif ($s['jawaban'] === $s['jawaban_benar']) {
         $stats[$sub]['benar']++;
     } else {
         $stats[$sub]['salah']++;

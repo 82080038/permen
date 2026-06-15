@@ -43,12 +43,12 @@ if ($session['status'] === 'selesai') {
 $stmt = $pdo->prepare("
     SELECT 
         COUNT(*) as total,
-        SUM(CASE WHEN dqa.jawaban_user IS NOT NULL THEN 1 ELSE 0 END) as answered,
-        SUM(CASE WHEN dqa.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) as benar,
-        SUM(CASE WHEN dqa.jawaban_user IS NOT NULL AND dqa.jawaban_user != q.jawaban_benar THEN 1 ELSE 0 END) as salah,
-        SUM(CASE WHEN q.subtes = 'TKP' AND dqa.jawaban_user = q.jawaban_benar THEN q.bobot_tkp ELSE 0 END) as skor_tkp,
-        SUM(CASE WHEN q.subtes = 'TIU' AND dqa.jawaban_user = q.jawaban_benar THEN 5 ELSE 0 END) as skor_tiu,
-        SUM(CASE WHEN q.subtes = 'TWK' AND dqa.jawaban_user = q.jawaban_benar THEN 5 ELSE 0 END) as skor_twk
+        SUM(CASE WHEN dqa.jawaban IS NOT NULL THEN 1 ELSE 0 END) as answered,
+        SUM(CASE WHEN dqa.jawaban = q.jawaban_benar THEN 1 ELSE 0 END) as benar,
+        SUM(CASE WHEN dqa.jawaban IS NOT NULL AND dqa.jawaban != q.jawaban_benar THEN 1 ELSE 0 END) as salah,
+        SUM(CASE WHEN q.subtes = 'TKP' AND dqa.jawaban = q.jawaban_benar THEN q.bobot_tkp ELSE 0 END) as skor_tkp,
+        SUM(CASE WHEN q.subtes = 'TIU' AND dqa.jawaban = q.jawaban_benar THEN 5 ELSE 0 END) as skor_tiu,
+        SUM(CASE WHEN q.subtes = 'TWK' AND dqa.jawaban = q.jawaban_benar THEN 5 ELSE 0 END) as skor_twk
     FROM daily_quiz_questions dq
     JOIN questions q ON dq.question_id = q.id
     LEFT JOIN daily_quiz_answers dqa ON dqa.session_id = dq.session_id AND dqa.question_id = dq.question_id

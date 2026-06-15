@@ -20,12 +20,12 @@ try {
             q.subtes,
             q.topik,
             COUNT(*) as total_attempts,
-            SUM(CASE WHEN a.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) as correct,
-            ROUND(SUM(CASE WHEN a.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as accuracy
+            SUM(CASE WHEN a.jawaban = q.jawaban_benar THEN 1 ELSE 0 END) as correct,
+            ROUND(SUM(CASE WHEN a.jawaban = q.jawaban_benar THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as accuracy
         FROM answers a
         JOIN questions q ON a.question_id = q.id
         JOIN tryout_sessions ts ON a.session_id = ts.id
-        WHERE ts.user_id = ? AND a.jawaban_user IS NOT NULL AND a.jawaban_user != ''
+        WHERE ts.user_id = ? AND a.jawaban IS NOT NULL AND a.jawaban != ''
         GROUP BY q.subtes, q.topik
         HAVING COUNT(*) >= 3
         ORDER BY accuracy ASC, total_attempts DESC
@@ -47,7 +47,7 @@ try {
             FROM answers a
             JOIN questions q ON a.question_id = q.id
             JOIN tryout_sessions ts ON a.session_id = ts.id
-            WHERE ts.user_id = ? AND a.jawaban_user IS NOT NULL
+            WHERE ts.user_id = ? AND a.jawaban IS NOT NULL
             GROUP BY q.subtes
         ");
         $stmt->execute([$userId]);

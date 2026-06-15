@@ -294,8 +294,8 @@ async function loadQuiz() {
         
         // Restore jawaban yang sudah tersimpan
         soal.forEach(s => {
-            if (s.jawaban_user) {
-                jawaban[s.question_id] = { jawaban: s.jawaban_user, ragu: s.is_ragu };
+            if (s.jawaban) {
+                jawaban[s.question_id] = { jawaban: s.jawaban, ragu: s.is_ragu };
             }
         });
         

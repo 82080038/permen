@@ -15,7 +15,7 @@ if (!$session) {
 }
 
 // Ambil data subtes dari tabel normalisasi session_subtes (fallback ke flat columns)
-$stmt = $pdo->prepare("SELECT subtes, nilai, passing_grade, jumlah_soal FROM session_subtes WHERE session_id = ?");
+$stmt = $pdo->prepare("SELECT subtes, skor as nilai, passing_grade, jumlah_soal FROM session_subtes WHERE session_id = ?");
 $stmt->execute([$sessionId]);
 $subDataRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $subData = [];
@@ -23,19 +23,22 @@ foreach ($subDataRows as $row) {
     $subData[$row['subtes']] = $row;
 }
 
+// Get passing grades from subtes_config
+$passingMap = $pdo->query("SELECT subtes, passing_grade FROM subtes_config WHERE is_active = 1 LIMIT 3")->fetchAll(PDO::FETCH_KEY_PAIR);
+
 if (empty($subData)) {
     // Fallback: data dari kolom flat (session lama)
     $subData = [
-        'TKP' => ['nilai'=>$session['skor_tkp'],'passing_grade'=>$session['passing_tkp'],'jumlah_soal'=>$session['jumlah_tkp']],
-        'TIU' => ['nilai'=>$session['skor_tiu'],'passing_grade'=>$session['passing_tiu'],'jumlah_soal'=>$session['jumlah_tiu']],
-        'TWK' => ['nilai'=>$session['skor_twk'],'passing_grade'=>$session['passing_twk'],'jumlah_soal'=>$session['jumlah_twk']],
+        'TKP' => ['nilai'=>$session['skor_tkp'],'passing_grade'=>$passingMap['TKP']??126,'jumlah_soal'=>30],
+        'TIU' => ['nilai'=>$session['skor_tiu'],'passing_grade'=>$passingMap['TIU']??80,'jumlah_soal'=>35],
+        'TWK' => ['nilai'=>$session['skor_twk'],'passing_grade'=>$passingMap['TWK']??65,'jumlah_soal'=>30],
     ];
 }
 
 $passingTkp = $subData['TKP']['passing_grade'] ?? 126;
 $passingTiu = $subData['TIU']['passing_grade'] ?? 80;
 $passingTwk = $subData['TWK']['passing_grade'] ?? 65;
-$passingTotal = $session['passing_total'] ?? 271;
+$passingTotal = ($passingTkp + $passingTiu + $passingTwk) ?? 271;
 
 $nilaiTkp = $subData['TKP']['nilai'] ?? 0;
 $nilaiTiu = $subData['TIU']['nilai'] ?? 0;
@@ -425,7 +428,7 @@ async function loadReview(){
     // Rekomendasi: hitung topik yang sering salah
     const topikSalah = {};
     (data.soal || []).forEach(q => {
-        if(q.jawaban_user !== q.jawaban_benar) {
+        if(q.jawaban !== q.jawaban_benar) {
             const key = q.subtes + ' — ' + q.topik;
             topikSalah[key] = (topikSalah[key] || 0) + 1;
         }
@@ -455,8 +458,8 @@ function applyFilters() {
     const filtered = allQuestions.filter(q => {
         if (subtesFilter && q.subtes !== subtesFilter) return false;
         
-        const isCorrect = q.jawaban_user === q.jawaban_benar;
-        const isEmpty = !q.jawaban_user;
+        const isCorrect = q.jawaban === q.jawaban_benar;
+        const isEmpty = !q.jawaban;
         
         if (statusFilter === 'benar' && !isCorrect) return false;
         if (statusFilter === 'salah' && (isEmpty || isCorrect)) return false;
@@ -489,8 +492,8 @@ function renderQuestions(questions) {
     }
 
     questions.forEach((q,i)=>{
-        const isCorrect = q.jawaban_user === q.jawaban_benar;
-        const isEmpty = !q.jawaban_user;
+        const isCorrect = q.jawaban === q.jawaban_benar;
+        const isEmpty = !q.jawaban;
         const statusColor = isEmpty ? '#999' : (isCorrect ? '#27ae60' : '#e74c3c');
         const statusText = isEmpty ? 'KOSONG' : (isCorrect ? 'BENAR' : 'SALAH');
 
@@ -519,7 +522,7 @@ function renderQuestions(questions) {
 
         ['A','B','C','D','E'].forEach(opt=>{
             const optText = q['pilihan_'+opt.toLowerCase()];
-            const isUser = q.jawaban_user === opt;
+            const isUser = q.jawaban === opt;
             const isKey = q.jawaban_benar === opt;
             let style = 'padding:.3rem .5rem;border-radius:4px;font-size:.85rem;margin-bottom:.2rem;';
             if(isKey) style += 'background:#d4edda;border:1px solid #27ae60;';
