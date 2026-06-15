@@ -4,7 +4,8 @@ require '../helpers.php';
 
 // Guard: user yang sudah login tidak perlu login lagi
 if (!empty($_SESSION['user_id'])) {
-    header('Location: user_dashboard.php');
+    $baseUrl = $_ENV['BASE_URL'] ?? '/permen';
+    header('Location: ' . $baseUrl . '/pages/user_dashboard.php');
     exit;
 }
 
@@ -47,10 +48,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 error_log("[LOGIN_DEBUG] Session data after login: " . json_encode($_SESSION));
                 
                 // Redirect based on role
+                $baseUrl = $_ENV['BASE_URL'] ?? '/permen';
                 if ($user['role'] === 'admin') {
-                    header('Location: /admin_dashboard.php');
+                    header('Location: ' . $baseUrl . '/pages/admin_dashboard.php');
                 } else {
-                    header('Location: /user_dashboard.php');
+                    header('Location: ' . $baseUrl . '/pages/user_dashboard.php');
                 }
                 exit;
             } else {
@@ -67,10 +69,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Jika sudah login, redirect
 if (!empty($_SESSION['user_id'])) {
+    $baseUrl = $_ENV['BASE_URL'] ?? '/permen';
     if ($_SESSION['user_role'] === 'admin') {
-        header('Location: /admin_dashboard.php');
+        header('Location: ' . $baseUrl . '/pages/admin_dashboard.php');
     } else {
-        header('Location: /user_dashboard.php');
+        header('Location: ' . $baseUrl . '/pages/user_dashboard.php');
     }
     exit;
 }
