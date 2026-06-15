@@ -113,7 +113,7 @@ try {
     }
 
     // Ambil session + validasi kepemilikan
-    $stmt = $pdo->prepare("SELECT id, nama, user_id, waktu_mulai, waktu_selesai, status, skor_twk, skor_tiu, skor_tkp, skor_total, strict_mode FROM tryout_sessions WHERE id = ? AND user_id = ?");
+    $stmt = $pdo->prepare("SELECT id, nama, user_id, waktu_mulai, waktu_selesai, status, skor_twk, skor_tiu, skor_tkp, skor_total FROM tryout_sessions WHERE id = ? AND user_id = ?");
     $stmt->execute([$sessionId, $userId]);
     $session = $stmt->fetch();
 

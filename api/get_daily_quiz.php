@@ -14,9 +14,9 @@ header('Content-Type: application/json; charset=utf-8');
 function getDifficultyFilter($difficulty) {
     switch ($difficulty) {
         case 'mudah':
-            return "AND kesulitan IN ('mudah', 'sedang')";
+            return "AND difficulty IN ('mudah', 'sedang', 'easy', 'medium')";
         case 'sulit':
-            return "AND kesulitan IN ('sedang', 'sulit')";
+            return "AND difficulty IN ('sedang', 'sulit', 'medium', 'hard')";
         default:
             return ""; // sedang: all questions
     }
@@ -121,7 +121,7 @@ $stmt = $pdo->prepare("
     SELECT dq.id as dq_id, dq.question_id, dq.subtes, dq.urutan,
            q.pertanyaan, q.pilihan_a, q.pilihan_b, q.pilihan_c, q.pilihan_d, q.pilihan_e,
            q.jawaban_benar, q.bobot_tkp, q.pembahasan, q.image_url,
-           dqa.jawaban, dqa.is_ragu
+           dqa.jawaban_user AS jawaban, dqa.is_ragu
     FROM daily_quiz_questions dq
     JOIN questions q ON dq.question_id = q.id
     LEFT JOIN daily_quiz_answers dqa ON dqa.session_id = dq.session_id AND dqa.question_id = dq.question_id
@@ -132,8 +132,8 @@ $stmt->execute([$sessionId]);
 $soal = $stmt->fetchAll();
 
 // Hitung progress
-$answered = count(array_filter($soal, fn($s) => $s['jawaban'] !== null));
-$marked = count(array_filter($soal, fn($s) => $s['is_ragu']));
+$answered = count(array_filter($soal, fn($s) => ($s['jawaban'] ?? null) !== null));
+$marked = count(array_filter($soal, fn($s) => !empty($s['is_ragu'])));
 
 echo json_encode([
     'success' => true,

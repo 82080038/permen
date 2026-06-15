@@ -13,6 +13,11 @@ if (!$session) {
     header('Location: /index.php');
     exit;
 }
+// Verify ownership
+if (!empty($_SESSION['user_id']) && $session['user_id'] != $_SESSION['user_id']) {
+    header('Location: /pages/user_dashboard.php');
+    exit;
+}
 
 // Ambil data subtes dari tabel normalisasi session_subtes (fallback ke flat columns)
 $stmt = $pdo->prepare("SELECT subtes, skor as nilai, passing_grade, jumlah_soal FROM session_subtes WHERE session_id = ?");
@@ -75,7 +80,7 @@ if (!$isLatihan && !empty($_SESSION['user_id'])) {
     
     if ($previousSession) {
         // Get previous subtes data
-        $stmt = $pdo->prepare("SELECT subtes, nilai FROM session_subtes WHERE session_id = ?");
+        $stmt = $pdo->prepare("SELECT subtes, skor as nilai FROM session_subtes WHERE session_id = ?");
         $stmt->execute([$previousSession['id']]);
         $prevSubData = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
