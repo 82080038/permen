@@ -1063,7 +1063,7 @@ function finishTryout(){
     <div class="zoom-hint">Ketuk gambar atau di luar area untuk menutup</div>
 </div>
 
-<base href="/">
+<base href="<?php echo $baseUrl ?? '/permen'; ?>">
 <script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/app.js"></script>
 <script>
 /**

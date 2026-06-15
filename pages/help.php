@@ -11,7 +11,7 @@ $activePage = 'help';
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
     <meta name="theme-color" content="#1a5276">
-    <base href="/">
+    <base href="<?php echo $baseUrl ?? '/permen'; ?>">
     <title><?= $pageTitle ?></title>
     <link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/style.css">
     <link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/form.css">

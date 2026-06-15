@@ -84,7 +84,7 @@ if (!empty($_SESSION['user_id'])) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
-<base href="/">
+<base href="<?php echo $baseUrl ?? '/permen'; ?>">
 <title>Login — SKD CAT-BKN</title>
 <?php $baseUrl = $_ENV['BASE_URL'] ?? '/permen'; ?>
 <link rel="stylesheet" href="<?php echo $baseUrl; ?>/assets/css/bootstrap.min.css">

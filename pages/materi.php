@@ -354,7 +354,7 @@ function checkMiniQuiz() {
     </div>
 </div>
 
-<base href="/">
+<base href="<?php echo $baseUrl ?? '/permen'; ?>">
 <script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/app.js"></script>
 <script>
 const topikBySubtes = {

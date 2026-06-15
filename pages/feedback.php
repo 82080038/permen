@@ -17,7 +17,7 @@ $userName = e($_SESSION['user_nama'] ?? 'User');
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
 <title>Feedback — SKD CAT-BKN</title>
-<base href="/">
+<base href="<?php echo $baseUrl ?? '/permen'; ?>">
 <link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/form.css">
 <link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/style.css">
 <style>
@@ -81,7 +81,7 @@ textarea{min-height:120px;resize:vertical}
 </div>
 </div>
 
-<base href="/">
+<base href="<?php echo $baseUrl ?? '/permen'; ?>">
 <script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/app.js"></script>
 <script>
 let selectedCategory = 'lainnya';
