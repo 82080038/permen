@@ -65,10 +65,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
-<base href="<?php echo $baseUrl ?? '/permen'; ?>">
+<base href="<?php echo $baseUrl ?? '/'; ?>">
 <title>Pengaturan — SKD CAT-BKN</title>
-<link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/form.css">
-<link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/style.css">
+<link rel="stylesheet" href="<?php echo $baseUrl ?? '/'; ?>/assets/form.css">
+<link rel="stylesheet" href="<?php echo $baseUrl ?? '/'; ?>/assets/style.css">
 <style>
 .settings-section {
     background: #fff;

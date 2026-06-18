@@ -65,9 +65,9 @@ try {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
-<base href="<?php echo $baseUrl ?? '/permen'; ?>">
+<base href="<?php echo $baseUrl ?? '/'; ?>">
 <title>Scheduled Tryouts — SKD CAT-BKN</title>
-<link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/style.css">
+<link rel="stylesheet" href="<?php echo $baseUrl ?? '/'; ?>/assets/style.css">
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>

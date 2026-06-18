@@ -1,8 +1,9 @@
 <?php
 require '../config.php';
 require '../helpers.php';
+$baseUrl = $_ENV['BASE_URL'] ?? '/permen';
 if (empty($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: ' . $baseUrl . '/pages/login.php');
     exit;
 }
 $userId = (int)$_SESSION['user_id'];
@@ -22,6 +23,19 @@ if (!empty($_GET['session_id'])) {
         $sessionId = 0; // invalid, buat baru
     }
 } elseif (!empty($_GET['scheduled'])) {
+    // Check if scheduled_tryouts table exists
+    try {
+        $tableExists = $pdo->query("SHOW TABLES LIKE 'scheduled_tryouts'")->fetch();
+    } catch (PDOException $e) {
+        $tableExists = false;
+    }
+    
+    if (!$tableExists) {
+        // Table doesn't exist, redirect to regular tryout
+        header('Location: ' . $baseUrl . '/pages/tryout.php');
+        exit;
+    }
+    
     // Create session from scheduled tryout
     $scheduledTryoutId = (int)$_GET['scheduled'];
     $stmt = $pdo->prepare("SELECT s.*, r.id as registration_id FROM scheduled_tryouts s 
@@ -51,8 +65,31 @@ if (!empty($_GET['session_id'])) {
 }
 
 if (!$sessionId) {
-    $stmt = $pdo->prepare("SELECT id FROM tryout_sessions WHERE user_id = ? AND status = 'berjalan' ORDER BY id DESC LIMIT 1");
-    $stmt->execute([$userId]);
+    // Check if tryout_sessions table exists
+    try {
+        $tryoutSessionsExists = $pdo->query("SHOW TABLES LIKE 'tryout_sessions'")->fetch();
+    } catch (PDOException $e) {
+        $tryoutSessionsExists = false;
+    }
+    if (!$tryoutSessionsExists) {
+        // Table doesn't exist, show error page
+        die("Database setup incomplete. Please contact administrator.");
+    }
+    
+    // Check which status value is valid for this database
+    $validStatus = 'ongoing'; // Default to production value
+    try {
+        $testStmt = $pdo->query("SHOW COLUMNS FROM tryout_sessions WHERE Field = 'status'");
+        $columnInfo = $testStmt->fetch();
+        if ($columnInfo && strpos($columnInfo['Type'], 'berjalan') !== false) {
+            $validStatus = 'berjalan'; // Local database uses 'berjalan'
+        }
+    } catch (PDOException $e) {
+        // Assume production default
+    }
+    
+    $stmt = $pdo->prepare("SELECT id FROM tryout_sessions WHERE user_id = ? AND status = ? ORDER BY id DESC LIMIT 1");
+    $stmt->execute([$userId, $validStatus]);
     $existing = $stmt->fetchColumn();
 
     if ($existing) {
@@ -69,43 +106,90 @@ if (!$sessionId) {
         $packageName = 'Try Out SKD';
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['package_id'])) {
             $packageId = (int)$_POST['package_id'];
-            // Get package details
-            $stmt = $pdo->prepare("SELECT * FROM tryout_packages WHERE id=? AND aktif=1");
-            $stmt->execute([$packageId]);
-            $package = $stmt->fetch();
-            if ($package) {
-                $packageName = $package['nama'];
+            // Check if tryout_packages table exists
+            $packagesExists = $pdo->query("SHOW TABLES LIKE 'tryout_packages'")->fetch();
+            if ($packagesExists) {
+                // Get package details
+                $stmt = $pdo->prepare("SELECT * FROM tryout_packages WHERE id=? AND aktif=1");
+                $stmt->execute([$packageId]);
+                $package = $stmt->fetch();
+                if ($package) {
+                    $packageName = $package['nama'];
+                }
             }
         }
 
-        $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai, status) VALUES (?, ?, NOW(), 'ongoing')");
-        $stmt->execute([$userId, $packageName]);
+        // Check which status value is valid for this database
+        $validStatus = 'ongoing'; // Default to production value
+        try {
+            $testStmt = $pdo->query("SHOW COLUMNS FROM tryout_sessions WHERE Field = 'status'");
+            $columnInfo = $testStmt->fetch();
+            if ($columnInfo && strpos($columnInfo['Type'], 'berjalan') !== false) {
+                $validStatus = 'berjalan'; // Local database uses 'berjalan'
+            }
+        } catch (PDOException $e) {
+            // Assume production default
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai, status) VALUES (?, ?, NOW(), ?)");
+        $stmt->execute([$userId, $packageName, $validStatus]);
         $sessionId = $pdo->lastInsertId();
         
-        // Insert ke tabel normalisasi session_subtes dari package atau konfigurasi global
-        if ($packageId > 0 && isset($package)) {
-            // Use package configuration
-            $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade) VALUES (?,?,?,?,?)");
-            $ins->execute([$sessionId, 'TWK', $package['durasi_twk'], $package['jumlah_soal_twk'], $package['passing_grade_twk']]);
-            $ins->execute([$sessionId, 'TIU', $package['durasi_tiu'], $package['jumlah_soal_tiu'], $package['passing_grade_tiu']]);
-            $ins->execute([$sessionId, 'TKP', $package['durasi_tkp'], $package['jumlah_soal_tkp'], $package['passing_grade_tkp']]);
-        } else {
-            // Use global configuration
-            $cfg = $pdo->query("SELECT subtes, durasi_menit, jumlah_soal, passing_grade FROM subtes_config WHERE is_active = 1 ORDER BY id");
-            $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade) VALUES (?,?,?,?,?)");
-            $urutan = 1;
-            foreach ($cfg as $c) {
-                $ins->execute([$sessionId, $c['subtes'], $c['durasi_menit'], $c['jumlah_soal'], $c['passing_grade']]);
-                $urutan++;
+        // Check if session_subtes table exists
+        try {
+            $sessionSubtesExists = $pdo->query("SHOW TABLES LIKE 'session_subtes'")->fetch();
+        } catch (PDOException $e) {
+            $sessionSubtesExists = false;
+        }
+        if ($sessionSubtesExists) {
+            // Insert ke tabel normalisasi session_subtes dari package atau konfigurasi global
+            if ($packageId > 0 && isset($package)) {
+                // Use package configuration
+                $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade) VALUES (?,?,?,?,?)");
+                $ins->execute([$sessionId, 'TWK', $package['durasi_twk'], $package['jumlah_soal_twk'], $package['passing_grade_twk']]);
+                $ins->execute([$sessionId, 'TIU', $package['durasi_tiu'], $package['jumlah_soal_tiu'], $package['passing_grade_tiu']]);
+                $ins->execute([$sessionId, 'TKP', $package['durasi_tkp'], $package['jumlah_soal_tkp'], $package['passing_grade_tkp']]);
+            } else {
+                // Use global configuration
+                try {
+                    $cfg = $pdo->query("SELECT subtes, durasi_menit, jumlah_soal, passing_grade FROM subtes_config WHERE is_active = 1 ORDER BY id");
+                } catch (PDOException $e) {
+                    try {
+                        $cfg = $pdo->query("SELECT subtes, durasi_menit, jumlah_soal, passing_grade FROM subtes_config WHERE aktif = 1 ORDER BY id");
+                    } catch (PDOException $e2) {
+                        $cfg = [];
+                    }
+                }
+                $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade) VALUES (?,?,?,?,?)");
+                $urutan = 1;
+                foreach ($cfg as $c) {
+                    $ins->execute([$sessionId, $c['subtes'], $c['durasi_menit'], $c['jumlah_soal'], $c['passing_grade']]);
+                    $urutan++;
+                }
             }
         }
     }
 }
 
 // Ambil data session untuk timer dari session_subtes (normalisasi)
-$stmt = $pdo->prepare("SELECT subtes, durasi_menit FROM session_subtes WHERE session_id = ? ORDER BY id");
-$stmt->execute([$sessionId]);
-$subtesRows = $stmt->fetchAll();
+$sessionSubtesExists = false;
+try {
+    $sessionSubtesExists = $pdo->query("SHOW TABLES LIKE 'session_subtes'")->fetch();
+} catch (PDOException $e) {
+    $sessionSubtesExists = false;
+}
+
+if ($sessionSubtesExists) {
+    try {
+        $stmt = $pdo->prepare("SELECT subtes, durasi_menit FROM session_subtes WHERE session_id = ? ORDER BY id");
+        $stmt->execute([$sessionId]);
+        $subtesRows = $stmt->fetchAll();
+    } catch (PDOException $e) {
+        $subtesRows = [];
+    }
+} else {
+    $subtesRows = [];
+}
 $durasiMap = ['TWK'=>30,'TIU'=>35,'TKP'=>45];
 foreach ($subtesRows as $row) {
     $durasiMap[$row['subtes']] = (int)$row['durasi_menit'];
@@ -113,19 +197,29 @@ foreach ($subtesRows as $row) {
 $totalDuration = array_sum($durasiMap);
 
 // Ambil waktu mulai per subtes untuk timer per subtes
-$stmt = $pdo->prepare("SELECT subtes, UNIX_TIMESTAMP(waktu_mulai) as start_ts, durasi_menit FROM session_subtes WHERE session_id = ? ORDER BY id");
-$stmt->execute([$sessionId]);
-$subtesTimers = [];
-$currentSubtes = '';
-foreach ($stmt as $row) {
-    $sub = $row['subtes'];
-    $dur = (int)$row['durasi_menit'];
-    $start = $row['start_ts'] ? (int)$row['start_ts'] : 0;
-    $elapsed = $start ? time() - $start : 0;
-    $remaining = max(0, $dur * 60 - $elapsed);
-    $subtesTimers[$sub] = ['durasi'=>$dur, 'start'=>$start, 'remaining'=>$remaining];
-    if (!$currentSubtes && $start) $currentSubtes = $sub; // subtes yang sudah dimulai = aktif
-    if (!$currentSubtes) $currentSubtes = $sub; // fallback ke subtes pertama
+if ($sessionSubtesExists) {
+    try {
+        $stmt = $pdo->prepare("SELECT subtes, UNIX_TIMESTAMP(waktu_mulai_subtes) as start_ts, durasi_menit FROM session_subtes WHERE session_id = ? ORDER BY id");
+        $stmt->execute([$sessionId]);
+        $subtesTimers = [];
+        $currentSubtes = '';
+        foreach ($stmt as $row) {
+            $sub = $row['subtes'];
+            $dur = (int)$row['durasi_menit'];
+            $start = $row['start_ts'] ? (int)$row['start_ts'] : 0;
+            $elapsed = $start ? time() - $start : 0;
+            $remaining = max(0, $dur * 60 - $elapsed);
+            $subtesTimers[$sub] = ['durasi'=>$dur, 'start'=>$start, 'remaining'=>$remaining];
+            if (!$currentSubtes && $start) $currentSubtes = $sub; // subtes yang sudah dimulai = aktif
+            if (!$currentSubtes) $currentSubtes = $sub; // fallback ke subtes pertama
+        }
+    } catch (PDOException $e) {
+        $subtesTimers = [];
+        $currentSubtes = '';
+    }
+} else {
+    $subtesTimers = [];
+    $currentSubtes = '';
 }
 // Kalau tidak ada subtes yang dimulai, set subtes pertama
 $firstSubtes = array_key_first($subtesTimers) ?: 'TWK';
@@ -304,757 +398,6 @@ require '../includes/breadcrumbs.php';
 <div class="pembahasan" id="pembahasanBox"></div>
 </div>
 </div>
-<script>
-const sessionId = <?= json_encode($sessionId) ?>;
-const csrfToken = <?= json_encode(getCsrfTokenForApi()) ?>;
-const strictMode = <?= json_encode($strictMode) ?>; // 1 = no back navigation, 0 = normal
-let soal = [];
-let passages = {}; // passage_id => {judul, bacaan}
-let currentIdx = 0;
-let answers = {}; // answer_id => jawaban
-let marked = {};  // answer_id => boolean (ragu-ragu)
-let bookmarked = {}; // question_id => boolean (favorit)
-let totalSeconds = <?= json_encode($remainingSeconds) ?>; // sisa waktu total dari server
-let timerInterval;
-let isPaused = false;
-const LS_KEY = 'cat_answers_' + sessionId;
-
-// Per-subtes timer data from server (PHP renders this as JSON)
-// Format: { TWK: {durasi:30, start:timestamp, remaining:seconds}, ... }
-const subtesTimers = <?= json_encode($subtesTimers) ?>;
-let currentSubtes = <?= json_encode($currentSubtes) ?>;
-let subtesOrder = Object.keys(subtesTimers); // e.g. ['TWK','TIU','TKP']
-let subtesRemaining = {}; // remaining seconds per subtes (client-side countdown)
-let activeSubtesIdx = subtesOrder.indexOf(currentSubtes);
-
-// Initialize per-subtes remaining time
-subtesOrder.forEach(sub => {
-    subtesRemaining[sub] = subtesTimers[sub]?.remaining || subtesTimers[sub]?.durasi * 60 || 1800;
-});
-
-/**
- * Load questions for this session from server.
- * If questions haven't been generated yet, API auto-generates them.
- * Then restore any saved answers from localStorage (survive page refresh).
- */
-async function loadSoal(){
-    try {
-        const res = await fetch('/api/get_soal.php?session_id='+sessionId, {
-            credentials: 'include',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-
-        if (res.status === 401 || res.status === 403) {
-            alert('Sesi Anda telah berakhir. Silakan login kembali.');
-            window.location.href = '/login.php';
-            return;
-        }
-
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
-
-        const text = await res.text();
-        
-        // Check if response is HTML (error page) instead of JSON
-        if (text.trim().startsWith('<') || text.trim().startsWith('<!DOCTYPE')) {
-            throw new Error('Server returned error page instead of JSON');
-        }
-        
-        const data = JSON.parse(text);
-        if(data.error){
-            if(data.error.includes('Session sudah selesai') || data.error.includes('tidak aktif')){
-                alert('Sesi tryout Anda telah berakhir atau tidak aktif. Anda akan diarahkan ke halaman hasil.');
-                window.location.href = 'hasil.php?session_id='+sessionId;
-                return;
-            }
-            alert(data.error);
-            return;
-        }
-        // Handle new standardized format: {success: true, data: {session, soal, passages}}
-        // Legacy format: {session, soal, passages}
-        const responseData = data.data || data;
-        soal = responseData.soal;
-        passages = responseData.passages || {};
-        // Restore answers from localStorage if available
-        restoreLocalAnswers();
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        if (loadingIndicator) {
-            loadingIndicator.style.display = 'none';
-        }
-        renderNumberGrid();
-        renderSoal(0);
-        startTimer();
-        // Show strict mode indicator if active
-        if (strictMode) {
-            document.getElementById('strictModeIndicator').style.display = 'block';
-            // Disable prev button in strict mode
-            document.getElementById('btnPrev').disabled = true;
-            document.getElementById('btnPrev').style.opacity = '0.5';
-            document.getElementById('btnPrev').style.cursor = 'not-allowed';
-        }
-    } catch (e) {
-        alert('Gagal memuat soal: ' + e.message + '. Silakan refresh halaman atau periksa koneksi internet Anda.');
-    }
-}
-
-/**
- * Start countdown timer for the entire tryout.
- * Runs every second. Decrements both total time and per-subtes time.
- * Auto-finishes when time runs out or auto-advances subtes.
- * FIXED: Added session expiry warning 5 minutes before expiry
- * FIXED: Added pause/resume support
- */
-function startTimer(){
-    let warningShown = false;
-    timerInterval = setInterval(()=>{
-        // Don't decrement if paused
-        if (isPaused) return;
-        
-        // Update per-subtes timer
-        if (currentSubtes && subtesRemaining[currentSubtes] > 0) {
-            subtesRemaining[currentSubtes]--;
-        }
-        totalSeconds--;
-        
-        // Show warning 5 minutes (300 seconds) before expiry
-        if (!warningShown && totalSeconds === 300) {
-            warningShown = true;
-            alert('PERINGATAN: Sesi Anda akan berakhir dalam 5 menit. Jawaban Anda akan otomatis disimpan.');
-            saveLocalAnswers(); // Force save before expiry
-        }
-        
-        if(totalSeconds<=0){clearInterval(timerInterval);finishTryout();return;}
-
-        // Check if current subtes time is up
-        if (currentSubtes && subtesRemaining[currentSubtes] <= 0) {
-            // Auto-advance to next subtes or finish
-            const nextIdx = activeSubtesIdx + 1;
-            if (nextIdx < subtesOrder.length) {
-                alert('Waktu subtes ' + currentSubtes + ' habis! Anda akan dipindahkan ke subtes berikutnya.');
-                advanceToNextSubtes();
-            } else {
-                clearInterval(timerInterval);
-                finishTryout();
-            }
-            return;
-        }
-
-        const m = Math.floor(totalSeconds/60).toString().padStart(2,'0');
-        const s = (totalSeconds%60).toString().padStart(2,'0');
-        document.getElementById('timer').textContent = m+':'+s;
-    },1000);
-}
-
-/**
- * Render the sidebar navigation grid showing all question numbers.
- * Each button shows status: active (blue), answered (green), marked (yellow), or unanswered.
- * Also updates the status text showing answered/unanswered/marked counts.
- * Supports filtering: all, ragu, unanswered
- */
-function renderNumberGrid(){
-    const grid = document.getElementById('numberGrid');
-    grid.innerHTML = '';
-    let answeredCount = 0, markedCount = 0;
-    soal.forEach((s,i)=>{
-        // Apply filter
-        if (currentFilter === 'ragu' && !marked[s.answer_id]) return;
-        if (currentFilter === 'unanswered' && answers[s.answer_id]) return;
-        
-        const btn = document.createElement('button');
-        btn.textContent = i+1;
-        btn.onclick = ()=>renderSoal(i);
-        if(i===currentIdx) btn.classList.add('active');
-        if(answers[s.answer_id]){ btn.classList.add('answered'); answeredCount++; }
-        if(marked[s.answer_id]){ btn.classList.add('marked'); markedCount++; }
-        grid.appendChild(btn);
-    });
-    const status = document.getElementById('navStatus');
-    if(status){
-        const total = soal.length;
-        const text = '<strong style="color:#27ae60">' + answeredCount + '</strong> dijawab, '
-            + '<strong style="color:#999">' + (total - answeredCount) + '</strong> belum'
-            + (markedCount > 0 ? ' (<strong style="color:#f39c12">' + markedCount + '</strong> ragu)' : '')
-            + (currentFilter !== 'all' ? ' <span style="color:#e74c3c">[Filter: ' + currentFilter + ']</span>' : '');
-        status.innerHTML = text;
-    }
-    // Scroll active button into view
-    const activeBtn = grid.querySelector('button.active');
-    if(activeBtn) activeBtn.scrollIntoView({behavior:'smooth', block:'nearest', inline:'nearest'});
-}
-
-/**
- * Auto-advance to the next subtes when time runs out.
- * Called by startTimer() when current subtes time hits 0.
- * Records transition via API and jumps to first question of next subtes.
- */
-function advanceToNextSubtes(){
-    const nextIdx = activeSubtesIdx + 1;
-    if (nextIdx >= subtesOrder.length) {
-        finishTryout();
-        return;
-    }
-    const nextSub = subtesOrder[nextIdx];
-    const currentSub = subtesOrder[activeSubtesIdx];
-
-    // Call API to record subtes transition
-    fetch('/api/next_subtes.php',{
-        method:'POST',
-        headers:{
-            'Content-Type':'application/json',
-            'X-CSRF-Token': csrfToken
-        },
-        body:JSON.stringify({session_id:sessionId, current_subtes:currentSub, next_subtes:nextSub})
-    });
-
-    currentSubtes = nextSub;
-    activeSubtesIdx = nextIdx;
-
-    // Find first soal of next subtes
-    const firstIdx = soal.findIndex(q => q.subtes === nextSub);
-    if (firstIdx >= 0) {
-        renderSoal(firstIdx);
-    }
-}
-
-/**
- * Render a single question (and its options) into the main content area.
- * Also handles passage display, image rendering, and subtes change detection.
- * @param {number} idx - Index in the soal array
- */
-function renderSoal(idx){
-    currentIdx = idx;
-    const s = soal[idx];
-
-    // Detect subtes change: confirm before allowing forward navigation
-    if (s.subtes !== currentSubtes) {
-        const prevSubIdx = subtesOrder.indexOf(currentSubtes);
-        const newSubIdx = subtesOrder.indexOf(s.subtes);
-        // Only allow forward navigation, not backward
-        if (newSubIdx > prevSubIdx) {
-            // Count unanswered in current subtes
-            const currentSubSoal = soal.filter(q => q.subtes === currentSubtes);
-            const unanswered = currentSubSoal.filter(q => !answers[q.answer_id]).length;
-            const msg = 'Anda akan pindah ke subtes ' + s.subtes + '.\n' +
-                        'Soal ' + currentSubtes + ' yang belum dijawab: ' + unanswered + '\n' +
-                        'Waktu ' + currentSubtes + ' yang tersisa tidak bisa digunakan untuk subtes lain.\n\n' +
-                        'Yakin ingin lanjut?';
-            if (!confirm(msg)) {
-                // Go back to last soal of current subtes
-                const lastIdx = soal.map(q => q.subtes).lastIndexOf(currentSubtes);
-                if (lastIdx >= 0) { currentIdx = lastIdx; }
-                return;
-            }
-            // Call API to record transition
-            fetch('/api/next_subtes.php',{
-                method:'POST',
-                headers:{
-                    'Content-Type':'application/json',
-                    'X-CSRF-Token': csrfToken
-                },
-                body:JSON.stringify({session_id:sessionId, current_subtes:currentSubtes, next_subtes:s.subtes})
-            });
-            currentSubtes = s.subtes;
-            activeSubtesIdx = newSubIdx;
-        }
-    }
-
-    document.getElementById('subtes-info').textContent = s.subtes + ' — Soal ' + (idx+1) + ' dari ' + soal.length;
-
-    // Handle passage box: show if soal has passage_id
-    const passageBox = document.getElementById('passageBox');
-    const passageJudul = document.getElementById('passageJudul');
-    const passageBacaan = document.getElementById('passageBacaan');
-
-    if (s.passage_id && passages[s.passage_id]) {
-        const p = passages[s.passage_id];
-        // Count total soal in this passage
-        const totalInPassage = soal.filter(q => q.passage_id == s.passage_id).length;
-        const orderInPassage = soal.filter((q,i) => q.passage_id == s.passage_id && i <= idx).length;
-
-        passageBox.style.display = 'block';
-        passageJudul.textContent = p.judul ? escapeHtml(p.judul) : 'Bacaan';
-        passageBacaan.innerHTML = '<div class="passage-info">Soal ' + orderInPassage + ' dari ' + totalInPassage + ' dalam bacaan ini</div>' + escapeHtml(p.bacaan);
-    } else {
-        passageBox.style.display = 'none';
-        passageJudul.textContent = '';
-        passageBacaan.innerHTML = '';
-    }
-
-    // Build question HTML: add scrollable class if question text is very long
-    const qText = escapeHtml(s.pertanyaan);
-    const scrollClass = (s.pertanyaan.length > 300) ? 'question-scrollable' : '';
-    let html = '<div class="question ' + scrollClass + '"><strong>' + (idx+1) + '.</strong> ' + qText + '</div>';
-
-    // Show image if present (tap to zoom with lazy loading)
-    if (s.image_url) {
-        html += '<img src="' + escapeHtml(s.image_url) + '" class="question-image" alt="Gambar soal" loading="lazy" onerror="this.style.display=\'none\'" onclick="openZoom(this.src)" style="cursor:zoom-in">';
-    }
-
-    html += '<div class="options">';
-    ['A','B','C','D','E'].forEach(opt=>{
-        const selected = answers[s.answer_id] === opt ? 'selected' : '';
-        html += '<label class="'+selected+'"><input type="radio" name="jawaban" value="'+opt+'" '+(selected?'checked':'')+' onchange="pilihJawaban('+s.answer_id+',\''+opt+'\',this)"> ' + opt + '. ' + escapeHtml(s['pilihan_'+opt.toLowerCase()]) + '</label>';
-    });
-    html += '</div>';
-    html += '<div class="pembahasan" id="pembahasanBox" style="display:none">' + escapeHtml(s.pembahasan) + '</div>';
-    document.getElementById('soalContainer').innerHTML = html;
-    renderNumberGrid();
-    // Pada mobile: scroll ke soal jika soal berada di bawah viewport (misal setelah sidebar)
-    // Tidak scroll jika soal sudah terlihat agar tidak naik-turun
-    const soalEl = document.getElementById('soalContainer');
-    const rect = soalEl.getBoundingClientRect();
-    if (rect.top < 0 || rect.top > window.innerHeight) {
-        soalEl.scrollIntoView({behavior:'smooth', block:'start'});
-    }
-}
-
-/**
- * Handle user selecting an answer (A-E).
- * Saves to server + localStorage, updates UI, then auto-advances to next question.
- * If last question, shows completion alert and redirects to results.
- */
-function pilihJawaban(answerId, opt, el){
-    answers[answerId] = opt;
-    // visual select
-    document.querySelectorAll('.options label').forEach(l=>l.classList.remove('selected'));
-    el.closest('label').classList.add('selected');
-    renderNumberGrid();
-    // save to localStorage
-    saveLocalAnswers();
-    // submit ke server
-    fetch('/api/submit_jawaban.php',{
-        method:'POST',
-        headers:{
-            'Content-Type':'application/json',
-            'X-CSRF-Token': csrfToken
-        },
-        body:JSON.stringify({answer_id:answerId,jawaban:opt,is_ragu:marked[answerId]?1:0})
-    }).then(r=>{
-        if(r.status === 401 || r.status === 403){
-            alert('Sesi Anda telah berakhir. Silakan login kembali.');
-            window.location.href = '/login.php';
-        }
-    }).catch(e=>{
-        console.error('Error submitting answer:', e);
-    });
-    // Auto-advance to next question (unless marked as ragu)
-    setTimeout(()=>{
-        // Check if current question is marked as ragu
-        const s = soal[currentIdx];
-        if (marked[s.answer_id]) {
-            // Don't auto-advance if marked as ragu
-            return;
-        }
-
-        if(currentIdx >= soal.length - 1){
-            // Last question answered
-            const answeredCount = Object.keys(answers).length;
-            const totalCount = soal.length;
-            const raguCount = Object.values(marked).filter(Boolean).length;
-            let msg = 'Selamat! Anda telah menjawab soal terakhir.\n\n';
-            msg += 'Soal dijawab: ' + answeredCount + ' / ' + totalCount + '\n';
-            if(raguCount > 0) msg += 'Ragu-ragu: ' + raguCount + '\n\n';
-            msg += 'Klik OK untuk melihat hasil tryout.';
-            alert(msg);
-            finishTryout();
-            return;
-        }
-        // Advance to next
-        const nextIdx = currentIdx + 1;
-        const currentSub = soal[currentIdx].subtes;
-        const nextSub = soal[nextIdx].subtes;
-        if (currentSub !== nextSub) {
-            const currentSubSoal = soal.filter(q => q.subtes === currentSub);
-            const unanswered = currentSubSoal.filter(q => !answers[q.answer_id]).length;
-            const msg = 'Anda akan pindah ke subtes ' + nextSub + '.\n' +
-                        'Soal ' + currentSub + ' yang belum dijawab: ' + unanswered + '\n' +
-                        'Waktu ' + currentSub + ' yang tersisa tidak bisa digunakan untuk subtes lain.\n\n' +
-                        'Yakin ingin lanjut?';
-            if (!confirm(msg)) return;
-            fetch('/api/next_subtes.php',{
-                method:'POST',
-                headers:{
-                    'Content-Type':'application/json',
-                    'X-CSRF-Token': csrfToken
-                },
-                body:JSON.stringify({session_id:sessionId, current_subtes:currentSub, next_subtes:nextSub})
-            });
-            currentSubtes = nextSub;
-            activeSubtesIdx = subtesOrder.indexOf(nextSub);
-        }
-        renderSoal(nextIdx);
-    }, 400); // 400ms delay so user sees their selection
-}
-
-/** Navigate to previous question */
-function prevSoal(){
-    // Block back navigation in strict mode
-    if (strictMode) {
-        alert('Strict Mode aktif: Anda tidak bisa kembali ke soal sebelumnya.');
-        return;
-    }
-    if(currentIdx>0)renderSoal(currentIdx-1);
-}
-/** Navigate to next question (with subtes change confirmation if applicable) */
-function nextSoal(){
-    if(currentIdx>=soal.length-1) return;
-    const nextIdx = currentIdx + 1;
-    const currentSub = soal[currentIdx].subtes;
-    const nextSub = soal[nextIdx].subtes;
-    if (currentSub !== nextSub) {
-        // Count unanswered in current subtes
-        const currentSubSoal = soal.filter(q => q.subtes === currentSub);
-        const unanswered = currentSubSoal.filter(q => !answers[q.answer_id]).length;
-        const msg = 'Anda akan pindah ke subtes ' + nextSub + '.\n' +
-                    'Soal ' + currentSub + ' yang belum dijawab: ' + unanswered + '\n' +
-                    'Waktu ' + currentSub + ' yang tersisa tidak bisa digunakan untuk subtes lain.\n\n' +
-                    'Yakin ingin lanjut?';
-        if (!confirm(msg)) return;
-        // Record transition via API
-        fetch('/api/next_subtes.php',{
-            method:'POST',
-            headers:{
-                'Content-Type':'application/json',
-                'X-CSRF-Token': csrfToken
-            },
-            body:JSON.stringify({session_id:sessionId, current_subtes:currentSub, next_subtes:nextSub})
-        });
-        currentSubtes = nextSub;
-        activeSubtesIdx = subtesOrder.indexOf(nextSub);
-    }
-    renderSoal(nextIdx);
-}
-
-/** ================================
- * LOCALSTORAGE PERSISTENCE
- * Survives page refresh / browser crash
- * Key format: cat_answers_<sessionId>
- * FIXED: Added localStorage quota exceeded handling
- * ================================ */
-function saveLocalAnswers(){
-    try {
-        const data = JSON.stringify({answers: answers, marked: marked, savedAt: Date.now()});
-        localStorage.setItem(LS_KEY, data);
-    } catch (e) {
-        if (e.name === 'QuotaExceededError') {
-            console.error('LocalStorage quota exceeded. Attempting to clear old data...');
-            // Try to clear old sessions to free space
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith('cat_answers_') && key !== LS_KEY) {
-                    localStorage.removeItem(key);
-                    console.log('Cleared old session:', key);
-                    // Try saving again
-                    try {
-                        const data = JSON.stringify({answers: answers, marked: marked, savedAt: Date.now()});
-                        localStorage.setItem(LS_KEY, data);
-                        console.log('Successfully saved after clearing old data');
-                        return;
-                    } catch (retryError) {
-                        console.error('Still cannot save after clearing old data');
-                    }
-                }
-            }
-            // If still failed, alert user
-            alert('Peringatan: Penyimpanan browser penuh. Jawaban Anda tetap disimpan ke server, tapi tidak dapat disimpan secara lokal untuk recovery.');
-        } else {
-            console.error('Error saving to localStorage:', e);
-        }
-    }
-}
-function restoreLocalAnswers(){
-    const saved = localStorage.getItem(LS_KEY);
-    if(saved){
-        try{
-            const data = JSON.parse(saved);
-            if(data.answers) Object.assign(answers, data.answers);
-            if(data.marked) Object.assign(marked, data.marked);
-        }catch(e){
-            console.error('Error restoring from localStorage:', e);
-        }
-    }
-}
-function clearLocalAnswers(){
-    try {
-        localStorage.removeItem(LS_KEY);
-    } catch (e) {
-        console.error('Error clearing localStorage:', e);
-    }
-}
-
-// --- MARK/RAGU-RAGU + NEEDS REVISION ---
-function toggleMark(){
-    const s = soal[currentIdx];
-    marked[s.answer_id] = !marked[s.answer_id];
-    saveLocalAnswers();
-    renderNumberGrid();
-    // Update button text to indicate state
-    const btn = document.getElementById('btnMark');
-    if (marked[s.answer_id]) {
-        btn.textContent = 'Ragu ✓';
-        btn.title = 'Auto-advance dinonaktifkan untuk soal ini';
-    } else {
-        btn.textContent = 'Ragu (M)';
-        btn.title = 'Tandai ragu-ragu';
-    }
-    // Send revision flag to server
-    fetch('/api/mark_revision.php',{
-        method:'POST',
-        headers:{
-            'Content-Type':'application/json',
-            'X-CSRF-Token': csrfToken
-        },
-        body:JSON.stringify({question_id:s.question_id, needs_revision:marked[s.answer_id]?1:0})
-    });
-}
-
-// --- FILTER FUNCTIONS ---
-let currentFilter = 'all'; // 'all', 'ragu', 'unanswered'
-
-function filterRagu(){
-    currentFilter = 'ragu';
-    renderNumberGrid();
-}
-
-function filterUnanswered(){
-    currentFilter = 'unanswered';
-    renderNumberGrid();
-}
-
-function showAll(){
-    currentFilter = 'all';
-    renderNumberGrid();
-}
-
-// --- PAUSE/RESUME FUNCTION ---
-async function togglePause(){
-    const btn = document.getElementById('btnPause');
-    const indicator = document.getElementById('pauseIndicator');
-    
-    if (!isPaused) {
-        // Pause the tryout
-        try {
-            const res = await fetch('/api/pause_tryout.php',{
-                method:'POST',
-                headers:{
-                    'Content-Type':'application/json',
-                    'X-CSRF-Token': csrfToken
-                },
-                body:JSON.stringify({session_id:sessionId})
-            });
-            
-            if (res.status === 401 || res.status === 403) {
-                alert('Sesi Anda telah berakhir. Silakan login kembali.');
-                window.location.href = '/login.php';
-                return;
-            }
-            
-            const data = await res.json();
-            if (data.success) {
-                isPaused = true;
-                btn.textContent = '▶ Resume';
-                btn.style.background = '#27ae60';
-                indicator.style.display = 'block';
-                alert('Tryout dipause. Timer dihentikan sementara. Klik Resume untuk melanjutkan.');
-            } else {
-                alert('Gagal pause: ' + (data.error || 'Unknown error'));
-            }
-        } catch (e) {
-            console.error('Error pausing tryout:', e);
-            alert('Gagal pause tryout. Silakan coba lagi.');
-        }
-    } else {
-        // Resume the tryout
-        try {
-            const res = await fetch('/api/resume_tryout.php',{
-                method:'POST',
-                headers:{
-                    'Content-Type':'application/json',
-                    'X-CSRF-Token': csrfToken
-                },
-                body:JSON.stringify({session_id:sessionId})
-            });
-            
-            if (res.status === 401 || res.status === 403) {
-                alert('Sesi Anda telah berakhir. Silakan login kembali.');
-                window.location.href = '/login.php';
-                return;
-            }
-            
-            const data = await res.json();
-            if (data.success) {
-                isPaused = false;
-                btn.textContent = '⏸ Pause';
-                btn.style.background = '#e67e22';
-                indicator.style.display = 'none';
-                // Adjust timer based on pause duration
-                totalSeconds += data.pause_duration;
-                alert('Tryout dilanjutkan. Timer disesuaikan dengan durasi pause.');
-            } else {
-                alert('Gagal resume: ' + (data.error || 'Unknown error'));
-            }
-        } catch (e) {
-            console.error('Error resuming tryout:', e);
-            alert('Gagal resume tryout. Silakan coba lagi.');
-        }
-    }
-}
-
-// --- BOOKMARK/FAVORIT ---
-async function toggleBookmark(){
-    const s = soal[currentIdx];
-    if (!s || !s.question_id) {
-        showToast('Soal tidak valid', 'error');
-        return;
-    }
-    const isBookmarked = bookmarked[s.question_id];
-    const action = isBookmarked ? 'remove' : 'add';
-
-    const formData = new FormData();
-    formData.append('question_id', s.question_id);
-    formData.append('action', action);
-
-    try {
-        const res = await fetch('/api/bookmark_question.php', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-Token': csrfToken
-            },
-            body: formData
-        });
-
-        if (res.status === 401 || res.status === 403) {
-            showToast('Sesi telah berakhir. Silakan login kembali.', 'error');
-            setTimeout(() => window.location.href = '/login.php', 2000);
-            return;
-        }
-
-        const data = await res.json();
-
-        if (data.success) {
-            bookmarked[s.question_id] = !isBookmarked;
-            const btn = document.getElementById('btnBookmark');
-            if (btn) {
-                btn.style.background = bookmarked[s.question_id] ? '#f39c12' : '#9b59b6';
-                btn.textContent = bookmarked[s.question_id] ? '⭐ Tersimpan' : '⭐ Favorit';
-            }
-            showToast(bookmarked[s.question_id] ? 'Soal disimpan ke favorit' : 'Soal dihapus dari favorit', 'success');
-        } else {
-            showToast(data.error || 'Gagal menyimpan favorit', 'error');
-        }
-    } catch (e) {
-        showToast('Gagal menyimpan favorit', 'error');
-    }
-}
-
-// --- ANTI-CHEATING ---
-// Disable right-click
-document.addEventListener('contextmenu', e=>e.preventDefault());
-// Disable copy
-document.addEventListener('copy', e=>{ if(e.target.closest('.passage-bacaan, .question')) e.preventDefault(); });
-// Disable cut
-document.addEventListener('cut', e=>{ if(e.target.closest('.passage-bacaan, .question')) e.preventDefault(); });
-// Detect window blur (user switches tab/app)
-let blurCount = 0;
-let blurAlertShown = false;
-window.addEventListener('blur', ()=>{
-    blurCount++;
-    if(blurCount >= 3 && !blurAlertShown){
-        blurAlertShown = true;
-        alert('Peringatan: Anda telah meninggalkan halaman tryout terlalu sering. Integritas tes akan dievaluasi.');
-    }
-});
-// Prevent back button navigation
-document.addEventListener('keydown', e=>{
-    if(e.key==='F5' || (e.ctrlKey && e.key==='r')){ e.preventDefault(); alert('Refresh tidak diizinkan selama tryout.'); }
-    if(e.ctrlKey && e.key==='u'){ e.preventDefault(); } // view source
-    if(e.ctrlKey && e.shiftKey && e.key==='I'){ e.preventDefault(); } // devtools
-    if(e.key==='F12'){ e.preventDefault(); } // devtools
-});
-history.pushState(null, '', location.href);
-window.addEventListener('popstate', ()=>{
-    history.pushState(null, '', location.href);
-    alert('Navigasi back tidak diizinkan selama tryout.');
-});
-
-/**
- * ================================
- * SWIPE NAVIGATION (Touch devices)
- * Swipe left  = next question
- * Swipe right = previous question
- * Threshold: 50px horizontal
- * ================================ */
-let touchStartX = 0;
-let touchStartY = 0;
-const SWIPE_THRESHOLD = 50;
-document.addEventListener('touchstart', e=>{
-    touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
-}, {passive:true});
-document.addEventListener('touchend', e=>{
-    if(!soal.length) return;
-    const touchEndX = e.changedTouches[0].screenX;
-    const touchEndY = e.changedTouches[0].screenY;
-    const dx = touchEndX - touchStartX;
-    const dy = touchEndY - touchStartY;
-    // Only handle horizontal swipes (abs(dx) > abs(dy))
-    if(Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD){
-        if(dx < 0){ nextSoal(); } // swipe left = next
-        else { prevSoal(); } // swipe right = previous
-    }
-}, {passive:true});
-
-/**
- * ================================
- * KEYBOARD SHORTCUTS
- * A-E     : Select answer
- * ←/↑     : Previous question
- * →/↓     : Next question
- * M       : Mark as uncertain
- * F5/Ctrl+R : Blocked (anti-cheating)
- * ================================ */
-document.addEventListener('keydown', e=>{
-    if(!soal.length) return;
-    const key = e.key.toUpperCase();
-    // A-E: select answer
-    if(['A','B','C','D','E'].includes(key)){
-        const radios = document.querySelectorAll('input[name="jawaban"]');
-        radios.forEach(r=>{ if(r.value===key){ r.checked=true; r.dispatchEvent(new Event('change')); } });
-    }
-    // Arrow keys: navigate
-    if(key==='ARROWLEFT' || key==='ARROWUP'){ prevSoal(); }
-    if(key==='ARROWRIGHT' || key==='ARROWDOWN'){ nextSoal(); }
-    // M: mark/ragu
-    if(key==='M'){ toggleMark(); }
-});
-
-function finishTryout(){
-    const answeredCount = Object.keys(answers).length;
-    const totalCount = soal.length;
-    const msg = 'Yakin ingin menyelesaikan try out?\n\n' +
-                'Soal dijawab: ' + answeredCount + ' / ' + totalCount + '\n' +
-                'Ragu-ragu: ' + Object.values(marked).filter(Boolean).length;
-    if(!confirm(msg)) return;
-    clearInterval(timerInterval);
-    clearLocalAnswers();
-    fetch('/api/finish_tryout.php',{
-        method:'POST',
-        headers:{
-            'Content-Type':'application/json',
-            'X-CSRF-Token': csrfToken
-        },
-        body:JSON.stringify({session_id:sessionId})
-    }).then(r=>r.json()).then(data=>{
-        if(data.success) window.location.href = 'hasil.php?session_id='+sessionId;
-        else alert(data.error);
-    });
-}
-
-</script>
 
 <!-- Image Zoom Modal -->
 <div id="imgZoomModal" onclick="closeZoom()">
@@ -1065,51 +408,20 @@ function finishTryout(){
 
 <base href="<?php echo $baseUrl ?? '/permen'; ?>">
 <script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/app.js"></script>
+<script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/js/dist/tryout.js"></script>
 <script>
-/**
- * ================================
- * ACCESSIBILITY: DARK MODE & FONT SIZE
- * Persist user preference to localStorage
- * ================================ */
-// --- THEME / DARK MODE ---
-const savedTheme = localStorage.getItem('cat_theme') || 'light';
-if(savedTheme==='dark') document.documentElement.setAttribute('data-theme','dark');
-function toggleTheme(){
-    const html = document.documentElement;
-    const current = html.getAttribute('data-theme') || 'light';
-    const next = current==='dark'?'light':'dark';
-    html.setAttribute('data-theme', next);
-    localStorage.setItem('cat_theme', next);
-}
-
-// --- FONT SIZE ---
-const fontSizes = ['small','medium','large'];
-let fontIdx = 1; // medium default
-const savedFont = localStorage.getItem('cat_font');
-if(savedFont){ const idx = fontSizes.indexOf(savedFont); if(idx>=0){ fontIdx=idx; document.documentElement.setAttribute('data-font-size',savedFont); } }
-function cycleFontSize(){
-    fontIdx = (fontIdx + 1) % fontSizes.length;
-    const size = fontSizes[fontIdx];
-    document.documentElement.setAttribute('data-font-size', size);
-    localStorage.setItem('cat_font', size);
-}
-
-/**
- * Open image in fullscreen zoom overlay modal.
- * Tap anywhere or click "Tutup" to close.
- */
-function openZoom(src){
-    const modal = document.getElementById('imgZoomModal');
-    const img = document.getElementById('zoomImg');
-    img.src = src;
-    modal.classList.add('show');
-}
-function closeZoom(){
-    document.getElementById('imgZoomModal').classList.remove('show');
-}
-
-// Wait for DOM to be ready before loading questions
-document.addEventListener('DOMContentLoaded', loadSoal);
+// Initialize TryoutManager with PHP variables
+document.addEventListener('DOMContentLoaded', function() {
+    window.tryoutManager = new TryoutManager({
+        sessionId: <?= json_encode($sessionId) ?>,
+        csrfToken: <?= json_encode(getCsrfTokenForApi()) ?>,
+        strictMode: <?= json_encode($strictMode) ?>,
+        baseUrl: '<?= $baseUrl ?>',
+        remainingSeconds: <?= json_encode($remainingSeconds) ?>,
+        subtesTimers: <?= json_encode($subtesTimers) ?>,
+        currentSubtes: <?= json_encode($currentSubtes) ?>
+    });
+});
 </script>
 </body>
 </html>

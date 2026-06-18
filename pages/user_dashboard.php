@@ -4,7 +4,7 @@ require '../helpers.php';
 
 // Guard: only logged in
 if (empty($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: /permen/pages/login.php');
     exit;
 }
 
@@ -13,19 +13,34 @@ $userName = e($_SESSION['user_nama'] ?? 'Peserta');
 $userRole = $_SESSION['user_role'] ?? 'user';
 
 // Fetch user info with instansi
-$stmt = $pdo->prepare("SELECT u.nama, u.no_hp, u.email, u.target_instansi, u.created_at, u.target_instansi, u.target_instansi, i.nama as instansi_nama, i.nama as instansi_nama, i.deskripsi as instansi_desk 
-    FROM users u LEFT JOIN instansi i ON u.target_instansi = i.id WHERE u.id = ?");
-$stmt->execute([$userId]);
-$userInfo = $stmt->fetch();
+try {
+    $stmt = $pdo->prepare("SELECT u.nama, u.no_hp, u.email, u.instansi_id, u.created_at, i.nama as instansi_nama, i.deskripsi as instansi_desk
+        FROM users u LEFT JOIN instansi i ON u.instansi_id = i.id WHERE u.id = ?");
+    $stmt->execute([$userId]);
+    $userInfo = $stmt->fetch();
+} catch (PDOException $e) {
+    // Fallback if instansi_id doesn't exist (try instansi_pilihan)
+    try {
+        $stmt = $pdo->prepare("SELECT u.nama, u.no_hp, u.email, u.instansi_pilihan, u.created_at FROM users u WHERE u.id = ?");
+        $stmt->execute([$userId]);
+        $userInfo = $stmt->fetch();
+    } catch (PDOException $e2) {
+        $userInfo = ['nama' => $userName, 'no_hp' => '', 'email' => '', 'instansi_nama' => ''];
+    }
+}
 
 // Fetch riwayat tryout
-$stmt = $pdo->prepare("SELECT * FROM tryout_sessions WHERE user_id = ? ORDER BY id DESC");
-$stmt->execute([$userId]);
-$riwayat = $stmt->fetchAll();
+try {
+    $stmt = $pdo->prepare("SELECT * FROM tryout_sessions WHERE user_id = ? ORDER BY id DESC");
+    $stmt->execute([$userId]);
+    $riwayat = $stmt->fetchAll();
+} catch (PDOException $e) {
+    $riwayat = [];
+}
 
 // Calculate stats
 $totalTryout = count($riwayat);
-$selesai = array_filter($riwayat, fn($r) => $r['status'] === 'selesai');
+$selesai = array_filter($riwayat, fn($r) => in_array($r['status'], ['selesai', 'completed']));
 $rataNilai = 0;
 $bestScore = 0;
 $subtesTerlemah = '-';
@@ -62,55 +77,79 @@ if (count($selesai) > 0) {
 }
 
 // Passing grades dari subtes_config (dinamis)
-$passingMap = $pdo->query("SELECT subtes, passing_grade FROM subtes_config WHERE is_active = 1")->fetchAll(PDO::FETCH_KEY_PAIR);
+try {
+    $passingMap = $pdo->query("SELECT subtes, passing_grade FROM subtes_config WHERE is_active = 1")->fetchAll(PDO::FETCH_KEY_PAIR);
+} catch (PDOException $e) {
+    try {
+        $passingMap = $pdo->query("SELECT subtes, passing_grade FROM subtes_config WHERE aktif = 1")->fetchAll(PDO::FETCH_KEY_PAIR);
+    } catch (PDOException $e2) {
+        $passingMap = [];
+    }
+}
 $passingTkp = (int)($passingMap['TKP'] ?? 126);
 $passingTiu = (int)($passingMap['TIU'] ?? 80);
 $passingTwk = (int)($passingMap['TWK'] ?? 65);
 $passingTotal = (int)($passingMap['TKP'] ?? 126) + (int)($passingMap['TIU'] ?? 80) + (int)($passingMap['TWK'] ?? 65);
 
 // Ambil rekomendasi materi
-$rekomendasiMateri = $pdo->query("SELECT * FROM rekomendasi_materi WHERE aktif = 1 ORDER BY urutan")->fetchAll();
+try {
+    $rekomendasiMateri = $pdo->query("SELECT * FROM rekomendasi_materi WHERE aktif = 1 ORDER BY urutan")->fetchAll();
+} catch (PDOException $e) {
+    $rekomendasiMateri = [];
+}
 
 // Analisis akurasi per topik (butuh minimal 1 jawaban)
-$akurasiTopik = $pdo->prepare("
-    SELECT 
-        q.subtes,
-        q.topik,
-        COUNT(*) as total,
-        SUM(a.is_benar) as benar
-    FROM answers a
-    JOIN questions q ON a.question_id = q.id
-    JOIN tryout_sessions ts ON a.session_id = ts.id
-    WHERE ts.user_id = ? AND a.jawaban IS NOT NULL AND a.jawaban != ''
-    GROUP BY q.subtes, q.topik
-    HAVING COUNT(*) >= 3
-    ORDER BY subtes, SUM(a.is_benar) ASC, COUNT(*) DESC
-    LIMIT 10
-");
-$akurasiTopik->execute([$userId]);
-$topikStats = $akurasiTopik->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $akurasiTopik = $pdo->prepare("
+        SELECT 
+            q.subtes,
+            q.topik,
+            COUNT(*) as total,
+            SUM(a.is_benar) as benar
+        FROM answers a
+        JOIN questions q ON a.question_id = q.id
+        JOIN tryout_sessions ts ON a.session_id = ts.id
+        WHERE ts.user_id = ? AND a.jawaban IS NOT NULL AND a.jawaban != ''
+        GROUP BY q.subtes, q.topik
+        HAVING COUNT(*) >= 3
+        ORDER BY subtes, SUM(a.is_benar) ASC, COUNT(*) DESC
+        LIMIT 10
+    ");
+    $akurasiTopik->execute([$userId]);
+    $topikStats = $akurasiTopik->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $topikStats = [];
+}
 
 // Fetch user's bookmarked materials with progress
-$bookmarksStmt = $pdo->prepare("
-    SELECT mb.materi_id, mb.created_at, mp.progress_percent, mp.last_read_at
-    FROM materi_bookmarks mb
-    LEFT JOIN materi_progress mp ON mb.user_id = mp.user_id AND mb.materi_id = mp.materi_id
-    WHERE mb.user_id = ?
-    ORDER BY mb.created_at DESC
-    LIMIT 10
-");
-$bookmarksStmt->execute([$userId]);
-$bookmarks = $bookmarksStmt->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $bookmarksStmt = $pdo->prepare("
+        SELECT mb.materi_id, mb.created_at, mp.progress_percent, mp.last_read_at
+        FROM materi_bookmarks mb
+        LEFT JOIN materi_progress mp ON mb.user_id = mp.user_id AND mb.materi_id = mp.materi_id
+        WHERE mb.user_id = ?
+        ORDER BY mb.created_at DESC
+        LIMIT 10
+    ");
+    $bookmarksStmt->execute([$userId]);
+    $bookmarks = $bookmarksStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $bookmarks = [];
+}
 
 // Fetch latest performance report
-$stmt = $pdo->prepare("
-    SELECT * FROM performance_reports 
-    WHERE user_id = ? 
-    ORDER BY created_at DESC 
-    LIMIT 1
-");
-$stmt->execute([$userId]);
-$performanceReport = $stmt->fetch();
+try {
+    $stmt = $pdo->prepare("
+        SELECT * FROM performance_reports 
+        WHERE user_id = ? 
+        ORDER BY created_at DESC 
+        LIMIT 1
+    ");
+    $stmt->execute([$userId]);
+    $performanceReport = $stmt->fetch();
+} catch (PDOException $e) {
+    $performanceReport = null;
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -286,31 +325,6 @@ $packages = $pdo->query("SELECT * FROM tryout_packages WHERE is_active = 1 ORDER
 </div>
 <a href="tryout.php" class="btn" style="background:#2980b9;color:#fff;text-decoration:none;padding:.75rem 1.5rem;border-radius:5px;display:inline-block" onclick="startTryoutWithOptions(event)">Mulai Try Out</a>
 </div>
-<script>
-function startTryoutWithOptions(e) {
-    e.preventDefault();
-    const strictMode = document.getElementById('strictModeCheck').checked ? 1 : 0;
-    const packageId = document.getElementById('packageSelect').value;
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'tryout.php';
-    
-    const strictInput = document.createElement('input');
-    strictInput.type = 'hidden';
-    strictInput.name = 'strict_mode';
-    strictInput.value = strictMode;
-    form.appendChild(strictInput);
-    
-    const packageInput = document.createElement('input');
-    packageInput.type = 'hidden';
-    packageInput.name = 'package_id';
-    packageInput.value = packageId;
-    form.appendChild(packageInput);
-    
-    document.body.appendChild(form);
-    form.submit();
-}
-</script>
 <?php else: ?>
 <!-- Enhanced Progress Chart -->
 <div class="section">
@@ -1117,24 +1131,16 @@ $dailyHistory = $dailyQuizHistory->fetchAll();
 <div class="footer">
 Dashboard Peserta SKD CAT-BKN | Latihan persiapan Sekolah Kedinasan
 </div>
+<script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/js/dist/user_dashboard.js"></script>
 <script>
-// Dark mode toggle
-function toggleTheme() {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-}
-// Load saved theme
-const savedTheme = localStorage.getItem('theme');
-if (savedTheme) {
-    document.documentElement.setAttribute('data-theme', savedTheme);
-}
-// Notifications toggle
-function toggleNotifications() {
-    const dropdown = document.getElementById('notifDropdown');
-    dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-}
+// Initialize chart data from PHP
+const chartData = <?= json_encode(array_map(fn($r)=>[
+    'date'=>date('d M',strtotime($r['waktu_mulai'])),
+    'total'=>(int)($r['total_nilai']??0),
+    'tkp'=>(int)($r['nilai_tkp']??0),
+    'tiu'=>(int)($r['nilai_tiu']??0),
+    'twk'=>(int)($r['nilai_twk']??0)
+], array_reverse(array_slice($selesai,-10)))) ?>;
 </script>
 </body>
 </html>

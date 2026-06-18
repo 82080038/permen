@@ -4,6 +4,17 @@
  * Fungsi reusable untuk seluruh aplikasi
  */
 
+// Fallback app() function for production environment without App class
+if (!function_exists('app')) {
+    function app(string $key) {
+        global $pdo;
+        if ($key === 'pdo') {
+            return $pdo;
+        }
+        return null;
+    }
+}
+
 /**
  * Generate CSRF token
  */
@@ -57,7 +68,6 @@ function getCsrfTokenForApi(): string
  */
 function checkRateLimit(string $ip, PDO $pdo): bool
 {
-    global $pdo;
     try {
         $stmt = $pdo->prepare("SELECT count, created_at FROM rate_limits WHERE ip = ? ORDER BY created_at DESC LIMIT 1");
         $stmt->execute([$ip]);
@@ -82,7 +92,6 @@ function checkRateLimit(string $ip, PDO $pdo): bool
  */
 function incrementRateLimit(string $ip, PDO $pdo): void
 {
-    global $pdo;
     try {
         $stmt = $pdo->prepare("SELECT count, created_at FROM rate_limits WHERE ip = ? ORDER BY created_at DESC LIMIT 1");
         $stmt->execute([$ip]);
@@ -111,8 +120,6 @@ function incrementRateLimit(string $ip, PDO $pdo): void
  */
 function checkAccountLockout(string $identifier, PDO $pdo): array
 {
-    global $pdo;
-    
     // Try no_hp first, fallback to email for backward compatibility
     $stmt = $pdo->prepare("SELECT failed_attempts, lockout_until FROM users WHERE no_hp = ? OR email = ?");
     $stmt->execute([$identifier, $identifier]);
@@ -145,8 +152,6 @@ function checkAccountLockout(string $identifier, PDO $pdo): array
  */
 function incrementFailedAttempts(string $identifier, PDO $pdo): void
 {
-    global $pdo;
-    
     $maxAttempts = 5;
     $lockoutDuration = 15; // minutes
     
@@ -180,8 +185,6 @@ function incrementFailedAttempts(string $identifier, PDO $pdo): void
  */
 function resetFailedAttempts(string $identifier, PDO $pdo): void
 {
-    global $pdo;
-    
     $stmt = $pdo->prepare("UPDATE users SET failed_attempts = 0, lockout_until = NULL WHERE no_hp = ? OR email = ?");
     $stmt->execute([$identifier, $identifier]);
 }
@@ -236,7 +239,7 @@ function appLog(string $message, string $level = 'info'): void
  */
 function logApiPerformance(string $endpoint, int $responseTimeMs, int $statusCode): void
 {
-    global $pdo;
+    $pdo = app('pdo');
 
     try {
         $stmt = $pdo->prepare("
@@ -374,7 +377,7 @@ function generateVerificationToken(): string
  */
 function logAdminAction(int $userId, string $action, ?string $entityType = null, ?int $entityId = null, ?string $details = null): bool
 {
-    global $pdo;
+    $pdo = app('pdo');
     
     $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
@@ -399,7 +402,7 @@ function logAdminAction(int $userId, string $action, ?string $entityType = null,
  */
 function logUserAction(int $userId, string $action, ?string $details = null): bool
 {
-    global $pdo;
+    $pdo = app('pdo');
     
     $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
@@ -425,7 +428,7 @@ function logUserAction(int $userId, string $action, ?string $details = null): bo
  */
 function checkAPIRateLimit(string $identifier, string $endpoint, int $limit = 60, int $window = 60): bool
 {
-    global $pdo;
+    $pdo = app('pdo');
     
     // Bypass rate limiting in development environment
     if (($_ENV['APP_ENV'] ?? 'development') === 'development') {
@@ -461,7 +464,7 @@ function checkAPIRateLimit(string $identifier, string $endpoint, int $limit = 60
  */
 function logAPIRequest(string $identifier, string $endpoint): void
 {
-    global $pdo;
+    $pdo = app('pdo');
     
     try {
         $stmt = $pdo->prepare("INSERT INTO api_rate_limits (identifier, endpoint, created_at) VALUES (?, ?, NOW())");
@@ -822,7 +825,7 @@ function logError(string $message, array $context = []): void {
  * This function should be called after session start in config.php
  */
 function applyUserSettings(): void {
-    global $pdo;
+    $pdo = app('pdo');
     
     // Only apply if user is logged in
     if (empty($_SESSION['user_id'])) {

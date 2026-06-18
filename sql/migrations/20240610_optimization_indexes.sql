@@ -1,5 +1,5 @@
 -- Migration: Database Optimization - Indexes and Cleanup
--- Date: 2026-06-09
+-- Date: 2026-06-10
 -- Author: Cascade AI
 
 -- ============================================

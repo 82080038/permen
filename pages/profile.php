@@ -4,7 +4,7 @@ require '../helpers.php';
 
 // Guard: only logged in
 if (empty($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: /permen/pages/login.php');
     exit;
 }
 
@@ -20,17 +20,29 @@ $stmt->execute([$userId]);
 $user = $stmt->fetch();
 
 // Fetch user's badges
-$stmt = $pdo->prepare("
-    SELECT badge_type, badge_name, badge_icon, badge_color, earned_at, period_start, period_end
-    FROM leaderboard_badges
-    WHERE user_id = ?
-    ORDER BY earned_at DESC
-");
-$stmt->execute([$userId]);
-$badges = $stmt->fetchAll();
+try {
+    $stmt = $pdo->prepare("
+        SELECT badge_type, badge_name, badge_icon, badge_color, earned_at, period_start, period_end
+        FROM leaderboard_badges
+        WHERE user_id = ?
+        ORDER BY earned_at DESC
+    ");
+    $stmt->execute([$userId]);
+    $badges = $stmt->fetchAll();
+} catch (PDOException $e) {
+    $badges = [];
+}
 
 // Ambil daftar instansi aktif untuk dropdown
-$instansiList = $pdo->query("SELECT id, nama FROM instansi WHERE is_active = 1 ORDER BY nama")->fetchAll();
+try {
+    $instansiList = $pdo->query("SELECT id, nama FROM instansi WHERE is_active = 1 ORDER BY nama")->fetchAll();
+} catch (PDOException $e) {
+    try {
+        $instansiList = $pdo->query("SELECT id, nama FROM instansi WHERE aktif = 1 ORDER BY nama")->fetchAll();
+    } catch (PDOException $e2) {
+        $instansiList = [];
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!validateCsrf($_POST['csrf_token'] ?? '')) {
@@ -46,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if (!$currentPassword || !$newPassword || !$confirmPassword) {
                 $error = 'Semua field password wajib diisi.';
-            } elseif (!password_verify($currentPassword, $user['password'])) {
+            } elseif (!password_verify($currentPassword, $user['password_hash'] ?? $user['password'] ?? '')) {
                 $error = 'Password saat ini salah.';
             } else {
                 $pwdValidation = validatePasswordStrength($newPassword);
@@ -56,8 +68,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'Password baru dan konfirmasi tidak cocok.';
                 } else {
                     $hash = password_hash($newPassword, PASSWORD_BCRYPT);
-                    $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
-                    $stmt->execute([$hash, $userId]);
+                    // Update password_hash column if exists, otherwise password
+                    try {
+                        $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+                        $stmt->execute([$hash, $userId]);
+                    } catch (PDOException $e) {
+                        $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+                        $stmt->execute([$hash, $userId]);
+                    }
                     $success = 'Password berhasil diubah!';
                 }
             }
@@ -89,34 +107,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($stmt->fetchColumn()) {
                     $error = 'Nomor HP sudah digunakan oleh user lain.';
                 } else {
-                    // Update data user
-                    $stmt = $pdo->prepare("UPDATE users SET nama = ?, no_hp = ?, sekolah_asal = ?, tahun_tamat = ?, instansi_id = ?, tanggal_lahir = ?, jenis_kelamin = ?, alamat = ?, show_leaderboard = ? WHERE id = ?");
-                    
-                    // Ambil nama instansi untuk backward compatibility
-                    $instansiNama = '';
-                    foreach ($instansiList as $i) {
-                        if ($i['id'] == $instansiId) { 
-                            $instansiNama = $i['kode']; 
-                            break; 
-                        }
+                    // Update data user - use compatible column names
+                    try {
+                        $stmt = $pdo->prepare("UPDATE users SET nama = ?, no_hp = ?, sekolah_asal = ?, tahun_tamat = ?, instansi_id = ?, tanggal_lahir = ?, jenis_kelamin = ?, alamat = ?, show_leaderboard = ? WHERE id = ?");
+                        $stmt->execute([
+                            $nama, 
+                            $noHp, 
+                            $sekolahAsal ?: null, 
+                            $tahunTamat ?: null, 
+                            $instansiId ?: null, 
+                            $tanggalLahir ?: null, 
+                            $jenisKelamin ?: null, 
+                            $alamat ?: null, 
+                            $showLeaderboard, 
+                            $userId
+                        ]);
+                    } catch (PDOException $e) {
+                        // Fallback for older schema
+                        $stmt = $pdo->prepare("UPDATE users SET nama = ?, no_hp = ?, sekolah_asal = ?, tahun_tamat = ?, target_instansi = ?, tanggal_lahir = ?, jenis_kelamin = ?, alamat = ?, show_leaderboard = ? WHERE id = ?");
+                        $stmt->execute([
+                            $nama, 
+                            $noHp, 
+                            $sekolahAsal ?: null, 
+                            $tahunTamat ?: null, 
+                            $instansiId ?: null, 
+                            $tanggalLahir ?: null, 
+                            $jenisKelamin ?: null, 
+                            $alamat ?: null, 
+                            $showLeaderboard, 
+                            $userId
+                        ]);
                     }
-                    
-                    $stmt->execute([
-                        $nama, 
-                        $noHp, 
-                        $sekolahAsal ?: null, 
-                        $tahunTamat ?: null, 
-                        $instansiId ?: null, 
-                        $tanggalLahir ?: null, 
-                        $jenisKelamin ?: null, 
-                        $alamat ?: null, 
-                        $showLeaderboard, 
-                        $userId
-                    ]);
-                    
-                    // Update instansi field untuk backward compatibility
-                    $stmt = $pdo->prepare("UPDATE users SET instansi = ? WHERE id = ?");
-                    $stmt->execute([$instansiNama ?: null, $userId]);
                     
                     // Update session
                     $_SESSION['user_nama'] = $nama;
@@ -139,10 +160,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
-<base href="<?php echo $baseUrl ?? '/permen'; ?>">
+<base href="<?php echo $baseUrl ?? '/'; ?>">
 <title>Profil — SKD CAT-BKN</title>
-<link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/form.css">
-<link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/style.css">
+<link rel="stylesheet" href="/assets/form.css">
+<link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>

@@ -1,0 +1,280 @@
+/* Common Form Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0
+}
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f5f7fa;
+    color: #222;
+    line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
+    transition: background .3s ease, color .3s ease
+}
+
+.header {
+    background: #1a5276;
+    color: #fff;
+    padding: .8rem 1rem;
+    text-align: center;
+    transition: background .3s
+}
+
+.header h1 {
+    font-size: 1.1rem
+}
+
+.container {
+    max-width: 420px;
+    margin: 2rem auto;
+    padding: 0 1rem
+}
+
+.card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .08);
+    padding: 1.5rem;
+    transition: background .3s ease, box-shadow .3s ease
+}
+
+.card h2 {
+    color: #1a5276;
+    font-size: 1.15rem;
+    margin-bottom: 1rem;
+    text-align: center;
+    transition: color .3s
+}
+
+.form-group {
+    margin-bottom: 1rem
+}
+
+.form-group label {
+    display: block;
+    font-size: .85rem;
+    color: #555;
+    margin-bottom: .3rem;
+    font-weight: 600;
+    transition: color .3s
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: .65rem .8rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: .9rem;
+    min-height: 44px;
+    background: #fff;
+    transition: background .3s, border-color .3s, color .3s
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #2980b9
+}
+
+.btn {
+    display: block;
+    width: 100%;
+    background: #2980b9;
+    color: #fff;
+    padding: .75rem;
+    border-radius: 5px;
+    border: none;
+    font-size: .95rem;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 44px;
+    transition: background .3s
+}
+
+.btn:hover {
+    background: #1a5276
+}
+
+.alert {
+    padding: .8rem;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+    font-size: .9rem;
+    transition: background .3s ease, color .3s ease
+}
+
+.alert.error {
+    background: #f8d7da;
+    color: #721c24
+}
+
+.alert.success {
+    background: #d4edda;
+    color: #155724
+}
+
+.footer {
+    text-align: center;
+    padding: 1.5rem;
+    color: #777;
+    font-size: .85rem;
+    transition: color .3s
+}
+
+.link {
+    color: #2980b9;
+    text-decoration: none;
+    transition: color .3s ease
+}
+
+.link:hover {
+    text-decoration: underline
+}
+
+.field-error {
+    color: #e74c3c;
+    font-size: .8rem;
+    margin-top: .3rem;
+    transition: color .3s ease
+}
+
+/* Dark Mode */
+@media(prefers-color-scheme:dark) {
+    body {
+        background: #1a1a2e;
+        color: #e8e8e8
+    }
+
+    .header {
+        background: #0f3460
+    }
+
+    .card {
+        background: #16213e;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, .3)
+    }
+
+    .card h2 {
+        color: #4cc9f0
+    }
+
+    .form-group label {
+        color: #d0d0d0
+    }
+
+    .form-group input,
+    .form-group select {
+        background: #0f3460;
+        border-color: #1f4068;
+        color: #e8e8e8
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        border-color: #4cc9f0
+    }
+
+    .btn {
+        background: #4cc9f0;
+        color: #1a1a2e
+    }
+
+    .btn:hover {
+        background: #3db8df
+    }
+
+    .alert.error {
+        background: #3d1a1a;
+        color: #ff6b6b
+    }
+
+    .alert.success {
+        background: #1a3d1a;
+        color: #6bff6b
+    }
+
+    .footer {
+        color: #a0a0a0
+    }
+
+    .link {
+        color: #4cc9f0
+    }
+
+    .field-error {
+        color: #ff6b6b
+    }
+}
+
+/* Manual dark mode toggle support */
+body.dark-mode {
+    background: #1a1a2e;
+    color: #e8e8e8
+}
+
+body.dark-mode .header {
+    background: #0f3460
+}
+
+body.dark-mode .card {
+    background: #16213e;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .3)
+}
+
+body.dark-mode .card h2 {
+    color: #4cc9f0
+}
+
+body.dark-mode .form-group label {
+    color: #d0d0d0
+}
+
+body.dark-mode .form-group input,
+body.dark-mode .form-group select {
+    background: #0f3460;
+    border-color: #1f4068;
+    color: #e8e8e8
+}
+
+body.dark-mode .form-group input:focus,
+body.dark-mode .form-group select:focus {
+    border-color: #4cc9f0
+}
+
+body.dark-mode .btn {
+    background: #4cc9f0;
+    color: #1a1a2e
+}
+
+body.dark-mode .btn:hover {
+    background: #3db8df
+}
+
+body.dark-mode .alert.error {
+    background: #3d1a1a;
+    color: #ff6b6b
+}
+
+body.dark-mode .alert.success {
+    background: #1a3d1a;
+    color: #6bff6b
+}
+
+body.dark-mode .footer {
+    color: #a0a0a0
+}
+
+body.dark-mode .link {
+    color: #4cc9f0
+}
+
+body.dark-mode .field-error {
+    color: #ff6b6b
+}
+
+.skip-link:focus {
+    top: 0
+}

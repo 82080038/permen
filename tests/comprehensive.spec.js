@@ -36,8 +36,8 @@ async function loginUser(page) {
   await page.fill('input[name="password"]', 'password123');
   await page.click('button[type="submit"]');
 
-  // Wait for navigation
-  await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+  // Wait for navigation to dashboard
+  await page.waitForURL(/user_dashboard\.php|admin_dashboard\.php/, { timeout: 10000 });
 }
 
 // Helper function to login as admin

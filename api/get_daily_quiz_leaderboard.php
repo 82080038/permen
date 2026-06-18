@@ -4,6 +4,16 @@ require '../helpers.php';
 
 header('Content-Type: application/json');
 
+// Simple response function for production compatibility
+function sendJsonResponse($success, $data = [], $message = '') {
+    echo json_encode([
+        'success' => $success,
+        'data' => $data,
+        'message' => $message
+    ]);
+    exit;
+}
+
 try {
     // Check if daily_quiz_streaks table exists
     $tableExists = false;
@@ -54,15 +64,11 @@ try {
         }
     }
 
-    echo json_encode([
-        'success' => true,
-        'data' => [
-            'streak_leaderboard' => $streakLeaderboard,
-            'total_leaderboard' => $totalLeaderboard,
-            'user_rank' => $userRank
-        ]
-    ]);
+    sendJsonResponse(true, [
+        'streak_leaderboard' => $streakLeaderboard,
+        'total_leaderboard' => $totalLeaderboard,
+        'user_rank' => $userRank
+    ], 'Leaderboard fetched');
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Failed to fetch leaderboard']);
+    sendJsonResponse(false, [], 'Failed to fetch leaderboard');
 }

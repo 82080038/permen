@@ -4,13 +4,33 @@ $baseUrl = $_ENV['BASE_URL'] ?? '/permen';
 require '../helpers.php';
 
 // Ambil daftar instansi aktif untuk dropdown
-$instansiList = $pdo->query("SELECT id, nama FROM instansi WHERE is_active = 1 ORDER BY nama")->fetchAll();
+try {
+    $instansiList = $pdo->query("SELECT id, nama FROM instansi WHERE is_active = 1 ORDER BY nama")->fetchAll();
+} catch (PDOException $e) {
+    try {
+        $instansiList = $pdo->query("SELECT id, nama FROM instansi WHERE aktif = 1 ORDER BY nama")->fetchAll();
+    } catch (PDOException $e2) {
+        $instansiList = [];
+    }
+}
 
 $period = $_GET['period'] ?? 'all'; // all, week, month
 $subtes = $_GET['subtes'] ?? '';   // TWK, TIU, TKP (optional filter)
 $instansiFilter = $_GET['instansi'] ?? ''; // instansi filter
 
-$where = "ts.status = 'completed'";
+// Check which status values are valid for this database
+$validStatuses = ['completed', 'selesai']; // Production uses 'completed', local uses 'selesai'
+try {
+    $testStmt = $pdo->query("SHOW COLUMNS FROM tryout_sessions WHERE Field = 'status'");
+    $columnInfo = $testStmt->fetch();
+    if ($columnInfo && strpos($columnInfo['Type'], 'berjalan') !== false) {
+        $validStatuses = ['selesai', 'berjalan']; // Local database
+    }
+} catch (PDOException $e) {
+    // Assume production default
+}
+
+$where = "ts.status IN ('" . implode("','", $validStatuses) . "')";
 $params = [];
 
 if ($period === 'week') {
@@ -20,65 +40,203 @@ if ($period === 'week') {
 }
 
 if ($instansiFilter) {
-    $where .= " AND u.target_instansi = ?";
+    try {
+        $where .= " AND u.instansi_id = ?";
+    } catch (PDOException $e) {
+        $where .= " AND u.target_instansi = ?";
+    }
     $params[] = $instansiFilter;
 }
 
 // Get top 20 by total score
-$sqlTotal = "
-    SELECT 
-        u.id as user_id,
-        u.nama, u.target_instansi,
-        ts.total_nilai,
-        ts.nilai_twk, ts.nilai_tiu, ts.nilai_tkp,
-        ts.waktu_mulai
-    FROM tryout_sessions ts
-    JOIN users u ON ts.user_id = u.id
-    WHERE $where
-    ORDER BY ts.total_nilai DESC
-    LIMIT 20
-";
-$totalStmt = $pdo->prepare($sqlTotal);
-$totalStmt->execute($params);
-$topTotal = $totalStmt->fetchAll();
+try {
+    $sqlTotal = "
+        SELECT 
+            u.id as user_id,
+            u.nama, u.instansi_id as target_instansi,
+            ts.skor_total as total_nilai,
+            ts.skor_twk as nilai_twk, ts.skor_tiu as nilai_tiu, ts.skor_tkp as nilai_tkp,
+            ts.waktu_mulai
+        FROM tryout_sessions ts
+        JOIN users u ON ts.user_id = u.id
+        WHERE $where
+        ORDER BY ts.skor_total DESC
+        LIMIT 20
+    ";
+    $totalStmt = $pdo->prepare($sqlTotal);
+    $totalStmt->execute($params);
+    $topTotal = $totalStmt->fetchAll();
+} catch (PDOException $e) {
+    // Fallback for older schema - check which column exists
+    try {
+        $testStmt = $pdo->query("SHOW COLUMNS FROM users WHERE Field = 'instansi_id'");
+        $hasInstansiId = $testStmt->fetch() !== false;
+        
+        if ($hasInstansiId) {
+            $sqlTotal = "
+                SELECT 
+                    u.id as user_id,
+                    u.nama, u.instansi_id as target_instansi,
+                    ts.total_nilai as total_nilai,
+                    ts.nilai_twk, ts.nilai_tiu, ts.nilai_tkp,
+                    ts.waktu_mulai
+                FROM tryout_sessions ts
+                JOIN users u ON ts.user_id = u.id
+                WHERE $where
+                ORDER BY ts.total_nilai DESC
+                LIMIT 20
+            ";
+        } else {
+            $sqlTotal = "
+                SELECT 
+                    u.id as user_id,
+                    u.nama, u.instansi_pilihan as target_instansi,
+                    ts.total_nilai as total_nilai,
+                    ts.nilai_twk, ts.nilai_tiu, ts.nilai_tkp,
+                    ts.waktu_mulai
+                FROM tryout_sessions ts
+                JOIN users u ON ts.user_id = u.id
+                WHERE $where
+                ORDER BY ts.total_nilai DESC
+                LIMIT 20
+            ";
+        }
+    } catch (PDOException $e2) {
+        // Final fallback without instansi column
+        $sqlTotal = "
+            SELECT 
+                u.id as user_id,
+                u.nama, '' as target_instansi,
+                ts.total_nilai as total_nilai,
+                ts.nilai_twk, ts.nilai_tiu, ts.nilai_tkp,
+                ts.waktu_mulai
+            FROM tryout_sessions ts
+            JOIN users u ON ts.user_id = u.id
+            WHERE $where
+            ORDER BY ts.total_nilai DESC
+            LIMIT 20
+        ";
+    }
+    $totalStmt = $pdo->prepare($sqlTotal);
+    $totalStmt->execute($params);
+    $topTotal = $totalStmt->fetchAll();
+}
 
 // Fetch badges for leaderboard users
 $userIds = array_column($topTotal, 'user_id');
 $badges = [];
 if (!empty($userIds)) {
-    $placeholders = implode(',', array_fill(0, count($userIds), '?'));
-    $stmt = $pdo->prepare("
-        SELECT user_id, badge_type, badge_name, badge_icon, badge_color
-        FROM leaderboard_badges
-        WHERE user_id IN ($placeholders)
-        ORDER BY earned_at DESC
-    ");
-    $stmt->execute($userIds);
-    $badgeRows = $stmt->fetchAll();
-    
-    foreach ($badgeRows as $badge) {
-        $badges[$badge['user_id']][] = $badge;
+    try {
+        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+        $stmt = $pdo->prepare("
+            SELECT user_id, badge_type, badge_name, badge_icon, badge_color
+            FROM leaderboard_badges
+            WHERE user_id IN ($placeholders)
+            ORDER BY earned_at DESC
+        ");
+        $stmt->execute($userIds);
+        $badgeRows = $stmt->fetchAll();
+        
+        foreach ($badgeRows as $badge) {
+            $badges[$badge['user_id']][] = $badge;
+        }
+    } catch (PDOException $e) {
+        $badges = [];
     }
 }
 
 // Get top 10 per subtes
 $topSubtes = [];
 foreach (['TWK','TIU','TKP'] as $s) {
-    $col = "skor_" . strtolower($s);
-    $whereSubtes = "ts.status = 'completed' AND ts.$col > 0";
+    // Check which score columns exist in tryout_sessions
+    $colSkor = "skor_" . strtolower($s);
+    $colNilai = "nilai_" . strtolower($s);
+    
+    try {
+        $testStmt = $pdo->query("SHOW COLUMNS FROM tryout_sessions WHERE Field = '$colSkor'");
+        $hasSkor = $testStmt->fetch() !== false;
+    } catch (PDOException $e) {
+        $hasSkor = false;
+    }
+    
+    try {
+        $testStmt = $pdo->query("SHOW COLUMNS FROM tryout_sessions WHERE Field = '$colNilai'");
+        $hasNilai = $testStmt->fetch() !== false;
+    } catch (PDOException $e) {
+        $hasNilai = false;
+    }
+    
+    if ($hasSkor) {
+        $scoreCol = $colSkor;
+    } elseif ($hasNilai) {
+        $scoreCol = $colNilai;
+    } else {
+        $scoreCol = "0"; // Fallback if neither exists
+    }
+    
+    // Check which status values are valid
+    $validStatuses = ['completed', 'selesai'];
+    try {
+        $testStmt = $pdo->query("SHOW COLUMNS FROM tryout_sessions WHERE Field = 'status'");
+        $columnInfo = $testStmt->fetch();
+        if ($columnInfo && strpos($columnInfo['Type'], 'berjalan') !== false) {
+            $validStatuses = ['selesai', 'berjalan'];
+        }
+    } catch (PDOException $e) {
+        // Assume production default
+    }
+    
+    $whereSubtes = "ts.status IN ('" . implode("','", $validStatuses) . "') AND ts.$scoreCol > 0";
     $paramsSubtes = [];
     
     if ($instansiFilter) {
-        $whereSubtes .= " AND u.target_instansi = ?";
+        // Check which instansi column exists
+        try {
+            $testStmt = $pdo->query("SHOW COLUMNS FROM users WHERE Field = 'instansi_id'");
+            $hasInstansiId = $testStmt->fetch() !== false;
+            if ($hasInstansiId) {
+                $whereSubtes .= " AND u.instansi_id = ?";
+            } else {
+                $testStmt2 = $pdo->query("SHOW COLUMNS FROM users WHERE Field = 'instansi_pilihan'");
+                $hasInstansiPilihan = $testStmt2->fetch() !== false;
+                if ($hasInstansiPilihan) {
+                    $whereSubtes .= " AND u.instansi_pilihan = ?";
+                } else {
+                    $whereSubtes .= " AND u.target_instansi = ?";
+                }
+            }
+        } catch (PDOException $e) {
+            $whereSubtes .= " AND u.target_instansi = ?";
+        }
         $paramsSubtes[] = $instansiFilter;
     }
     
+    // Check which instansi column to select
+    try {
+        $testStmt = $pdo->query("SHOW COLUMNS FROM users WHERE Field = 'instansi_id'");
+        $hasInstansiId = $testStmt->fetch() !== false;
+        if ($hasInstansiId) {
+            $instansiSelect = "u.instansi_id as target_instansi";
+        } else {
+            $testStmt2 = $pdo->query("SHOW COLUMNS FROM users WHERE Field = 'instansi_pilihan'");
+            $hasInstansiPilihan = $testStmt2->fetch() !== false;
+            if ($hasInstansiPilihan) {
+                $instansiSelect = "u.instansi_pilihan as target_instansi";
+            } else {
+                $instansiSelect = "'' as target_instansi";
+            }
+        }
+    } catch (PDOException $e) {
+        $instansiSelect = "'' as target_instansi";
+    }
+    
     $stmt = $pdo->prepare("
-        SELECT u.nama, u.target_instansi, ts.$col as nilai, ts.waktu_mulai
+        SELECT u.nama, $instansiSelect, 
+               ts.$scoreCol as nilai, ts.waktu_mulai
         FROM tryout_sessions ts
         JOIN users u ON ts.user_id = u.id
         WHERE $whereSubtes
-        ORDER BY ts.$col DESC
+        ORDER BY nilai DESC
         LIMIT 10
     ");
     $stmt->execute($paramsSubtes);

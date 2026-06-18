@@ -21,12 +21,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Sesi tidak valid. Silakan muat ulang halaman.';
     } elseif ($noHp && $password) {
         try {
-            // Simple database query
-            $stmt = $pdo->prepare("SELECT id, nama, no_hp, email, role, password_hash FROM users WHERE no_hp = ? OR email = ?");
+            // Simple database query - check both password and password_hash columns for compatibility
+            $stmt = $pdo->prepare("SELECT id, nama, no_hp, email, role FROM users WHERE no_hp = ? OR email = ?");
             $stmt->execute([$noHp, $noHp]);
             $user = $stmt->fetch();
 
-            if ($user && password_verify($password, $user['password_hash'])) {
+            // Get password from correct column
+            $passwordHash = null;
+            if ($user) {
+                // Try to get password_hash first (local), then password (production)
+                try {
+                    $stmt2 = $pdo->prepare("SELECT password_hash, password FROM users WHERE id = ?");
+                    $stmt2->execute([$user['id']]);
+                    $pwdData = $stmt2->fetch();
+                    $passwordHash = $pwdData['password_hash'] ?? $pwdData['password'] ?? '';
+                } catch (PDOException $e) {
+                    // If password column doesn't exist (local), try only password_hash
+                    $stmt2 = $pdo->prepare("SELECT password_hash FROM users WHERE id = ?");
+                    $stmt2->execute([$user['id']]);
+                    $pwdData = $stmt2->fetch();
+                    $passwordHash = $pwdData['password_hash'] ?? '';
+                }
+            }
+            
+            if ($user && password_verify($password, $passwordHash)) {
                 // Set ALL session variables
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_nama'] = $user['nama'];
