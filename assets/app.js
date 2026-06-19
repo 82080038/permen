@@ -955,7 +955,7 @@ function trackEvent(eventType, data = {}, sendBeacon = false) {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams(payload)
-        }).catch(e => console.error('Analytics tracking failed:', e));
+        }).catch(() => {});
     }
 }
 

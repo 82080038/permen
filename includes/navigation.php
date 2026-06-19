@@ -16,10 +16,9 @@ $userId = $_SESSION['user_id'] ?? null;
 $userRole = $_SESSION['role'] ?? '';
 
 // Detect if navigation is included from pages/ directory or root
-$baseUrl = $_ENV['BASE_URL'] ?? '/';
-$baseUrl = rtrim($baseUrl, '/') . '/';
-$basePath = $baseUrl . 'pages/';
-$apiPath = $baseUrl . 'api/';
+$_navBase = rtrim($_ENV['BASE_URL'] ?? '/', '/') . '/';
+$basePath = $_navBase . 'pages/';
+$apiPath = $_navBase . 'api/';
 
 // Helper untuk menentukan apakah menu aktif
 function isActive($page, $active) {
@@ -30,8 +29,8 @@ function isActive($page, $active) {
 // Inject Bootstrap hanya sekali — cegah duplikasi jika navigation di-include lebih dari sekali
 if (!defined('BOOTSTRAP_LOADED')) {
     define('BOOTSTRAP_LOADED', true);
-    echo '<link rel="stylesheet" href="' . $baseUrl . 'assets/css/bootstrap.min.css">';
-    echo '<link rel="stylesheet" href="' . $baseUrl . 'assets/css/bootstrap-icons.min.css">';
+    echo '<link rel="stylesheet" href="' . $_navBase . 'assets/css/bootstrap.min.css">';
+    echo '<link rel="stylesheet" href="' . $_navBase . 'assets/css/bootstrap-icons.min.css">';
 }
 ?>
 <style>
@@ -179,7 +178,7 @@ window.isLoggedIn = <?= $userId ? 'true' : 'false' ?>;
 <script>
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('<?php echo $baseUrl; ?>assets/js/sw.js')
+        navigator.serviceWorker.register('<?php echo $_navBase; ?>assets/js/sw.js')
             .then((registration) => {
                 console.log('[SW] Registered:', registration.scope);
                 
@@ -202,5 +201,5 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <?php if (defined('BOOTSTRAP_LOADED')): ?>
-<script src="<?php echo $baseUrl; ?>assets/js/bootstrap.bundle.min.js" defer></script>
+<script src="<?php echo $_navBase; ?>assets/js/bootstrap.bundle.min.js" defer></script>
 <?php endif; ?>
