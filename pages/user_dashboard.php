@@ -207,6 +207,8 @@ tr:hover{background:#f8f9fa}
 .stats{grid-template-columns:repeat(2,1fr)}
 .actions{flex-wrap:nowrap}
 .section{padding:1rem}
+.section a,.section button{min-height:44px;display:inline-flex;align-items:center;padding:.4rem .2rem}
+table a{min-height:44px;display:inline-flex;align-items:center;padding:.3rem .2rem}
 }
 @media(max-width:380px){
 .stats{grid-template-columns:1fr}

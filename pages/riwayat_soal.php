@@ -121,14 +121,16 @@ try {
 .pembahasan-box.show{display:block}
 .tips-box{margin-top:.4rem;padding:.4rem;background:#eaf8ea;border-left:3px solid #27ae60;border-radius:4px;font-size:.82rem;display:none}
 .tips-box.show{display:block}
-.toggle-btn{background:none;border:none;color:#2980b9;cursor:pointer;font-size:.85rem;padding:0;text-decoration:underline}
+.toggle-btn{background:none;border:none;color:#2980b9;cursor:pointer;font-size:.85rem;padding:.5rem .2rem;text-decoration:underline;min-height:44px}
 .pagination{display:flex;gap:.3rem;justify-content:center;margin-top:1rem;flex-wrap:wrap}
-.pagination a,.pagination span{display:inline-block;padding:.3rem .6rem;border-radius:4px;font-size:.85rem;text-decoration:none}
+.pagination a,.pagination span{display:inline-flex;align-items:center;justify-content:center;padding:.5rem .8rem;border-radius:4px;font-size:.85rem;text-decoration:none;min-height:44px;min-width:44px}
 .pagination a{background:#eaf2f8;color:#1a5276}.pagination a:hover{background:#2980b9;color:#fff}
 .pagination span{background:#2980b9;color:#fff}
 .empty{color:#777;font-style:italic;text-align:center;padding:2rem}
 .footer{text-align:center;padding:1.2rem;color:#777;font-size:.85rem;margin-top:1.5rem}
-@media(max-width:600px){.filter-bar{flex-direction:column;align-items:stretch}.filter-bar>*{width:100%}}
+@media(max-width:600px){.filter-bar{flex-direction:column;align-items:stretch}.filter-bar>*{width:100%}
+.soal-item a{display:inline-flex;align-items:center;min-height:44px;padding:.4rem .2rem}
+}
 .skip-link:focus{top:0}
 </style>
 </head>
@@ -168,7 +170,7 @@ try {
             <option value="kosong" <?= $filterStatus === 'kosong' ? 'selected' : '' ?>>Kosong</option>
         </select>
         <button type="submit" aria-label="Filter riwayat soal">Filter</button>
-        <a href="riwayat_soal.php" style="color:#666;font-size:.9rem;text-decoration:none;margin-left:.3rem">Reset</a>
+        <a href="riwayat_soal.php" style="color:#666;font-size:.9rem;text-decoration:none;margin-left:.3rem;display:inline-flex;align-items:center;min-height:44px;padding:.3rem .5rem">Reset</a>
     </form>
 </div>
 

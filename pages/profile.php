@@ -285,7 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </form>
 
 <p style="text-align:center;margin-top:1rem;font-size:.9rem">
-<a href="user_dashboard.php" class="link">Kembali ke Dashboard</a>
+<a href="user_dashboard.php" class="link" style="display:inline-flex;align-items:center;min-height:44px;padding:.5rem">Kembali ke Dashboard</a>
 </p>
 
 <!-- Badges Section -->

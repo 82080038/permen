@@ -137,6 +137,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 .font-small { font-size: 14px; }
 .font-medium { font-size: 16px; }
 .font-large { font-size: 18px; }
+.radio-option input[type="radio"] { min-width: 22px; min-height: 22px; width: 22px; height: 22px; }
+.radio-option { min-height: 44px; padding: .5rem .3rem; }
+select { min-height: 44px; padding: .5rem; font-size: 1rem; }
+@media(max-width:600px){
+  .setting-item { flex-direction: column; align-items: flex-start; gap: .8rem; }
+  .setting-control { min-width: unset; width: 100%; }
+  .radio-group { gap: .5rem; }
+}
 </style>
 </head>
 <body>
@@ -291,7 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </form>
 
 <p style="text-align:center;margin-top:1rem;font-size:.9rem">
-<a href="user_dashboard.php" class="link">Kembali ke Dashboard</a>
+<a href="user_dashboard.php" class="link" style="display:inline-flex;align-items:center;min-height:44px;padding:.5rem">Kembali ke Dashboard</a>
 </p>
 </div>
 </div>

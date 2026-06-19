@@ -52,6 +52,10 @@ if (!isset($breadcrumbs) || !is_array($breadcrumbs)) {
 .breadcrumb-item a {
     color: #2980b9;
     text-decoration: none;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: .3rem 0;
 }
 .breadcrumb-item a:hover {
     text-decoration: underline;

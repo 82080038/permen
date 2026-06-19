@@ -120,7 +120,7 @@ $activePage = 'help';
                 
                 <!-- Back Link -->
                 <div style="text-align:center;margin-top:2rem">
-                    <a href="index.php" class="link">Kembali ke Beranda</a>
+                    <a href="index.php" class="link" style="display:inline-flex;align-items:center;min-height:44px;padding:.5rem">Kembali ke Beranda</a>
                 </div>
             </div>
         </div>
