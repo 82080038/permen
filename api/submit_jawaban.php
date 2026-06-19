@@ -138,8 +138,14 @@ if ($soal['subtes'] === 'TKP') {
 // Use database transaction to prevent race conditions
 try {
     $pdo->beginTransaction();
-    $stmt = $pdo->prepare("UPDATE answers SET jawaban = ?, skor = ?, is_ragu = ? WHERE id = ?");
-    $stmt->execute([$jawaban, $skor, $isRagu, $answerId]);
+    // Try production column name first (jawaban_user), fallback to local (jawaban)
+    try {
+        $stmt = $pdo->prepare("UPDATE answers SET jawaban_user = ?, skor = ?, is_ragu = ? WHERE id = ?");
+        $stmt->execute([$jawaban, $skor, $isRagu, $answerId]);
+    } catch (PDOException $e) {
+        $stmt = $pdo->prepare("UPDATE answers SET jawaban = ?, skor = ?, is_ragu = ? WHERE id = ?");
+        $stmt->execute([$jawaban, $skor, $isRagu, $answerId]);
+    }
     
     // Log answer submission for audit trail
     logUserAction($userId, 'submit_answer', "answer_id=$answerId, session_id={$soal['session_id']}, jawaban=$jawaban, skor=$skor, is_ragu=$isRagu");

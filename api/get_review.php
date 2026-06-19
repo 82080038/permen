@@ -23,24 +23,42 @@ if (!$stmt->fetch()) {
 }
 
 // Ambil soal dengan jawaban user + passage
-$stmt = $pdo->prepare("
-    SELECT 
-        a.id as answer_id, a.jawaban, a.skor,
-        q.id as question_id, q.subtes, q.tipe, q.topik, q.pertanyaan,
-        q.pilihan_a, q.pilihan_b, q.pilihan_c, q.pilihan_d, q.pilihan_e,
-        q.jawaban_benar, q.pembahasan, q.tips_trick, q.image_url, q.related_links,
-        q.materi_id, q.passage_id, q.passage_order,
-        p.judul as passage_judul, p.bacaan as passage_bacaan,
-        m.judul as materi_judul, m.url as materi_url
-    FROM answers a
-    JOIN questions q ON a.question_id = q.id
-    LEFT JOIN passages p ON q.passage_id = p.id
-    LEFT JOIN materi m ON q.materi_id = m.id
-    WHERE a.session_id = ?
-    ORDER BY FIELD(q.subtes,'TWK','TIU','TKP'), q.passage_id, q.passage_order, a.id
-");
-$stmt->execute([$sessionId]);
-$soal = $stmt->fetchAll();
+// Production uses jawaban_user, local uses jawaban
+try {
+    $stmt = $pdo->prepare("
+        SELECT 
+            a.id as answer_id, a.jawaban_user as jawaban, a.skor,
+            q.id as question_id, q.subtes, q.topik, q.pertanyaan,
+            q.pilihan_a, q.pilihan_b, q.pilihan_c, q.pilihan_d, q.pilihan_e,
+            q.jawaban_benar, q.pembahasan, q.image_url,
+            q.passage_id, q.passage_order,
+            p.judul as passage_judul, p.bacaan as passage_bacaan
+        FROM answers a
+        JOIN questions q ON a.question_id = q.id
+        LEFT JOIN passages p ON q.passage_id = p.id
+        WHERE a.session_id = ?
+        ORDER BY FIELD(q.subtes,'TWK','TIU','TKP'), q.passage_id, q.passage_order, a.id
+    ");
+    $stmt->execute([$sessionId]);
+    $soal = $stmt->fetchAll();
+} catch (PDOException $e) {
+    $stmt = $pdo->prepare("
+        SELECT 
+            a.id as answer_id, a.jawaban, a.skor,
+            q.id as question_id, q.subtes, q.topik, q.pertanyaan,
+            q.pilihan_a, q.pilihan_b, q.pilihan_c, q.pilihan_d, q.pilihan_e,
+            q.jawaban_benar, q.pembahasan, q.image_url,
+            q.passage_id, q.passage_order,
+            p.judul as passage_judul, p.bacaan as passage_bacaan
+        FROM answers a
+        JOIN questions q ON a.question_id = q.id
+        LEFT JOIN passages p ON q.passage_id = p.id
+        WHERE a.session_id = ?
+        ORDER BY FIELD(q.subtes,'TWK','TIU','TKP'), q.passage_id, q.passage_order, a.id
+    ");
+    $stmt->execute([$sessionId]);
+    $soal = $stmt->fetchAll();
+}
 
 // Build passages
 $passages = [];

@@ -1138,15 +1138,5 @@ $dailyHistory = $dailyQuizHistory->fetchAll();
 Dashboard Peserta SKD CAT-BKN | Latihan persiapan Sekolah Kedinasan
 </div>
 <script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/js/dist/user_dashboard.js"></script>
-<script>
-// Initialize chart data from PHP
-const chartData = <?= json_encode(array_map(fn($r)=>[
-    'date'=>date('d M',strtotime($r['waktu_mulai'])),
-    'total'=>(int)($r['total_nilai']??0),
-    'tkp'=>(int)($r['nilai_tkp']??0),
-    'tiu'=>(int)($r['nilai_tiu']??0),
-    'twk'=>(int)($r['nilai_twk']??0)
-], array_reverse(array_slice($selesai,-10)))) ?>;
-</script>
 </body>
 </html>
