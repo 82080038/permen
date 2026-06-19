@@ -260,12 +260,10 @@ test.describe.serial('Peserta Full Simulation', () => {
       }
     });
 
-    // Monitor console errors
-    const consoleErrors = [];
+    // Monitor console messages
+    const consoleMessages = [];
     page.on('console', msg => {
-      if (msg.type() === 'error') {
-        consoleErrors.push(msg.text());
-      }
+      consoleMessages.push({ type: msg.type(), text: msg.text() });
     });
 
     // Wait for soal to load via JS - wait longer for production
@@ -287,7 +285,7 @@ test.describe.serial('Peserta Full Simulation', () => {
     });
     console.log(`  Debug: hasManager=${debugInfo.hasManager}, soalLength=${debugInfo.soalLength}, sessionId=${debugInfo.sessionId}, lastError=${debugInfo.lastError}, sessionStatus=${debugInfo.sessionStatus}, isLoading=${debugInfo.isLoading}, tryoutJsLoaded=${debugInfo.tryoutJsLoaded}`);
     console.log(`  API responses: ${JSON.stringify(apiResponses)}`);
-    console.log(`  Console errors: ${JSON.stringify(consoleErrors)}`);
+    console.log(`  Console messages: ${JSON.stringify(consoleMessages)}`);
 
     const soalCount = debugInfo.soalLength;
     console.log(`  ✓ Total soal loaded: ${soalCount}`);
