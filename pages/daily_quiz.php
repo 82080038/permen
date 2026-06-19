@@ -287,15 +287,15 @@ function escapeHtml(text) {
 async function loadQuiz() {
     try {
         const res = await fetch(BASE_URL + '/api/get_daily_quiz.php');
-        const data = await res.json();
+        const response = await res.json();
         
-        if (!data.success) {
-            alert(data.error || 'Gagal memuat soal');
+        if (!response.success) {
+            alert(response.error || 'Gagal memuat soal');
             return;
         }
         
-        sessionId = data.session.id;
-        soal = data.soal;
+        sessionId = response.data.session.id;
+        soal = response.data.soal;
         
         // Restore jawaban yang sudah tersimpan
         soal.forEach(s => {
