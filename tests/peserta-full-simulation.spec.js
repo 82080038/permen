@@ -241,9 +241,34 @@ test.describe.serial('Peserta Full Simulation', () => {
     await page.click('button[type="submit"]');
     await page.waitForURL(/user_dashboard/, { timeout: 15000 });
 
-    // Go to tryout page - this creates a new session
+    // Go to tryout page - this creates or resumes a session
     await page.goto(BASE + '/pages/tryout.php');
     await page.waitForTimeout(3000);
+
+    // If there's a stale/expired session, finish it first and reload
+    const timerCheck = await page.evaluate(() => {
+      const tm = window.tryoutManager;
+      if (!tm) return { ok: false, reason: 'no_tm' };
+      if (tm.remainingSeconds !== undefined && tm.remainingSeconds <= 0) {
+        return { ok: false, reason: 'expired', sessionId: tm.sessionId, csrfToken: tm.csrfToken, baseUrl: tm.baseUrl };
+      }
+      return { ok: true };
+    });
+
+    if (!timerCheck.ok && timerCheck.reason === 'expired') {
+      console.log('  ⚠️ Expired session detected, finishing it...');
+      await page.evaluate(async (ctx) => {
+        await fetch(`${ctx.baseUrl}/api/finish_tryout.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': ctx.csrfToken },
+          body: JSON.stringify({ session_id: ctx.sessionId })
+        });
+      }, timerCheck);
+      await page.waitForTimeout(1000);
+      // Reload to get a fresh session
+      await page.goto(BASE + '/pages/tryout.php');
+      await page.waitForTimeout(3000);
+    }
 
     // Check if on tryout page
     const url = page.url();
