@@ -245,43 +245,51 @@ test.describe.serial('Peserta Full Simulation', () => {
     await page.goto(BASE + '/pages/tryout.php');
     await page.waitForTimeout(3000);
 
-    // If there's a stale/expired session, finish it first and reload
-    const timerCheck = await page.evaluate(() => {
-      const tm = window.tryoutManager;
-      if (!tm) return { ok: false, reason: 'no_tm' };
-      if (tm.remainingSeconds !== undefined && tm.remainingSeconds <= 0) {
-        return { ok: false, reason: 'expired', sessionId: tm.sessionId, csrfToken: tm.csrfToken, baseUrl: tm.baseUrl };
-      }
-      return { ok: true };
-    });
-
-    if (!timerCheck.ok && timerCheck.reason === 'expired') {
-      console.log('  ⚠️ Expired session detected, finishing it...');
-      await page.evaluate(async (ctx) => {
-        await fetch(`${ctx.baseUrl}/api/finish_tryout.php`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': ctx.csrfToken },
-          body: JSON.stringify({ session_id: ctx.sessionId })
-        });
-      }, timerCheck);
-      await page.waitForTimeout(1000);
-      // Reload to get a fresh session
-      await page.goto(BASE + '/pages/tryout.php');
-      await page.waitForTimeout(3000);
-    }
-
     // Check if on tryout page
     const url = page.url();
     expect(url).toContain('tryout');
     console.log(`  ✓ Tryout page loaded: ${url.replace(BASE, '')}`);
 
-    // Wait for soal to load via JS
-    await page.waitForTimeout(5000);
+    // Monitor network requests to see API response
+    const apiResponses = [];
+    page.on('response', async (response) => {
+      if (response.url().includes('get_soal.php')) {
+        const status = response.status();
+        const body = await response.text().catch(() => 'no body');
+        apiResponses.push({ status, body: body.substring(0, 200) });
+      }
+    });
+
+    // Monitor console errors
+    const consoleErrors = [];
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        consoleErrors.push(msg.text());
+      }
+    });
+
+    // Wait for soal to load via JS - wait longer for production
+    await page.waitForTimeout(10000);
 
     // Check if questions loaded
-    const soalCount = await page.evaluate(() => {
-      return window.tryoutManager?.soal?.length || 0;
+    const debugInfo = await page.evaluate(() => {
+      const tm = window.tryoutManager;
+      return {
+        hasManager: !!tm,
+        soalLength: tm?.soal?.length || 0,
+        sessionId: tm?.sessionId,
+        baseUrl: tm?.baseUrl,
+        lastError: tm?.lastError || 'none',
+        sessionStatus: tm?.sessionStatus || 'unknown',
+        isLoading: tm?.isLoading || false,
+        tryoutJsLoaded: typeof TryoutManager !== 'undefined'
+      };
     });
+    console.log(`  Debug: hasManager=${debugInfo.hasManager}, soalLength=${debugInfo.soalLength}, sessionId=${debugInfo.sessionId}, lastError=${debugInfo.lastError}, sessionStatus=${debugInfo.sessionStatus}, isLoading=${debugInfo.isLoading}, tryoutJsLoaded=${debugInfo.tryoutJsLoaded}`);
+    console.log(`  API responses: ${JSON.stringify(apiResponses)}`);
+    console.log(`  Console errors: ${JSON.stringify(consoleErrors)}`);
+
+    const soalCount = debugInfo.soalLength;
     console.log(`  ✓ Total soal loaded: ${soalCount}`);
     expect(soalCount).toBeGreaterThan(0);
 
