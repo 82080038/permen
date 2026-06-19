@@ -119,6 +119,7 @@ Tidak ada materi yang cocok dengan pencarian.
 </div>
 
 <script>
+const BASE_URL = '<?php echo $baseUrl ?? '/permen'; ?>';
 function filterMateri() {
     const searchTerm = document.getElementById('searchMateri').value.toLowerCase();
     const cards = document.querySelectorAll('#materiContainer .card');
@@ -146,7 +147,7 @@ async function toggleBookmark(materiId, button) {
     formData.append('csrf_token', '<?= csrfToken() ?>');
     
     try {
-        const response = await fetch('/api/toggle_bookmark.php', {
+        const response = await fetch(BASE_URL + '/api/toggle_bookmark.php', {
             method: 'POST',
             body: formData
         });
@@ -187,7 +188,7 @@ function trackProgress(cardBody, materiId) {
         formData.append('last_position', scrollTop);
         formData.append('csrf_token', '<?= csrfToken() ?>');
         
-        fetch('/api/update_materi_progress.php', {
+        fetch(BASE_URL + '/api/update_materi_progress.php', {
             method: 'POST',
             body: formData
         }).catch(error => console.error('Failed to update progress:', error));
@@ -227,7 +228,7 @@ async function startMiniQuiz(materiId, subtes, button) {
     container.innerHTML = '<p style="color:#666;font-size:.9rem">Memuat soal...</p>';
     
     try {
-        const response = await fetch('/api/get_mini_quiz.php?subtes=' + encodeURIComponent(subtes) + '&topik=' + encodeURIComponent(topik) + '&jumlah=3');
+        const response = await fetch(BASE_URL + '/api/get_mini_quiz.php?subtes=' + encodeURIComponent(subtes) + '&topik=' + encodeURIComponent(topik) + '&jumlah=3');
         const data = await response.json();
         
         if (!data.success) {
@@ -387,7 +388,7 @@ async function generateLatihan(){
     container.innerHTML = '<p style="color:#666">Generating soal...</p>';
 
     try {
-        const res = await fetch('/api/generate_user_soal.php?subtes=' + encodeURIComponent(subtes)
+        const res = await fetch(BASE_URL + '/api/generate_user_soal.php?subtes=' + encodeURIComponent(subtes)
             + '&topik=' + encodeURIComponent(topik)
             + '&jumlah=' + encodeURIComponent(jumlah));
         const data = await res.json();

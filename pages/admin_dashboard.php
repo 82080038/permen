@@ -1224,6 +1224,7 @@ Dashboard Admin SKD CAT-BKN | Selamat datang, <?= $adminName ?>
 
 <script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/js/dist/admin_dashboard.js"></script>
 <script>
+const BASE_URL = '<?php echo $baseUrl ?? '/permen'; ?>';
 // Admin-specific functions that need to remain inline
 // These functions are specific to the admin dashboard and are not in the external file
 
@@ -1233,7 +1234,7 @@ async function loadRevisionQueue() {
     const priority = document.getElementById('filterRevisionPriority').value;
     
     try {
-        let url = '/api/admin_revision_queue.php?action=get_queue';
+        let url = BASE_URL + '/api/admin_revision_queue.php?action=get_queue';
         if (status) url += '&status=' + encodeURIComponent(status);
         if (priority) url += '&priority=' + encodeURIComponent(priority);
         
@@ -1254,7 +1255,7 @@ async function loadRevisionQueue() {
 
 async function loadRevisionStats() {
     try {
-        const res = await fetch('/api/admin_revision_queue.php?action=get_revision_stats');
+        const res = await fetch(BASE_URL + '/api/admin_revision_queue.php?action=get_revision_stats');
         const data = await res.json();
         
         if (data.success) {
@@ -1357,7 +1358,7 @@ async function updateRevisionStatus(queueId) {
     formData.append('status', status);
     
     try {
-        const res = await fetch('/api/admin_revision_queue.php', {
+        const res = await fetch(BASE_URL + '/api/admin_revision_queue.php', {
             method: 'POST',
             body: formData
         });
@@ -1382,7 +1383,7 @@ async function updateRevisionPriority(queueId) {
     formData.append('priority', priority);
     
     try {
-        const res = await fetch('/api/admin_revision_queue.php', {
+        const res = await fetch(BASE_URL + '/api/admin_revision_queue.php', {
             method: 'POST',
             body: formData
         });
@@ -1408,7 +1409,7 @@ function addRevisionNote(queueId) {
     formData.append('status', document.getElementById('status-' + queueId).value);
     formData.append('admin_notes', note);
     
-    fetch('/api/admin_revision_queue.php', {
+    fetch(BASE_URL + '/api/admin_revision_queue.php', {
         method: 'POST',
         body: formData
     }).then(res => res.json()).then(data => {
@@ -1430,7 +1431,7 @@ async function removeFromQueue(queueId) {
     formData.append('queue_id', queueId);
     
     try {
-        const res = await fetch('/api/admin_revision_queue.php', {
+        const res = await fetch(BASE_URL + '/api/admin_revision_queue.php', {
             method: 'POST',
             body: formData
         });
@@ -1448,7 +1449,7 @@ async function removeFromQueue(queueId) {
 
 async function detectRevisionCandidates() {
     try {
-        const res = await fetch('/api/auto_detect_revision.php?action=detect_revision_candidates');
+        const res = await fetch(BASE_URL + '/api/auto_detect_revision.php?action=detect_revision_candidates');
         const data = await res.json();
         
         if (data.success) {
@@ -1514,7 +1515,7 @@ async function addAllCandidates() {
     if (!confirm('Tambahkan semua kandidat terdeteksi ke revision queue?')) return;
     
     try {
-        const res = await fetch('/api/auto_detect_revision.php?action=add_all_candidates');
+        const res = await fetch(BASE_URL + '/api/auto_detect_revision.php?action=add_all_candidates');
         const data = await res.json();
         
         if (data.success) {
@@ -1532,7 +1533,7 @@ async function addAllCandidates() {
 // --- ADMIN REPORTS ---
 async function loadReports() {
     try {
-        const res = await fetch('/api/admin_reports.php?action=get_reports');
+        const res = await fetch(BASE_URL + '/api/admin_reports.php?action=get_reports');
         const data = await res.json();
         
         if (data.success) {
@@ -1578,7 +1579,7 @@ async function generateReport() {
     formData.append('report_type', reportType);
     
     try {
-        const res = await fetch('/api/admin_reports.php', {
+        const res = await fetch(BASE_URL + '/api/admin_reports.php', {
             method: 'POST',
             body: formData
         });
@@ -1597,7 +1598,7 @@ async function generateReport() {
 
 async function loadSchedules() {
     try {
-        const res = await fetch('/api/admin_reports.php?action=get_schedules');
+        const res = await fetch(BASE_URL + '/api/admin_reports.php?action=get_schedules');
         const data = await res.json();
         
         if (data.success) {
@@ -1669,7 +1670,7 @@ async function createSchedule() {
     formData.append('schedule_time', scheduleTime);
     
     try {
-        const res = await fetch('/api/admin_reports.php', {
+        const res = await fetch(BASE_URL + '/api/admin_reports.php', {
             method: 'POST',
             body: formData
         });
@@ -1694,7 +1695,7 @@ async function toggleSchedule(scheduleId, isActive) {
     formData.append('is_active', isActive);
     
     try {
-        const res = await fetch('/api/admin_reports.php', {
+        const res = await fetch(BASE_URL + '/api/admin_reports.php', {
             method: 'POST',
             body: formData
         });
@@ -1718,7 +1719,7 @@ async function deleteSchedule(scheduleId) {
     formData.append('schedule_id', scheduleId);
     
     try {
-        const res = await fetch('/api/admin_reports.php', {
+        const res = await fetch(BASE_URL + '/api/admin_reports.php', {
             method: 'POST',
             body: formData
         });
@@ -1744,7 +1745,7 @@ async function loadFeedback(){
     if(category) params.append('category', category);
     
     try {
-        const res = await fetch('/api/get_feedback.php?' + params.toString());
+        const res = await fetch(BASE_URL + '/api/get_feedback.php?' + params.toString());
         const data = await res.json();
         
         if(data.success){
@@ -1843,7 +1844,7 @@ async function moderateContent(moderationId, action) {
     formData.append('note', note);
     
     try {
-        const res = await fetch('/api/admin_content_moderation.php', {
+        const res = await fetch(BASE_URL + '/api/admin_content_moderation.php', {
             method: 'POST',
             body: formData
         });
@@ -1935,7 +1936,7 @@ async function updateFeedback(feedbackId){
     formData.append('response', response);
     
     try {
-        const res = await fetch('/api/update_feedback.php', {
+        const res = await fetch(BASE_URL + '/api/update_feedback.php', {
             method: 'POST',
             body: formData
         });
@@ -1964,7 +1965,7 @@ let selectedTags = [];
 
 async function loadTags() {
     try {
-        const res = await fetch('/api/admin_soal_crud.php?action=get_all_tags');
+        const res = await fetch(BASE_URL + '/api/admin_soal_crud.php?action=get_all_tags');
         const data = await res.json();
         
         if (data.success) {
@@ -2044,7 +2045,7 @@ async function addSoal(e) {
     selectedTags.forEach(tag => formData.append('tags[]', tag));
     
     try {
-        const res = await fetch('/api/admin_soal_crud.php', {
+        const res = await fetch(BASE_URL + '/api/admin_soal_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2125,7 +2126,7 @@ async function bulkImportSoal(e) {
             formData.append('pembahasan', values[10]?.replace(/"/g, '').trim() || '');
             
             try {
-                const res = await fetch('/api/admin_soal_crud.php', {
+                const res = await fetch(BASE_URL + '/api/admin_soal_crud.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -2169,7 +2170,7 @@ async function deleteSoal(soalId) {
     formData.append('soal_id', soalId);
     
     try {
-        const res = await fetch('/api/admin_soal_crud.php', {
+        const res = await fetch(BASE_URL + '/api/admin_soal_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2266,7 +2267,7 @@ async function restoreVersion(soalId, version) {
     formData.append('version', version);
     
     try {
-        const res = await fetch('/api/admin_soal_crud.php', {
+        const res = await fetch(BASE_URL + '/api/admin_soal_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2288,7 +2289,7 @@ async function loadMateriList() {
     const subtes = document.getElementById('filterMateriSubtes').value;
     
     try {
-        let url = '/api/admin_materi_crud.php?action=get_materi_list';
+        let url = BASE_URL + '/api/admin_materi_crud.php?action=get_materi_list';
         if (subtes) url += '&subtes=' + encodeURIComponent(subtes);
         
         const res = await fetch(url);
@@ -2362,7 +2363,7 @@ async function addMateri(e) {
     formData.append('urutan', document.getElementById('addMateriUrutan').value);
     
     try {
-        const res = await fetch('/api/admin_materi_crud.php', {
+        const res = await fetch(BASE_URL + '/api/admin_materi_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2425,7 +2426,7 @@ async function updateMateri(materiId) {
     formData.append('is_active', '1');
     
     try {
-        const res = await fetch('/api/admin_materi_crud.php', {
+        const res = await fetch(BASE_URL + '/api/admin_materi_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2463,7 +2464,7 @@ async function deleteMateri(materiId) {
     formData.append('materi_id', materiId);
     
     try {
-        const res = await fetch('/api/admin_materi_crud.php', {
+        const res = await fetch(BASE_URL + '/api/admin_materi_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2482,7 +2483,7 @@ async function deleteMateri(materiId) {
 
 async function moveMateri(materiId, direction) {
     try {
-        const res = await fetch('/api/admin_materi_crud.php?action=get_materi_list');
+        const res = await fetch(BASE_URL + '/api/admin_materi_crud.php?action=get_materi_list');
         const data = await res.json();
         
         if (data.success) {
@@ -2510,7 +2511,7 @@ async function moveMateri(materiId, direction) {
                 formData.append(`orders[${i}][urutan]`, order.urutan);
             });
             
-            const reorderRes = await fetch('/api/admin_materi_crud.php', {
+            const reorderRes = await fetch(BASE_URL + '/api/admin_materi_crud.php', {
                 method: 'POST',
                 body: formData
             });
@@ -2532,7 +2533,7 @@ async function loadTipsList() {
     const subtes = document.getElementById('filterTipsSubtes').value;
     
     try {
-        let url = '/api/admin_tips_crud.php?action=get_tips_list';
+        let url = BASE_URL + '/api/admin_tips_crud.php?action=get_tips_list';
         if (subtes) url += '&subtes=' + encodeURIComponent(subtes);
         
         const res = await fetch(url);
@@ -2602,7 +2603,7 @@ async function addTips(e) {
     formData.append('penjelasan', document.getElementById('addTipsPenjelasan').value);
     
     try {
-        const res = await fetch('/api/admin_tips_crud.php', {
+        const res = await fetch(BASE_URL + '/api/admin_tips_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2667,7 +2668,7 @@ async function updateTips(tipsId) {
     formData.append('is_active', '1');
     
     try {
-        const res = await fetch('/api/admin_tips_crud.php', {
+        const res = await fetch(BASE_URL + '/api/admin_tips_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2705,7 +2706,7 @@ async function deleteTips(tipsId) {
     formData.append('tips_id', tipsId);
     
     try {
-        const res = await fetch('/api/admin_tips_crud.php', {
+        const res = await fetch(BASE_URL + '/api/admin_tips_crud.php', {
             method: 'POST',
             body: formData
         });
@@ -2729,7 +2730,7 @@ async function loadMediaLibrary() {
     const search = document.getElementById('searchMedia').value;
     
     try {
-        let url = '/api/admin_media_library.php?action=get_media_list';
+        let url = BASE_URL + '/api/admin_media_library.php?action=get_media_list';
         if (fileType) url += '&file_type=' + encodeURIComponent(fileType);
         if (folder) url += '&folder=' + encodeURIComponent(folder);
         if (search) url += '&search=' + encodeURIComponent(search);
@@ -2752,7 +2753,7 @@ async function loadMediaLibrary() {
 
 async function loadFolders() {
     try {
-        const res = await fetch('/api/admin_media_library.php?action=get_folders');
+        const res = await fetch(BASE_URL + '/api/admin_media_library.php?action=get_folders');
         const data = await res.json();
         
         if (data.success) {
@@ -2829,7 +2830,7 @@ async function uploadMedia(e) {
     formData.append('folder', document.getElementById('mediaFolder').value);
     
     try {
-        const res = await fetch('/api/admin_media_library.php', {
+        const res = await fetch(BASE_URL + '/api/admin_media_library.php', {
             method: 'POST',
             body: formData
         });
@@ -2863,7 +2864,7 @@ async function deleteMedia(mediaId) {
     formData.append('media_id', mediaId);
     
     try {
-        const res = await fetch('/api/admin_media_library.php', {
+        const res = await fetch(BASE_URL + '/api/admin_media_library.php', {
             method: 'POST',
             body: formData
         });
@@ -2943,7 +2944,7 @@ async function runGenerator(){
     log.innerHTML = '';
 
     try {
-        const url = '/api/generate_soal_smart.php?subtes=' + encodeURIComponent(subtes)
+        const url = BASE_URL + '/api/generate_soal_smart.php?subtes=' + encodeURIComponent(subtes)
             + '&tipe=' + encodeURIComponent(tipe)
             + '&topik=' + encodeURIComponent(topik)
             + '&jumlah=' + encodeURIComponent(jumlah)
@@ -2985,7 +2986,7 @@ async function uploadGambar(){
     if(!input.files[0]){ alert('Pilih file gambar terlebih dahulu'); return; }
     const form = new FormData();
     form.append('gambar', input.files[0]);
-    const res = await fetch('/api/upload_image.php', {method:'POST', body:form});
+    const res = await fetch(BASE_URL + '/api/upload_image.php', {method:'POST', body:form});
     const data = await res.json();
     const out = document.getElementById('uploadResult');
     if(data.success){
@@ -3003,7 +3004,7 @@ async function loadSoalList(){
     const container = document.getElementById('soalList');
     container.innerHTML = '<p style="color:#666">Memuat...</p>';
 
-    let url = '/api/list_soal.php?limit=50';
+    let url = BASE_URL + '/api/list_soal.php?limit=50';
     if(keyword) url += '&q=' + encodeURIComponent(keyword);
     if(subtes) url += '&subtes=' + encodeURIComponent(subtes);
     if(tag) url += '&tag=' + encodeURIComponent(tag);
@@ -3065,7 +3066,7 @@ async function loadRevisionList(){
     const container = document.getElementById('soalList');
     container.innerHTML = '<p style="color:#666">Memuat soal perlu revisi...</p>';
     try {
-        const res = await fetch('/api/list_soal.php?needs_revision=1&limit=50');
+        const res = await fetch(BASE_URL + '/api/list_soal.php?needs_revision=1&limit=50');
         const data = await res.json();
         if(data.error){ container.innerHTML='<p style="color:#e74c3c">'+data.error+'</p>'; return; }
         if(!data.soal || data.soal.length===0){ container.innerHTML='<p style="color:#666">Tidak ada soal yang perlu direvisi. Bagus!</p>'; return; }
@@ -3094,7 +3095,7 @@ async function loadRevisionList(){
 async function markRevised(id){
     if(!confirm('Tandai soal ini sudah direvisi?')) return;
     try {
-        const res = await fetch('/api/update_revision.php', {
+        const res = await fetch(BASE_URL + '/api/update_revision.php', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
             body:JSON.stringify({question_id:id, action:'mark_revised'})
@@ -3113,7 +3114,7 @@ async function markRevised(id){
 
 async function toggleActive(id){
     try {
-        const res = await fetch('/api/update_revision.php', {
+        const res = await fetch(BASE_URL + '/api/update_revision.php', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
             body:JSON.stringify({question_id:id, action:'toggle_active'})
@@ -3131,7 +3132,7 @@ async function toggleActive(id){
 
 // --- EDIT MODAL ---
 async function openEditModal(id){
-    const res = await fetch('/api/get_soal_detail.php?id=' + id);
+    const res = await fetch(BASE_URL + '/api/get_soal_detail.php?id=' + id);
     const data = await res.json();
     if(data.error){ alert(data.error); return; }
     const s = data.soal;
@@ -3172,7 +3173,7 @@ async function saveSoalEdit(){
     form.append('pembahasan', document.getElementById('editPembahasan').value);
     if(fileInput.files[0]) form.append('gambar', fileInput.files[0]);
 
-    const res = await fetch('/api/update_soal.php', {method:'POST', body:form});
+    const res = await fetch(BASE_URL + '/api/update_soal.php', {method:'POST', body:form});
     const data = await res.json();
     if(data.success){
         alert('Soal berhasil diperbarui!');
@@ -3190,7 +3191,7 @@ async function resetUserPassword(userId, userName){
         const formData = new FormData();
         formData.append('user_id', userId);
         
-        const res = await fetch('/api/reset_user_password.php', {
+        const res = await fetch(BASE_URL + '/api/reset_user_password.php', {
             method: 'POST',
             body: formData
         });
@@ -3233,7 +3234,7 @@ async function bulkAction(action) {
         formData.append('reason', action === 'suspend' ? 'Bulk suspend' : '');
         
         try {
-            await fetch('/api/admin_user_management.php', {
+            await fetch(BASE_URL + '/api/admin_user_management.php', {
                 method: 'POST',
                 body: formData
             });
@@ -3260,7 +3261,7 @@ async function editUser(userId) {
     formData.append('no_hp', noHp);
     
     try {
-        const res = await fetch('/api/admin_user_management.php', {
+        const res = await fetch(BASE_URL + '/api/admin_user_management.php', {
             method: 'POST',
             body: formData
         });
@@ -3339,7 +3340,7 @@ async function manageUserStatus(userId, userName, currentStatus) {
     formData.append('reason', reason);
     
     try {
-        const res = await fetch('/api/admin_user_management.php', {
+        const res = await fetch(BASE_URL + '/api/admin_user_management.php', {
             method: 'POST',
             body: formData
         });
@@ -3359,7 +3360,7 @@ async function manageUserStatus(userId, userName, currentStatus) {
 // --- EVENT MANAGEMENT ---
 async function loadEvents() {
     try {
-        const res = await fetch('/api/admin_tryout_events.php?action=get_events');
+        const res = await fetch(BASE_URL + '/api/admin_tryout_events.php?action=get_events');
         const data = await res.json();
         
         if (data.success) {
@@ -3431,7 +3432,7 @@ async function createEvent(e) {
     formData.append('passing_grade', document.getElementById('eventPassingGrade').value);
     
     try {
-        const res = await fetch('/api/admin_tryout_events.php', {
+        const res = await fetch(BASE_URL + '/api/admin_tryout_events.php', {
             method: 'POST',
             body: formData
         });
@@ -3457,7 +3458,7 @@ async function toggleEventStatus(eventId, currentStatus) {
     formData.append('aktif', currentStatus ? '0' : '1');
     
     try {
-        const res = await fetch('/api/admin_tryout_events.php', {
+        const res = await fetch(BASE_URL + '/api/admin_tryout_events.php', {
             method: 'POST',
             body: formData
         });
@@ -3481,7 +3482,7 @@ async function deleteEvent(eventId) {
     formData.append('event_id', eventId);
     
     try {
-        const res = await fetch('/api/admin_tryout_events.php', {
+        const res = await fetch(BASE_URL + '/api/admin_tryout_events.php', {
             method: 'POST',
             body: formData
         });

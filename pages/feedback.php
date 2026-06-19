@@ -88,6 +88,7 @@ textarea{min-height:120px;resize:vertical}
 <base href="<?php echo $baseUrl ?? '/permen'; ?>">
 <script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/app.js"></script>
 <script>
+const BASE_URL = '<?php echo $baseUrl ?? '/permen'; ?>';
 let selectedCategory = 'lainnya';
 
 function selectCategory(btn) {
@@ -110,7 +111,7 @@ async function submitFeedback(e) {
     formData.append('message', document.getElementById('message').value);
     
     try {
-        const res = await fetch('/api/submit_feedback.php', {
+        const res = await fetch(BASE_URL + '/api/submit_feedback.php', {
             method: 'POST',
             body: formData
         });
@@ -138,7 +139,7 @@ async function submitFeedback(e) {
 
 async function loadFeedbackHistory() {
     try {
-        const res = await fetch('/api/get_my_feedback.php');
+        const res = await fetch(BASE_URL + '/api/get_my_feedback.php');
         const data = await res.json();
         
         if (data.success) {

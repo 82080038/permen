@@ -168,8 +168,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="theme-color" content="#1a5276">
 <base href="<?php echo $baseUrl ?? '/'; ?>">
 <title>Profil — SKD CAT-BKN</title>
-<link rel="stylesheet" href="/assets/form.css">
-<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/form.css">
+<link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/style.css">
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
@@ -320,6 +320,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="footer">SKD CAT-BKN Try Out & Bimbel</div>
 <script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/app.js"></script>
 <script>
+const BASE_URL = '<?php echo $baseUrl ?? '/permen'; ?>';
 function previewPhoto(input) {
     const errorDiv = document.getElementById('photoError');
     errorDiv.textContent = '';
@@ -365,7 +366,7 @@ async function uploadPhoto() {
     formData.append('photo', input.files[0]);
     
     try {
-        const response = await fetch('/api/upload_profile_photo.php', {
+        const response = await fetch(BASE_URL + '/api/upload_profile_photo.php', {
             method: 'POST',
             body: formData
         });

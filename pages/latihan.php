@@ -267,6 +267,7 @@ Latihan ini menggunakan skor sesuai ketentuan SKD. TWK & TIU (benar/salah), TKP 
 Dibangun berdasarkan KepmenPANRB No. 208/2025.
 </div>
 <script>
+const BASE_URL = '<?php echo $baseUrl ?? '/permen'; ?>';
 const topicsData = <?= json_encode($topicsBySubtes ?? []) ?>;
 
 // Load adaptive recommendations on page load
@@ -276,7 +277,7 @@ async function loadAdaptiveRecommendations() {
     const container = document.getElementById('adaptiveRecommendations');
     
     try {
-        const response = await fetch('/api/get_adaptive_recommendations.php');
+        const response = await fetch(BASE_URL + '/api/get_adaptive_recommendations.php');
         const data = await response.json();
         
         if (!data.success) {
@@ -383,7 +384,7 @@ async function startPersonalPractice() {
     resultDiv.innerHTML = '<p style="color:#666;text-align:center">Memuat soal...</p>';
     
     try {
-        const response = await fetch('/api/generate_user_soal.php?subtes=' + encodeURIComponent(subtes) + '&topik=' + encodeURIComponent(topik) + '&jumlah=' + encodeURIComponent(jumlah));
+        const response = await fetch(BASE_URL + '/api/generate_user_soal.php?subtes=' + encodeURIComponent(subtes) + '&topik=' + encodeURIComponent(topik) + '&jumlah=' + encodeURIComponent(jumlah));
         const data = await response.json();
         
         if (data.error) {
@@ -637,7 +638,7 @@ async function checkPersonalPractice(subtes, topik, jumlah, kesulitan) {
     formData.append('csrf_token', '<?= csrfToken() ?>');
     
     try {
-        await fetch('/api/save_practice_session.php', {
+        await fetch(BASE_URL + '/api/save_practice_session.php', {
             method: 'POST',
             body: formData
         });

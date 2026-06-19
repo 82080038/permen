@@ -3,6 +3,9 @@
  * Handles dashboard functionality including notifications, charts, and theme toggle
  */
 
+// Use BASE_URL from PHP (injected before this script loads)
+const _baseUrl = (typeof BASE_URL !== 'undefined') ? BASE_URL : '';
+
 // Theme toggle
 function toggleTheme() {
     const current = document.documentElement.getAttribute('data-theme');
@@ -47,7 +50,7 @@ let notifDropdownOpen = false;
 
 async function loadNotifications() {
     try {
-        const res = await fetch('/api/get_notifications.php?limit=10');
+        const res = await fetch(_baseUrl + '/api/get_notifications.php?limit=10');
         if (!res.ok) {
             // Silently fail if notifications endpoint is not available
             return;
@@ -105,7 +108,7 @@ function updateNotifBadge(count) {
 
 function openNotification(id, link) {
     // Mark as read
-    fetch('/api/mark_notification_read.php', {
+    fetch(_baseUrl + '/api/mark_notification_read.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -204,7 +207,7 @@ let comparisonChart = null;
 
 async function loadAnalytics() {
     try {
-        const response = await fetch('/api/get_dashboard_analytics.php');
+        const response = await fetch(_baseUrl + '/api/get_dashboard_analytics.php');
         const data = await response.json();
         
         if (data.success) {

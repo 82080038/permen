@@ -1,7 +1,7 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 
-const BASE = 'https://bimbel.bereng.info';
+const BASE = process.env.TEST_BASE_URL || 'https://bimbel.bereng.info';
 const PESERTA = {
   nama: 'Peserta Simulasi',
   no_hp: '081200001111',

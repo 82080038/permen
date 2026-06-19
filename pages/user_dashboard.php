@@ -439,7 +439,7 @@ let notifDropdownOpen = false;
 
 async function loadNotifications() {
     try {
-        const res = await fetch('/api/get_notifications.php?limit=10');
+        const res = await fetch(BASE_URL + '/api/get_notifications.php?limit=10');
         if (!res.ok) {
             // Silently fail if notifications endpoint is not available
             return;
@@ -516,7 +516,7 @@ async function openNotification(id, link) {
     try {
         const formData = new FormData();
         formData.append('notification_id', id);
-        await fetch('/api/mark_notification_read.php', { method: 'POST', body: formData });
+        await fetch(BASE_URL + '/api/mark_notification_read.php', { method: 'POST', body: formData });
     } catch (e) {}
     
     // Navigate if link exists
@@ -530,14 +530,14 @@ async function openNotification(id, link) {
 
 async function markAllRead() {
     try {
-        const res = await fetch('/api/get_notifications.php?unread_only=true');
+        const res = await fetch(BASE_URL + '/api/get_notifications.php?unread_only=true');
         const data = await res.json();
         
         if (data.success && data.data && data.data.notifications.length > 0) {
             for (const n of data.data.notifications) {
                 const formData = new FormData();
                 formData.append('notification_id', n.id);
-                await fetch('/api/mark_notification_read.php', { method: 'POST', body: formData });
+                await fetch(BASE_URL + '/api/mark_notification_read.php', { method: 'POST', body: formData });
             }
             loadNotifications();
         }
@@ -709,7 +709,7 @@ let comparisonChart = null;
 
 async function loadAnalytics() {
     try {
-        const response = await fetch('/api/get_dashboard_analytics.php');
+        const response = await fetch(BASE_URL + '/api/get_dashboard_analytics.php');
         const data = await response.json();
         
         if (data.success) {
@@ -1137,6 +1137,7 @@ $dailyHistory = $dailyQuizHistory->fetchAll();
 <div class="footer">
 Dashboard Peserta SKD CAT-BKN | Latihan persiapan Sekolah Kedinasan
 </div>
+<script>const BASE_URL = '<?php echo $baseUrl ?? '/permen'; ?>';</script>
 <script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/js/dist/user_dashboard.js"></script>
 </body>
 </html>

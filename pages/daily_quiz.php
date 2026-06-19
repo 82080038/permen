@@ -267,6 +267,7 @@ $hasCompleted = $session && $session['status'] === 'selesai';
 </div>
 
 <script>
+const BASE_URL = '<?php echo $baseUrl ?? '/permen'; ?>';
 <?php if (!$hasCompleted): ?>
 let soal = [];
 let currentIndex = 0;
@@ -285,7 +286,7 @@ function escapeHtml(text) {
 // Load soal saat halaman dimuat
 async function loadQuiz() {
     try {
-        const res = await fetch('/api/get_daily_quiz.php');
+        const res = await fetch(BASE_URL + '/api/get_daily_quiz.php');
         const data = await res.json();
         
         if (!data.success) {
@@ -382,7 +383,7 @@ function selectJawaban(opt) {
 
 async function submitAnswer(qid, jawab, ragu) {
     try {
-        await fetch('/api/submit_daily_answer.php', {
+        await fetch(BASE_URL + '/api/submit_daily_answer.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -445,7 +446,7 @@ async function finishQuiz() {
     if (!confirm('Yakin ingin menyelesaikan Daily Quiz?')) return;
     
     try {
-        const res = await fetch('/api/finish_daily_quiz.php', {
+        const res = await fetch(BASE_URL + '/api/finish_daily_quiz.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: sessionId })
@@ -518,7 +519,7 @@ async function loadLeaderboard(type) {
     container.innerHTML = '<p style="text-align:center;color:#666;font-size:.9rem">Memuat leaderboard...</p>';
     
     try {
-        const res = await fetch('/api/get_daily_quiz_leaderboard.php');
+        const res = await fetch(BASE_URL + '/api/get_daily_quiz_leaderboard.php');
         const data = await res.json();
         
         if (!data.success) {

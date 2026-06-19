@@ -100,8 +100,9 @@ $activePage = 'materi';
 </div>
 
 <script>
+const BASE_URL = '<?php echo $baseUrl ?? '/permen'; ?>';
 function toggleBookmark(materiId) {
-    fetch('/api/bookmark_question.php', {
+    fetch(BASE_URL + '/api/bookmark_question.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({materi_id: materiId})
@@ -114,7 +115,7 @@ function toggleBookmark(materiId) {
 }
 
 function markProgress(materiId) {
-    fetch('/api/update_materi_progress.php', {
+    fetch(BASE_URL + '/api/update_materi_progress.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({materi_id: materiId, progress: 100})
