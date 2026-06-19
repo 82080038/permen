@@ -3,6 +3,9 @@
  * Handles question loading, timer, navigation, and answer submission
  */
 
+console.log('[TryoutManager] Class definition loaded');
+window.tryoutManagerClassLoaded = true;
+
 class TryoutManager {
     constructor(config) {
         this.sessionId = config.sessionId;
@@ -45,6 +48,7 @@ class TryoutManager {
             subtesTimers: this.subtesTimers,
             currentSubtes: this.currentSubtes
         });
+        window.tryoutManagerInitCalled = true;
         // Initialize per-subtes remaining time
         this.subtesOrder.forEach(sub => {
             this.subtesRemaining[sub] = this.subtesTimers[sub]?.remaining || this.subtesTimers[sub]?.durasi * 60 || 1800;

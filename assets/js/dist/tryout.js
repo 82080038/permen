@@ -1,5 +1,7 @@
 (() => {
   // assets/js/src/tryout.js
+  console.log("[TryoutManager] Class definition loaded");
+  window.tryoutManagerClassLoaded = true;
   var TryoutManager = class {
     constructor(config) {
       this.sessionId = config.sessionId;
@@ -37,6 +39,7 @@
         subtesTimers: this.subtesTimers,
         currentSubtes: this.currentSubtes
       });
+      window.tryoutManagerInitCalled = true;
       this.subtesOrder.forEach((sub) => {
         this.subtesRemaining[sub] = this.subtesTimers[sub]?.remaining || this.subtesTimers[sub]?.durasi * 60 || 1800;
       });
