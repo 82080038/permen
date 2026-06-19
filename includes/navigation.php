@@ -17,8 +17,9 @@ $userRole = $_SESSION['role'] ?? '';
 
 // Detect if navigation is included from pages/ directory or root
 $baseUrl = $_ENV['BASE_URL'] ?? '/';
+$baseUrl = rtrim($baseUrl, '/') . '/';
 $basePath = $baseUrl . 'pages/';
-$apiPath = $baseUrl . 'api/'; // Use BASE_URL for API calls
+$apiPath = $baseUrl . 'api/';
 
 // Helper untuk menentukan apakah menu aktif
 function isActive($page, $active) {

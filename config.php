@@ -1,8 +1,8 @@
 <?php
 require __DIR__ . '/env_loader.php';
 
-// Global base URL - available in all files that include config.php
-$baseUrl = $_ENV['BASE_URL'] ?? '/permen';
+// Global base URL - available in all files that include config.php (no trailing slash)
+$baseUrl = rtrim($_ENV['BASE_URL'] ?? '/permen', '/');
 
 // Composer autoloading (PSR-4)
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
