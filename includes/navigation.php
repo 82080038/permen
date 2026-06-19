@@ -107,7 +107,7 @@ if (!defined('BOOTSTRAP_LOADED')) {
 
   <nav id="navMenu" class="nav-menu" role="navigation" aria-label="Main navigation">
     <?php if ($userRole === 'admin'): ?>
-    <a href="<?= $basePath ?>index.php" <?= isActive('beranda', $activePage) ?> role="menuitem">Beranda</a>
+    <a href="<?= $_navBase ?>" <?= isActive('beranda', $activePage) ?> role="menuitem">Beranda</a>
     <a href="<?= $basePath ?>admin_dashboard.php" <?= isActive('admin_dashboard', $activePage) ?> role="menuitem">Dashboard</a>
     <a href="<?= $basePath ?>admin_scheduled_tryouts.php" <?= isActive('admin_scheduled_tryouts', $activePage) ?> role="menuitem">Scheduled Tryout</a>
     <a href="<?= $basePath ?>latihan.php" <?= isActive('latihan', $activePage) ?> role="menuitem">Latihan</a>
@@ -117,7 +117,7 @@ if (!defined('BOOTSTRAP_LOADED')) {
     <a href="<?= $basePath ?>help.php" <?= isActive('help', $activePage) ?> role="menuitem">Bantuan</a>
     <a href="<?= $apiPath ?>logout.php" role="menuitem">Logout</a>
     <?php elseif ($userId): ?>
-    <a href="<?= $basePath ?>index.php" <?= isActive('beranda', $activePage) ?> role="menuitem">Beranda</a>
+    <a href="<?= $_navBase ?>" <?= isActive('beranda', $activePage) ?> role="menuitem">Beranda</a>
     <a href="<?= $basePath ?>profile.php" <?= isActive('profile', $activePage) ?> role="menuitem">Profil</a>
     <a href="<?= $basePath ?>settings.php" <?= isActive('settings', $activePage) ?> role="menuitem">Pengaturan</a>
     <a href="<?= $basePath ?>latihan.php" <?= isActive('latihan', $activePage) ?> role="menuitem">Latihan</a>
@@ -129,7 +129,7 @@ if (!defined('BOOTSTRAP_LOADED')) {
     <a href="<?= $basePath ?>help.php" <?= isActive('help', $activePage) ?> role="menuitem">Bantuan</a>
     <a href="<?= $apiPath ?>logout.php" role="menuitem">Logout</a>
     <?php else: ?>
-    <a href="<?= $basePath ?>index.php" <?= isActive('beranda', $activePage) ?> role="menuitem">Beranda</a>
+    <a href="<?= $_navBase ?>" <?= isActive('beranda', $activePage) ?> role="menuitem">Beranda</a>
     <a href="<?= $basePath ?>latihan.php" <?= isActive('latihan', $activePage) ?> role="menuitem">Latihan</a>
     <a href="<?= $basePath ?>tryout.php" <?= isActive('tryout', $activePage) ?> role="menuitem">Try Out</a>
     <a href="<?= $basePath ?>leaderboard.php" <?= isActive('leaderboard', $activePage) ?> role="menuitem">Leaderboard</a>

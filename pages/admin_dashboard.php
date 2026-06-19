@@ -1347,9 +1347,7 @@ function renderRevisionQueue(queue) {
     document.getElementById('revisionQueueList').innerHTML = html;
 }
 </script>
-</body>
-</html>
-
+<script>
 async function updateRevisionStatus(queueId) {
     const status = document.getElementById('status-' + queueId).value;
     
@@ -3183,13 +3181,6 @@ async function saveSoalEdit(){
     } else {
         alert('Gagal: ' + (data.error || 'Unknown error'));
     }
-}
-
-function escapeHtml(text){
-    if(!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 async function resetUserPassword(userId, userName){
