@@ -46,12 +46,24 @@ if (!empty($_GET['session_id'])) {
     
     if ($scheduledTryout) {
         // Create tryout session from scheduled tryout
-        $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai, status) VALUES (?, ?, NOW(), 'ongoing')");
-        $stmt->execute([$userId, $scheduledTryout['nama']]);
+        // Detect valid status value for this database
+        $insertStatus = 'berjalan'; // default local
+        try {
+            $colInfo = $pdo->query("SHOW COLUMNS FROM tryout_sessions WHERE Field = 'status'")->fetch();
+            if ($colInfo && strpos($colInfo['Type'], 'ongoing') !== false) {
+                $insertStatus = 'ongoing';
+            }
+        } catch (PDOException $e) {}
+        $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai, status) VALUES (?, ?, NOW(), ?)");
+        $stmt->execute([$userId, $scheduledTryout['nama'], $insertStatus]);
         $sessionId = $pdo->lastInsertId();
         
         // Insert session_subtes from scheduled tryout duration
-        $cfg = $pdo->query("SELECT subtes, durasi_menit, jumlah_soal, passing_grade FROM subtes_config WHERE is_active = 1 ORDER BY id");
+        try {
+            $cfg = $pdo->query("SELECT subtes, durasi_menit, jumlah_soal, passing_grade FROM subtes_config WHERE is_active = 1 ORDER BY id");
+        } catch (PDOException $e) {
+            $cfg = $pdo->query("SELECT subtes, durasi_menit, jumlah_soal, passing_grade FROM subtes_config WHERE aktif = 1 ORDER BY id");
+        }
         $ins = $pdo->prepare("INSERT INTO session_subtes (session_id, subtes, durasi_menit, jumlah_soal, passing_grade, urutan) VALUES (?,?,?,?,?,?)");
         foreach ($cfg as $c) {
             // Use scheduled tryout duration divided by 3 for each subtest

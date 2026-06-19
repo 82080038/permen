@@ -12,7 +12,11 @@ $error = '';
 $success = '';
 
 // Ambil daftar instansi aktif untuk dropdown
-$instansiList = $pdo->query("SELECT id, nama FROM instansi WHERE is_active = 1 ORDER BY nama")->fetchAll();
+try {
+    $instansiList = $pdo->query("SELECT id, nama FROM instansi WHERE is_active = 1 ORDER BY nama")->fetchAll();
+} catch (PDOException $e) {
+    $instansiList = $pdo->query("SELECT id, nama FROM instansi WHERE aktif = 1 ORDER BY nama")->fetchAll();
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!validateCsrf($_POST['csrf_token'] ?? '')) {
@@ -49,8 +53,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     foreach ($instansiList as $i) {
                         if ($i['id'] == $instansiId) { $targetInstansi = $i['nama']; break; }
                     }
-                    $stmt = $pdo->prepare("INSERT INTO users (nama, no_hp, email, password, role, target_instansi, status, created_at) VALUES (?, ?, ?, ?, 'user', ?, 'active', NOW())");
-                    $stmt->execute([$nama, $noHp, null, $hash, $targetInstansi ?: null]);
+                    // Use password_hash column (local) or password column (production)
+                    try {
+                        $stmt = $pdo->prepare("INSERT INTO users (nama, no_hp, email, password_hash, role, instansi, status, created_at) VALUES (?, ?, ?, ?, 'user', ?, 'active', NOW())");
+                        $stmt->execute([$nama, $noHp, null, $hash, $targetInstansi ?: null]);
+                    } catch (PDOException $e) {
+                        // Fallback for production database with 'password' column
+                        $stmt = $pdo->prepare("INSERT INTO users (nama, no_hp, email, password, role, target_instansi, status, created_at) VALUES (?, ?, ?, ?, 'user', ?, 'active', NOW())");
+                        $stmt->execute([$nama, $noHp, null, $hash, $targetInstansi ?: null]);
+                    }
                     $success = 'Pendaftaran berhasil! Silakan login dengan nomor HP dan password Anda.';
                 }
             }
@@ -65,8 +76,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
 <title>Register — SKD CAT-BKN</title>
-<link rel="stylesheet" href="/assets/form.css">
-<link rel="stylesheet" href="/assets/style.css">
+<?php $baseUrl = $_ENV['BASE_URL'] ?? '/permen'; ?>
+<link rel="stylesheet" href="<?= $baseUrl ?>/assets/form.css">
+<link rel="stylesheet" href="<?= $baseUrl ?>/assets/style.css">
 </head>
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
@@ -125,6 +137,6 @@ Sudah punya akun? <a href="login.php" class="link">Login di sini</a>
 </div>
 </div>
 <div class="footer">SKD CAT-BKN Try Out & Bimbel</div>
-<script src="/assets/app.js"></script>
+<script src="<?= $baseUrl ?>/assets/app.js"></script>
 </body>
 </html>

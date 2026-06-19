@@ -26,9 +26,15 @@ $practiceHistory = $historyStmt->fetchAll(PDO::FETCH_ASSOC);
 $subtes = $_GET['subtes'] ?? '';
 if ($subtes && in_array($subtes, ['TWK','TIU','TKP'])) {
     $nama = "Latihan $subtes";
-    $cfg = $pdo->prepare("SELECT durasi_menit, jumlah_soal, passing_grade FROM subtes_config WHERE subtes = ? AND is_active = 1");
-    $cfg->execute([$subtes]);
-    $c = $cfg->fetch();
+    try {
+        $cfg = $pdo->prepare("SELECT durasi_menit, jumlah_soal, passing_grade FROM subtes_config WHERE subtes = ? AND is_active = 1");
+        $cfg->execute([$subtes]);
+        $c = $cfg->fetch();
+    } catch (PDOException $e) {
+        $cfg = $pdo->prepare("SELECT durasi_menit, jumlah_soal, passing_grade FROM subtes_config WHERE subtes = ? AND aktif = 1");
+        $cfg->execute([$subtes]);
+        $c = $cfg->fetch();
+    }
     $durasi = (int)($c['durasi_menit'] ?? ($subtes === 'TWK' ? 30 : ($subtes === 'TIU' ? 35 : 45)));
     $jumlah = (int)($c['jumlah_soal'] ?? ($subtes === 'TWK' ? 30 : ($subtes === 'TIU' ? 35 : 45)));
     $passing = (int)($c['passing_grade'] ?? ($subtes === 'TWK' ? 65 : ($subtes === 'TIU' ? 80 : 126)));

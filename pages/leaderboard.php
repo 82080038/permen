@@ -5,10 +5,10 @@ require '../helpers.php';
 
 // Ambil daftar instansi aktif untuk dropdown
 try {
-    $instansiList = $pdo->query("SELECT id, nama FROM instansi WHERE is_active = 1 ORDER BY nama")->fetchAll();
+    $instansiList = $pdo->query("SELECT id, kode, nama FROM instansi WHERE is_active = 1 ORDER BY nama")->fetchAll();
 } catch (PDOException $e) {
     try {
-        $instansiList = $pdo->query("SELECT id, nama FROM instansi WHERE aktif = 1 ORDER BY nama")->fetchAll();
+        $instansiList = $pdo->query("SELECT id, kode, nama FROM instansi WHERE aktif = 1 ORDER BY nama")->fetchAll();
     } catch (PDOException $e2) {
         $instansiList = [];
     }

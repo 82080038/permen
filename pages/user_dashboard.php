@@ -4,7 +4,8 @@ require '../helpers.php';
 
 // Guard: only logged in
 if (empty($_SESSION['user_id'])) {
-    header('Location: /permen/pages/login.php');
+    $baseUrl = $_ENV['BASE_URL'] ?? '/permen';
+    header('Location: ' . $baseUrl . '/pages/login.php');
     exit;
 }
 
