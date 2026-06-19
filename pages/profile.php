@@ -2,10 +2,15 @@
 require '../config.php';
 require '../helpers.php';
 
-// Guard: only logged in
+// Guard: only logged in peserta
 if (empty($_SESSION['user_id'])) {
     $baseUrl = $_ENV['BASE_URL'] ?? '/permen';
     header('Location: ' . $baseUrl . '/pages/login.php');
+    exit;
+}
+if (($_SESSION['user_role'] ?? $_SESSION['role'] ?? '') === 'admin') {
+    $baseUrl = $_ENV['BASE_URL'] ?? '/permen';
+    header('Location: ' . $baseUrl . '/pages/admin_dashboard.php');
     exit;
 }
 

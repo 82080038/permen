@@ -6,6 +6,10 @@ if (empty($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
+if (($_SESSION['user_role'] ?? $_SESSION['role'] ?? '') === 'admin') {
+    header('Location: admin_dashboard.php');
+    exit;
+}
 $userId = $_SESSION['user_id'];
 
 // Fetch available topics for each subtes

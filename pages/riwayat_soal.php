@@ -7,6 +7,10 @@ if (empty($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
+if (($_SESSION['user_role'] ?? $_SESSION['role'] ?? '') === 'admin') {
+    header('Location: admin_dashboard.php');
+    exit;
+}
 
 $userId = (int)$_SESSION['user_id'];
 $userName = e($_SESSION['user_nama'] ?? 'Peserta');

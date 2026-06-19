@@ -6,6 +6,10 @@ if (empty($_SESSION['user_id'])) {
     header('Location: ' . $baseUrl . '/pages/login.php');
     exit;
 }
+if (($_SESSION['user_role'] ?? $_SESSION['role'] ?? '') === 'admin') {
+    header('Location: ' . $baseUrl . '/pages/admin_dashboard.php');
+    exit;
+}
 $userId = (int)$_SESSION['user_id'];
 
 // Cek session aktif user, jika tidak ada buat baru

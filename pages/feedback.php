@@ -2,9 +2,13 @@
 require '../config.php';
 require '../helpers.php';
 
-// Guard: only logged in users
+// Guard: only logged in peserta (not admin)
 if (empty($_SESSION['user_id'])) {
     header('Location: login.php');
+    exit;
+}
+if (($_SESSION['user_role'] ?? $_SESSION['role'] ?? '') === 'admin') {
+    header('Location: admin_dashboard.php');
     exit;
 }
 
