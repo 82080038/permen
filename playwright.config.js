@@ -18,7 +18,7 @@ module.exports = defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     // Jalankan dalam mode headed untuk testing dengan tampilan browser
-    headless: true,
+    headless: false,
     launchOptions: {
       slowMo: 0,
     },
