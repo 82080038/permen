@@ -280,10 +280,13 @@ test.describe.serial('Peserta Full Simulation', () => {
         lastError: tm?.lastError || 'none',
         sessionStatus: tm?.sessionStatus || 'unknown',
         isLoading: tm?.isLoading || false,
-        tryoutJsLoaded: typeof TryoutManager !== 'undefined'
+        tryoutJsLoaded: typeof TryoutManager !== 'undefined',
+        classLoaded: window.tryoutManagerClassLoaded || false,
+        initCalled: window.tryoutManagerInitCalled || false
       };
     });
     console.log(`  Debug: hasManager=${debugInfo.hasManager}, soalLength=${debugInfo.soalLength}, sessionId=${debugInfo.sessionId}, lastError=${debugInfo.lastError}, sessionStatus=${debugInfo.sessionStatus}, isLoading=${debugInfo.isLoading}, tryoutJsLoaded=${debugInfo.tryoutJsLoaded}`);
+    console.log(`  Debug: classLoaded=${debugInfo.classLoaded}, initCalled=${debugInfo.initCalled}`);
     console.log(`  API responses: ${JSON.stringify(apiResponses)}`);
     console.log(`  Console messages: ${JSON.stringify(consoleMessages)}`);
 
