@@ -129,6 +129,7 @@ class TryoutManager {
     }
 
     async loadSoal() {
+        console.log('[TryoutManager] loadSoal called with sessionId:', this.sessionId, 'baseUrl:', this.baseUrl);
         try {
             const res = await fetch(`${this.baseUrl}/api/get_soal.php?session_id=${this.sessionId}`, {
                 credentials: 'include',
