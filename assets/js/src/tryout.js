@@ -39,6 +39,12 @@ class TryoutManager {
     }
 
     init() {
+        console.log('[TryoutManager] init called', {
+            sessionId: this.sessionId,
+            baseUrl: this.baseUrl,
+            subtesTimers: this.subtesTimers,
+            currentSubtes: this.currentSubtes
+        });
         // Initialize per-subtes remaining time
         this.subtesOrder.forEach(sub => {
             this.subtesRemaining[sub] = this.subtesTimers[sub]?.remaining || this.subtesTimers[sub]?.durasi * 60 || 1800;
