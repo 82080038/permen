@@ -13,7 +13,7 @@ $id = $_GET['id'] ?? '';
 
 if ($id) {
     // Cari di database
-    $stmt = $pdo->prepare("SELECT * FROM tips WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT * FROM tips_tricks WHERE id = ?");
     $stmt->execute([$id]);
     $tip = $stmt->fetch();
     
@@ -24,7 +24,7 @@ if ($id) {
 }
 
 if ($subtes) {
-    $stmt = $pdo->prepare("SELECT * FROM tips WHERE subtes = ? ORDER BY id");
+    $stmt = $pdo->prepare("SELECT * FROM tips_tricks WHERE subtes = ? ORDER BY id");
     $stmt->execute([strtolower($subtes)]);
     $tips = $stmt->fetchAll();
     
@@ -35,6 +35,6 @@ if ($subtes) {
 }
 
 // Return all tips if no parameters
-$stmt = $pdo->query("SELECT * FROM tips ORDER BY subtes, id");
+$stmt = $pdo->query("SELECT * FROM tips_tricks ORDER BY subtes, id");
 $tips = $stmt->fetchAll();
 ApiResponse::success($tips, 'All tips retrieved');
