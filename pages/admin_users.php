@@ -189,7 +189,7 @@ tr:hover{background:#f8f9fa}
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000">Lanjut ke konten utama</a>
 <?php $pageTitle = 'Kelola Pengguna'; $activePage = 'admin_users'; ?>
-<?php require '../includes/navigation.php'; ?>
+<?php require '../includes/nav_admin.php'; ?>
 
 <div class="container" id="main-content">
 <h1>Kelola Pengguna</h1>

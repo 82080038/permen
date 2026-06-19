@@ -11,7 +11,7 @@ header('Content-Type: application/json');
 
 try {
     // Get user count
-    $userCount = $pdo->query("SELECT COUNT(*) as count FROM users")->fetch()['count'];
+    $userCount = $pdo->query("SELECT COUNT(*) as count FROM users WHERE role='user'")->fetch()['count'];
     
     // Get completed tryout count
     $tryoutCount = $pdo->query("SELECT COUNT(*) as count FROM tryout_sessions WHERE status = 'completed'")->fetch()['count'];

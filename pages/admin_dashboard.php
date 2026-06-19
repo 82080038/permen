@@ -310,7 +310,7 @@ tr:hover{background:#f8f9fa}
 <body>
 <a href="#main-content" class="skip-link" style="position:absolute;top:-40px;left:0;background:#1a5276;color:#fff;padding:8px;z-index:1000;transition:top 0.3s">Lanjut ke konten utama</a>
 <?php $pageTitle = 'Dashboard Admin — SKD CAT-BKN'; $activePage = 'admin_dashboard'; $showThemeToggle = true; $showNotifications = true; ?>
-<?php require '../includes/navigation.php'; ?>
+<?php require '../includes/nav_admin.php'; ?>
 
 <div class="container" id="main-content">
 <div class="stats">

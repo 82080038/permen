@@ -30,7 +30,7 @@ try {
     // Assume production default
 }
 
-$where = "ts.status IN ('" . implode("','", $validStatuses) . "')";
+$where = "ts.status IN ('" . implode("','", $validStatuses) . "') AND u.role = 'user'";
 $params = [];
 
 if ($period === 'week') {
@@ -186,7 +186,7 @@ foreach (['TWK','TIU','TKP'] as $s) {
         // Assume production default
     }
     
-    $whereSubtes = "ts.status IN ('" . implode("','", $validStatuses) . "') AND ts.$scoreCol > 0";
+    $whereSubtes = "ts.status IN ('" . implode("','", $validStatuses) . "') AND ts.$scoreCol > 0 AND u.role = 'user'";
     $paramsSubtes = [];
     
     if ($instansiFilter) {
