@@ -242,6 +242,20 @@ test.describe.serial('Peserta Full Simulation', () => {
     await page.waitForURL(/user_dashboard/, { timeout: 15000 });
 
     // Go to tryout page - this creates or resumes a session
+    // Set up listeners BEFORE navigating to catch all events during page load
+    const apiResponses = [];
+    const consoleMessages = [];
+    page.on('response', async (response) => {
+      if (response.url().includes('get_soal.php')) {
+        const status = response.status();
+        const body = await response.text().catch(() => 'no body');
+        apiResponses.push({ status, body: body.substring(0, 500) });
+      }
+    });
+    page.on('console', msg => {
+      consoleMessages.push({ type: msg.type(), text: msg.text() });
+    });
+
     await page.goto(BASE + '/pages/tryout.php');
     await page.waitForTimeout(3000);
 
@@ -249,22 +263,6 @@ test.describe.serial('Peserta Full Simulation', () => {
     const url = page.url();
     expect(url).toContain('tryout');
     console.log(`  ✓ Tryout page loaded: ${url.replace(BASE, '')}`);
-
-    // Monitor network requests to see API response
-    const apiResponses = [];
-    page.on('response', async (response) => {
-      if (response.url().includes('get_soal.php')) {
-        const status = response.status();
-        const body = await response.text().catch(() => 'no body');
-        apiResponses.push({ status, body: body.substring(0, 200) });
-      }
-    });
-
-    // Monitor console messages
-    const consoleMessages = [];
-    page.on('console', msg => {
-      consoleMessages.push({ type: msg.type(), text: msg.text() });
-    });
 
     // Wait for soal to load via JS - wait longer for production
     await page.waitForTimeout(10000);

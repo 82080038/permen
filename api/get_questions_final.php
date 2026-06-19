@@ -40,14 +40,16 @@ try {
     ApiResponse::serverError('Database connection failed');
 }
 
-// Session configuration
+// Session configuration - must match config.php exactly for session sharing
 ini_set('session.gc_maxlifetime', 3600);
 ini_set('session.cookie_httponly', 1);
 ini_set('session.cookie_samesite', 'Lax');
 ini_set('session.use_strict_mode', 1);
+ini_set('session.use_cookies', 1);
+ini_set('session.use_only_cookies', 1);
 
-$secureCookie = (($_ENV['APP_ENV'] ?? 'development') === 'production') && 
-                 (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] == 443);
+$secureCookie = $isHttps && (($_ENV['APP_ENV'] ?? 'development') === 'production');
 
 session_set_cookie_params([
     'lifetime' => 3600,

@@ -11,8 +11,8 @@ $_SESSION = [];
 
 // Destroy session cookie
 if (isset($_COOKIE[session_name()])) {
-    $secure = (($_ENV['APP_ENV'] ?? 'development') === 'production') && 
-             (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] == 443);
+    $secure = $isHttps && (($_ENV['APP_ENV'] ?? 'development') === 'production');
     
     setcookie(session_name(), '', [
         'expires' => time() - 3600,

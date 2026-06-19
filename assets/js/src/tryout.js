@@ -166,17 +166,32 @@ class TryoutManager {
             }
 
             const data = JSON.parse(text);
-            if (data.error) {
-                if (data.error.includes('Session sudah selesai') || data.error.includes('tidak aktif')) {
+
+            // Check for error in both data.error and data.message formats
+            const errorMsg = data.error || (data.success === false ? data.message : null);
+            if (errorMsg) {
+                if (errorMsg.includes('Session sudah selesai') || errorMsg.includes('tidak aktif')) {
                     alert('Sesi tryout Anda telah berakhir atau tidak aktif. Anda akan diarahkan ke halaman hasil.');
                     window.location.href = `${this.baseUrl}/pages/hasil.php?session_id=${this.sessionId}`;
                     return;
                 }
-                alert(data.error);
+                if (errorMsg.includes('Autentikasi') || errorMsg.includes('login')) {
+                    alert('Sesi Anda telah berakhir. Silakan login kembali.');
+                    window.location.href = `${this.baseUrl}/pages/login.php`;
+                    return;
+                }
+                this.lastError = errorMsg;
+                alert('Gagal memuat soal: ' + errorMsg);
                 return;
             }
 
             const responseData = data.data || data;
+            if (!responseData || !responseData.soal || !Array.isArray(responseData.soal)) {
+                this.lastError = 'Format data soal tidak valid: ' + text.substring(0, 200);
+                alert('Gagal memuat soal: format data tidak valid. Silakan refresh halaman.');
+                return;
+            }
+
             this.soal = responseData.soal;
             this.passages = responseData.passages || {};
             console.log('Loaded', this.soal.length, 'questions');

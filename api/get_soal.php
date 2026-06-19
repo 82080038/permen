@@ -59,15 +59,18 @@ try {
     exit;
 }
 
-// Session configuration
+// Session configuration - must match config.php exactly for session sharing
 ini_set('session.gc_maxlifetime', 3600);
 ini_set('session.cookie_httponly', 1);
 ini_set('session.cookie_samesite', 'Lax');
 ini_set('session.use_strict_mode', 1);
+ini_set('session.use_cookies', 1);
+ini_set('session.use_only_cookies', 1);
 
-// Set secure flag based on environment (HTTPS required for production)
+// Set secure flag based on environment - must match config.php HTTPS detection
 $isProduction = ($_ENV['APP_ENV'] ?? 'development') === 'production';
-$secureCookie = $isProduction && (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] == 443);
+$secureCookie = $isHttps && $isProduction;
 
 session_set_cookie_params([
     'lifetime' => 3600,
