@@ -12,7 +12,8 @@
     "test:headed": "npx playwright test --headed",
     "test:ui": "npx playwright test --ui",
     "test:debug": "npx playwright test --debug",
-    "build:js": "esbuild assets/js/src/*.js --bundle --outdir=assets/js/dist --minify"
+    "build:js": "esbuild assets/js/src/*.js --bundle --outdir=assets/js/dist --minify",
+    "build:js:debug": "esbuild assets/js/src/*.js --bundle --outdir=assets/js/dist"
   },
   "keywords": [],
   "author": "",

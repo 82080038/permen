@@ -1,31 +1,705 @@
-(()=>{var S=class{constructor(t){this.sessionId=t.sessionId,this.csrfToken=t.csrfToken,this.strictMode=t.strictMode,this.baseUrl=t.baseUrl,this.remainingSeconds=t.remainingSeconds,this.subtesTimers=t.subtesTimers,this.currentSubtes=t.currentSubtes,this.soal=[],this.passages={},this.currentIdx=0,this.answers={},this.marked={},this.bookmarked={},this.totalSeconds=this.remainingSeconds,this.timerInterval=null,this.isPaused=!1,this.LS_KEY="cat_answers_"+this.sessionId,this.subtesOrder=Object.keys(this.subtesTimers),this.subtesRemaining={},this.activeSubtesIdx=this.subtesOrder.indexOf(this.currentSubtes),this.currentFilter="all",this.touchStartX=0,this.touchStartY=0,this.SWIPE_THRESHOLD=50,this.blurCount=0,this.blurAlertShown=!1,this.init()}init(){console.log("[TryoutManager] init called",{sessionId:this.sessionId,baseUrl:this.baseUrl,subtesTimers:this.subtesTimers,currentSubtes:this.currentSubtes}),this.subtesOrder.forEach(t=>{this.subtesRemaining[t]=this.subtesTimers[t]?.remaining||this.subtesTimers[t]?.durasi*60||1800}),this.loadSoal(),this.bindEvents()}bindEvents(){document.addEventListener("contextmenu",t=>t.preventDefault()),document.addEventListener("copy",t=>{t.target.closest(".passage-bacaan, .question")&&t.preventDefault()}),document.addEventListener("cut",t=>{t.target.closest(".passage-bacaan, .question")&&t.preventDefault()}),window.addEventListener("blur",()=>{this.blurCount++,this.blurCount>=3&&!this.blurAlertShown&&(this.blurAlertShown=!0,alert("Peringatan: Anda telah meninggalkan halaman tryout terlalu sering. Integritas tes akan dievaluasi."))}),document.addEventListener("keydown",t=>{(t.key==="F5"||t.ctrlKey&&t.key==="r")&&(t.preventDefault(),alert("Refresh tidak diizinkan selama tryout.")),t.ctrlKey&&t.key==="u"&&t.preventDefault(),t.ctrlKey&&t.shiftKey&&t.key==="I"&&t.preventDefault(),t.key==="F12"&&t.preventDefault()}),history.pushState(null,"",location.href),window.addEventListener("popstate",()=>{history.pushState(null,"",location.href),alert("Navigasi back tidak diizinkan selama tryout.")}),document.addEventListener("touchstart",t=>{this.touchStartX=t.changedTouches[0].screenX,this.touchStartY=t.changedTouches[0].screenY},{passive:!0}),document.addEventListener("touchend",t=>{if(!this.soal.length)return;let e=t.changedTouches[0].screenX,s=t.changedTouches[0].screenY,n=e-this.touchStartX,a=s-this.touchStartY;Math.abs(n)>Math.abs(a)&&Math.abs(n)>this.SWIPE_THRESHOLD&&(n<0?this.nextSoal():this.prevSoal())},{passive:!0}),document.addEventListener("keydown",t=>{if(!this.soal.length)return;let e=t.key.toUpperCase();["A","B","C","D","E"].includes(e)&&document.querySelectorAll('input[name="jawaban"]').forEach(n=>{n.value===e&&(n.checked=!0,n.dispatchEvent(new Event("change")))}),(e==="ARROWLEFT"||e==="ARROWUP")&&this.prevSoal(),(e==="ARROWRIGHT"||e==="ARROWDOWN")&&this.nextSoal(),e==="M"&&this.toggleMark()})}async loadSoal(){console.log("[TryoutManager] loadSoal called with sessionId:",this.sessionId,"baseUrl:",this.baseUrl);try{let t=await fetch(`${this.baseUrl}/api/get_soal.php?session_id=${this.sessionId}`,{credentials:"include",headers:{Accept:"application/json","X-Requested-With":"XMLHttpRequest"}});if(t.status===401||t.status===403){alert("Sesi Anda telah berakhir. Silakan login kembali."),window.location.href=`${this.baseUrl}/pages/login.php`;return}if(!t.ok)throw new Error(`HTTP ${t.status}: ${t.statusText}`);let e=await t.text();if(e.trim().startsWith("<")||e.trim().startsWith("<!DOCTYPE"))throw new Error("Server returned error page instead of JSON");let s=JSON.parse(e);if(s.error){if(s.error.includes("Session sudah selesai")||s.error.includes("tidak aktif")){alert("Sesi tryout Anda telah berakhir atau tidak aktif. Anda akan diarahkan ke halaman hasil."),window.location.href=`${this.baseUrl}/pages/hasil.php?session_id=${this.sessionId}`;return}alert(s.error);return}let n=s.data||s;this.soal=n.soal,this.passages=n.passages||{},console.log("Loaded",this.soal.length,"questions"),console.log("First question:",this.soal[0]),this.soal.length>0&&(this.currentSubtes=this.soal[0].subtes,this.activeSubtesIdx=this.subtesOrder.indexOf(this.currentSubtes),console.log("Set currentSubtes to:",this.currentSubtes)),this.restoreLocalAnswers();let a=document.getElementById("loadingIndicator");a&&(a.style.display="none"),this.renderNumberGrid(),this.renderSoal(0),this.startTimer(),this.strictMode&&(document.getElementById("strictModeIndicator").style.display="block",document.getElementById("btnPrev").disabled=!0,document.getElementById("btnPrev").style.opacity="0.5",document.getElementById("btnPrev").style.cursor="not-allowed")}catch(t){alert("Gagal memuat soal: "+t.message+". Silakan refresh halaman atau periksa koneksi internet Anda.")}}startTimer(){let t=!1;this.timerInterval=setInterval(()=>{if(this.isPaused)return;if(this.currentSubtes&&this.subtesRemaining[this.currentSubtes]>0&&this.subtesRemaining[this.currentSubtes]--,this.totalSeconds--,!t&&this.totalSeconds===300&&(t=!0,alert("PERINGATAN: Sesi Anda akan berakhir dalam 5 menit. Jawaban Anda akan otomatis disimpan."),this.saveLocalAnswers()),this.totalSeconds<=0){clearInterval(this.timerInterval),this.finishTryout();return}if(this.currentSubtes&&this.subtesRemaining[this.currentSubtes]<=0){this.activeSubtesIdx+1<this.subtesOrder.length?(alert("Waktu subtes "+this.currentSubtes+" habis! Anda akan dipindahkan ke subtes berikutnya."),this.advanceToNextSubtes()):(clearInterval(this.timerInterval),this.finishTryout());return}let e=Math.floor(this.totalSeconds/60).toString().padStart(2,"0"),s=(this.totalSeconds%60).toString().padStart(2,"0");document.getElementById("timer").textContent=e+":"+s},1e3)}renderNumberGrid(){let t=document.getElementById("numberGrid");t.innerHTML="";let e=0,s=0;this.soal.forEach((o,i)=>{if(this.currentFilter==="ragu"&&!this.marked[o.answer_id]||this.currentFilter==="unanswered"&&this.answers[o.answer_id])return;let l=document.createElement("button");l.textContent=i+1,l.onclick=()=>this.renderSoal(i),i===this.currentIdx&&l.classList.add("active"),this.answers[o.answer_id]&&(l.classList.add("answered"),e++),this.marked[o.answer_id]&&(l.classList.add("marked"),s++),t.appendChild(l)});let n=document.getElementById("navStatus");if(n){let o=this.soal.length,i='<strong style="color:#27ae60">'+e+'</strong> dijawab, <strong style="color:#999">'+(o-e)+"</strong> belum"+(s>0?' (<strong style="color:#f39c12">'+s+"</strong> ragu)":"")+(this.currentFilter!=="all"?' <span style="color:#e74c3c">[Filter: '+this.currentFilter+"]</span>":"");n.innerHTML=i}let a=t.querySelector("button.active");a&&a.scrollIntoView({behavior:"smooth",block:"nearest",inline:"nearest"})}advanceToNextSubtes(){let t=this.activeSubtesIdx+1;if(t>=this.subtesOrder.length){this.finishTryout();return}let e=this.subtesOrder[t],s=this.subtesOrder[this.activeSubtesIdx];fetch(`${this.baseUrl}/api/next_subtes.php`,{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-Token":this.csrfToken},body:JSON.stringify({session_id:this.sessionId,current_subtes:s,next_subtes:e})}),this.currentSubtes=e,this.activeSubtesIdx=t;let n=this.soal.findIndex(a=>a.subtes===e);n>=0&&this.renderSoal(n)}renderSoal(t){console.log("renderSoal called with idx:",t),this.currentIdx=t;let e=this.soal[t];if(console.log("Rendering question",t,e),e.subtes!==this.currentSubtes){console.log("Subtes change detected:",this.currentSubtes,"->",e.subtes);let r=this.subtesOrder.indexOf(this.currentSubtes),c=this.subtesOrder.indexOf(e.subtes);if(c>r){let m=this.soal.filter(g=>g.subtes===this.currentSubtes).filter(g=>!this.answers[g.answer_id]).length,f="Anda akan pindah ke subtes "+e.subtes+`.
-Soal `+this.currentSubtes+" yang belum dijawab: "+m+`
-Waktu `+this.currentSubtes+` yang tersisa tidak bisa digunakan untuk subtes lain.
-
-Yakin ingin lanjut?`;if(!confirm(f)){let g=this.soal.map(y=>y.subtes).lastIndexOf(this.currentSubtes);g>=0&&(this.currentIdx=g),console.log("User cancelled subtes change, returning");return}fetch(`${this.baseUrl}/api/next_subtes.php`,{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-Token":this.csrfToken},body:JSON.stringify({session_id:this.sessionId,current_subtes:this.currentSubtes,next_subtes:e.subtes})}),this.currentSubtes=e.subtes,this.activeSubtesIdx=c}}console.log("Setting subtes-info"),document.getElementById("subtes-info").textContent=e.subtes+" \u2014 Soal "+(t+1)+" dari "+this.soal.length;let s=document.getElementById("passageBox"),n=document.getElementById("passageJudul"),a=document.getElementById("passageBacaan");if(e.passage_id&&this.passages[e.passage_id]){let r=this.passages[e.passage_id],c=this.soal.filter(m=>m.passage_id==e.passage_id).length,k=this.soal.filter((m,f)=>m.passage_id==e.passage_id&&f<=t).length;s.style.display="block",n.textContent=r.judul?this.escapeHtml(r.judul):"Bacaan",a.innerHTML='<div class="passage-info">Soal '+k+" dari "+c+" dalam bacaan ini</div>"+this.escapeHtml(r.bacaan)}else s.style.display="none",n.textContent="",a.innerHTML="";let o=this.escapeHtml(e.pertanyaan),l='<div class="question '+(e.pertanyaan.length>300?"question-scrollable":"")+'"><strong>'+(t+1)+".</strong> "+o+"</div>";e.image_url&&(l+='<img src="'+this.escapeHtml(e.image_url)+`" class="question-image" alt="Gambar soal" loading="lazy" onerror="this.style.display='none'" onclick="openZoom(this.src)" style="cursor:zoom-in">`),l+='<div class="options">',["A","B","C","D","E"].forEach(r=>{let c=this.answers[e.answer_id]===r?"selected":"";l+='<label class="'+c+'"><input type="radio" name="jawaban" value="'+r+'" '+(c?"checked":"")+' onchange="window.tryoutManager.pilihJawaban('+e.answer_id+",'"+r+`',this)"> `+r+". "+this.escapeHtml(e["pilihan_"+r.toLowerCase()])+"</label>"}),l+="</div>",l+='<div class="pembahasan" id="pembahasanBox" style="display:none">'+this.escapeHtml(e.pembahasan)+"</div>",console.log("Setting innerHTML for soalContainer"),document.getElementById("soalContainer").innerHTML=l,console.log("innerHTML set successfully"),this.renderNumberGrid();let h=document.getElementById("soalContainer"),u=h.getBoundingClientRect();(u.top<0||u.top>window.innerHeight)&&h.scrollIntoView({behavior:"smooth",block:"start"})}pilihJawaban(t,e,s){this.answers[t]=e,document.querySelectorAll(".options label").forEach(n=>n.classList.remove("selected")),s.closest("label").classList.add("selected"),this.renderNumberGrid(),this.saveLocalAnswers(),fetch(`${this.baseUrl}/api/submit_jawaban.php`,{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-Token":this.csrfToken},body:JSON.stringify({answer_id:t,jawaban:e,is_ragu:this.marked[t]?1:0})}).then(n=>{(n.status===401||n.status===403)&&(alert("Sesi Anda telah berakhir. Silakan login kembali."),window.location.href=`${this.baseUrl}/pages/login.php`)}).catch(n=>{console.error("Error submitting answer:",n)}),setTimeout(()=>{let n=this.soal[this.currentIdx];if(this.marked[n.answer_id])return;if(this.currentIdx>=this.soal.length-1){let l=Object.keys(this.answers).length,h=this.soal.length,u=Object.values(this.marked).filter(Boolean).length,r=`Selamat! Anda telah menjawab soal terakhir.
-
-`;r+="Soal dijawab: "+l+" / "+h+`
-`,u>0&&(r+="Ragu-ragu: "+u+`
-
-`),r+="Klik OK untuk melihat hasil tryout.",alert(r),this.finishTryout();return}let a=this.currentIdx+1,o=this.soal[this.currentIdx].subtes,i=this.soal[a].subtes;if(o!==i){let h=this.soal.filter(r=>r.subtes===o).filter(r=>!this.answers[r.answer_id]).length,u="Anda akan pindah ke subtes "+i+`.
-Soal `+o+" yang belum dijawab: "+h+`
-Waktu `+o+` yang tersisa tidak bisa digunakan untuk subtes lain.
-
-Yakin ingin lanjut?`;if(!confirm(u))return;fetch(`${this.baseUrl}/api/next_subtes.php`,{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-Token":this.csrfToken},body:JSON.stringify({session_id:this.sessionId,current_subtes:o,next_subtes:i})}),this.currentSubtes=i,this.activeSubtesIdx=this.subtesOrder.indexOf(i)}this.renderSoal(a)},400)}prevSoal(){if(this.strictMode){alert("Strict Mode aktif: Anda tidak bisa kembali ke soal sebelumnya.");return}this.currentIdx>0&&this.renderSoal(this.currentIdx-1)}nextSoal(){if(this.currentIdx>=this.soal.length-1)return;let t=this.currentIdx+1,e=this.soal[this.currentIdx].subtes,s=this.soal[t].subtes;if(e!==s){let a=this.soal.filter(i=>i.subtes===e).filter(i=>!this.answers[i.answer_id]).length,o="Anda akan pindah ke subtes "+s+`.
-Soal `+e+" yang belum dijawab: "+a+`
-Waktu `+e+` yang tersisa tidak bisa digunakan untuk subtes lain.
-
-Yakin ingin lanjut?`;if(!confirm(o))return;fetch(`${this.baseUrl}/api/next_subtes.php`,{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-Token":this.csrfToken},body:JSON.stringify({session_id:this.sessionId,current_subtes:e,next_subtes:s})}),this.currentSubtes=s,this.activeSubtesIdx=this.subtesOrder.indexOf(s)}this.renderSoal(t)}saveLocalAnswers(){try{let t=JSON.stringify({answers:this.answers,marked:this.marked,savedAt:Date.now()});localStorage.setItem(this.LS_KEY,t)}catch(t){if(t.name==="QuotaExceededError"){console.error("LocalStorage quota exceeded. Attempting to clear old data...");for(let e=0;e<localStorage.length;e++){let s=localStorage.key(e);if(s&&s.startsWith("cat_answers_")&&s!==this.LS_KEY){localStorage.removeItem(s),console.log("Cleared old session:",s);try{let n=JSON.stringify({answers:this.answers,marked:this.marked,savedAt:Date.now()});localStorage.setItem(this.LS_KEY,n),console.log("Successfully saved after clearing old data");return}catch{console.error("Still cannot save after clearing old data")}}}alert("Peringatan: Penyimpanan browser penuh. Jawaban Anda tetap disimpan ke server, tapi tidak dapat disimpan secara lokal untuk recovery.")}else console.error("Error saving to localStorage:",t)}}restoreLocalAnswers(){let t=localStorage.getItem(this.LS_KEY);if(t)try{let e=JSON.parse(t);e.answers&&Object.assign(this.answers,e.answers),e.marked&&Object.assign(this.marked,e.marked)}catch(e){console.error("Error restoring from localStorage:",e)}}clearLocalAnswers(){try{localStorage.removeItem(this.LS_KEY)}catch(t){console.error("Error clearing localStorage:",t)}}toggleMark(){let t=this.soal[this.currentIdx];this.marked[t.answer_id]=!this.marked[t.answer_id],this.saveLocalAnswers(),this.renderNumberGrid();let e=document.getElementById("btnMark");this.marked[t.answer_id]?(e.textContent="Ragu \u2713",e.title="Auto-advance dinonaktifkan untuk soal ini"):(e.textContent="Ragu (M)",e.title="Tandai ragu-ragu"),fetch(`${this.baseUrl}/api/mark_revision.php`,{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-Token":this.csrfToken},body:JSON.stringify({question_id:t.question_id,needs_revision:this.marked[t.answer_id]?1:0})})}filterRagu(){this.currentFilter="ragu",this.renderNumberGrid()}filterUnanswered(){this.currentFilter="unanswered",this.renderNumberGrid()}showAll(){this.currentFilter="all",this.renderNumberGrid()}async togglePause(){let t=document.getElementById("btnPause"),e=document.getElementById("pauseIndicator");if(this.isPaused)try{let s=await fetch(`${this.baseUrl}/api/resume_tryout.php`,{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-Token":this.csrfToken},body:JSON.stringify({session_id:this.sessionId})});if(s.status===401||s.status===403){alert("Sesi Anda telah berakhir. Silakan login kembali."),window.location.href=`${this.baseUrl}/pages/login.php`;return}let n=await s.json();n.success?(this.isPaused=!1,t.textContent="\u23F8 Pause",t.style.background="#e67e22",e.style.display="none",this.totalSeconds+=n.pause_duration,alert("Tryout dilanjutkan. Timer disesuaikan dengan durasi pause.")):alert("Gagal resume: "+(n.error||"Unknown error"))}catch(s){console.error("Error resuming tryout:",s),alert("Gagal resume tryout. Silakan coba lagi.")}else try{let s=await fetch(`${this.baseUrl}/api/pause_tryout.php`,{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-Token":this.csrfToken},body:JSON.stringify({session_id:this.sessionId})});if(s.status===401||s.status===403){alert("Sesi Anda telah berakhir. Silakan login kembali."),window.location.href=`${this.baseUrl}/pages/login.php`;return}let n=await s.json();n.success?(this.isPaused=!0,t.textContent="\u25B6 Resume",t.style.background="#27ae60",e.style.display="block",alert("Tryout dipause. Timer dihentikan sementara. Klik Resume untuk melanjutkan.")):alert("Gagal pause: "+(n.error||"Unknown error"))}catch(s){console.error("Error pausing tryout:",s),alert("Gagal pause tryout. Silakan coba lagi.")}}async toggleBookmark(){let t=this.soal[this.currentIdx];if(!t||!t.question_id){this.showToast("Soal tidak valid","error");return}let e=this.bookmarked[t.question_id],s=e?"remove":"add",n=new FormData;n.append("question_id",t.question_id),n.append("action",s);try{let a=await fetch(`${this.baseUrl}/api/bookmark_question.php`,{method:"POST",headers:{"X-CSRF-Token":this.csrfToken},body:n});if(a.status===401||a.status===403){this.showToast("Sesi telah berakhir. Silakan login kembali.","error"),setTimeout(()=>window.location.href=`${this.baseUrl}/pages/login.php`,2e3);return}let o=await a.json();if(o.success){this.bookmarked[t.question_id]=!e;let i=document.getElementById("btnBookmark");i&&(i.style.background=this.bookmarked[t.question_id]?"#f39c12":"#9b59b6",i.textContent=this.bookmarked[t.question_id]?"\u2B50 Tersimpan":"\u2B50 Favorit"),this.showToast(this.bookmarked[t.question_id]?"Soal disimpan ke favorit":"Soal dihapus dari favorit","success")}else this.showToast(o.error||"Gagal menyimpan favorit","error")}catch{this.showToast("Gagal menyimpan favorit","error")}}showToast(t,e="info"){let s=document.createElement("div");s.textContent=t,s.style.cssText=`
+(() => {
+  // assets/js/src/tryout.js
+  var TryoutManager = class {
+    constructor(config) {
+      this.sessionId = config.sessionId;
+      this.csrfToken = config.csrfToken;
+      this.strictMode = config.strictMode;
+      this.baseUrl = config.baseUrl;
+      this.remainingSeconds = config.remainingSeconds;
+      this.subtesTimers = config.subtesTimers;
+      this.currentSubtes = config.currentSubtes;
+      this.soal = [];
+      this.passages = {};
+      this.currentIdx = 0;
+      this.answers = {};
+      this.marked = {};
+      this.bookmarked = {};
+      this.totalSeconds = this.remainingSeconds;
+      this.timerInterval = null;
+      this.isPaused = false;
+      this.LS_KEY = "cat_answers_" + this.sessionId;
+      this.subtesOrder = Object.keys(this.subtesTimers);
+      this.subtesRemaining = {};
+      this.activeSubtesIdx = this.subtesOrder.indexOf(this.currentSubtes);
+      this.currentFilter = "all";
+      this.touchStartX = 0;
+      this.touchStartY = 0;
+      this.SWIPE_THRESHOLD = 50;
+      this.blurCount = 0;
+      this.blurAlertShown = false;
+      this.init();
+    }
+    init() {
+      console.log("[TryoutManager] init called", {
+        sessionId: this.sessionId,
+        baseUrl: this.baseUrl,
+        subtesTimers: this.subtesTimers,
+        currentSubtes: this.currentSubtes
+      });
+      this.subtesOrder.forEach((sub) => {
+        this.subtesRemaining[sub] = this.subtesTimers[sub]?.remaining || this.subtesTimers[sub]?.durasi * 60 || 1800;
+      });
+      this.loadSoal();
+      this.bindEvents();
+    }
+    bindEvents() {
+      document.addEventListener("contextmenu", (e) => e.preventDefault());
+      document.addEventListener("copy", (e) => {
+        if (e.target.closest(".passage-bacaan, .question")) e.preventDefault();
+      });
+      document.addEventListener("cut", (e) => {
+        if (e.target.closest(".passage-bacaan, .question")) e.preventDefault();
+      });
+      window.addEventListener("blur", () => {
+        this.blurCount++;
+        if (this.blurCount >= 3 && !this.blurAlertShown) {
+          this.blurAlertShown = true;
+          alert("Peringatan: Anda telah meninggalkan halaman tryout terlalu sering. Integritas tes akan dievaluasi.");
+        }
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "F5" || e.ctrlKey && e.key === "r") {
+          e.preventDefault();
+          alert("Refresh tidak diizinkan selama tryout.");
+        }
+        if (e.ctrlKey && e.key === "u") e.preventDefault();
+        if (e.ctrlKey && e.shiftKey && e.key === "I") e.preventDefault();
+        if (e.key === "F12") e.preventDefault();
+      });
+      history.pushState(null, "", location.href);
+      window.addEventListener("popstate", () => {
+        history.pushState(null, "", location.href);
+        alert("Navigasi back tidak diizinkan selama tryout.");
+      });
+      document.addEventListener("touchstart", (e) => {
+        this.touchStartX = e.changedTouches[0].screenX;
+        this.touchStartY = e.changedTouches[0].screenY;
+      }, { passive: true });
+      document.addEventListener("touchend", (e) => {
+        if (!this.soal.length) return;
+        const touchEndX = e.changedTouches[0].screenX;
+        const touchEndY = e.changedTouches[0].screenY;
+        const dx = touchEndX - this.touchStartX;
+        const dy = touchEndY - this.touchStartY;
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > this.SWIPE_THRESHOLD) {
+          if (dx < 0) this.nextSoal();
+          else this.prevSoal();
+        }
+      }, { passive: true });
+      document.addEventListener("keydown", (e) => {
+        if (!this.soal.length) return;
+        const key = e.key.toUpperCase();
+        if (["A", "B", "C", "D", "E"].includes(key)) {
+          const radios = document.querySelectorAll('input[name="jawaban"]');
+          radios.forEach((r) => {
+            if (r.value === key) {
+              r.checked = true;
+              r.dispatchEvent(new Event("change"));
+            }
+          });
+        }
+        if (key === "ARROWLEFT" || key === "ARROWUP") this.prevSoal();
+        if (key === "ARROWRIGHT" || key === "ARROWDOWN") this.nextSoal();
+        if (key === "M") this.toggleMark();
+      });
+    }
+    async loadSoal() {
+      console.log("[TryoutManager] loadSoal called with sessionId:", this.sessionId, "baseUrl:", this.baseUrl);
+      try {
+        const res = await fetch(`${this.baseUrl}/api/get_soal.php?session_id=${this.sessionId}`, {
+          credentials: "include",
+          headers: {
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+          }
+        });
+        if (res.status === 401 || res.status === 403) {
+          alert("Sesi Anda telah berakhir. Silakan login kembali.");
+          window.location.href = `${this.baseUrl}/pages/login.php`;
+          return;
+        }
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        const text = await res.text();
+        if (text.trim().startsWith("<") || text.trim().startsWith("<!DOCTYPE")) {
+          throw new Error("Server returned error page instead of JSON");
+        }
+        const data = JSON.parse(text);
+        if (data.error) {
+          if (data.error.includes("Session sudah selesai") || data.error.includes("tidak aktif")) {
+            alert("Sesi tryout Anda telah berakhir atau tidak aktif. Anda akan diarahkan ke halaman hasil.");
+            window.location.href = `${this.baseUrl}/pages/hasil.php?session_id=${this.sessionId}`;
+            return;
+          }
+          alert(data.error);
+          return;
+        }
+        const responseData = data.data || data;
+        this.soal = responseData.soal;
+        this.passages = responseData.passages || {};
+        console.log("Loaded", this.soal.length, "questions");
+        console.log("First question:", this.soal[0]);
+        if (this.soal.length > 0) {
+          this.currentSubtes = this.soal[0].subtes;
+          this.activeSubtesIdx = this.subtesOrder.indexOf(this.currentSubtes);
+          console.log("Set currentSubtes to:", this.currentSubtes);
+        }
+        this.restoreLocalAnswers();
+        const loadingIndicator = document.getElementById("loadingIndicator");
+        if (loadingIndicator) {
+          loadingIndicator.style.display = "none";
+        }
+        this.renderNumberGrid();
+        this.renderSoal(0);
+        this.startTimer();
+        if (this.strictMode) {
+          document.getElementById("strictModeIndicator").style.display = "block";
+          document.getElementById("btnPrev").disabled = true;
+          document.getElementById("btnPrev").style.opacity = "0.5";
+          document.getElementById("btnPrev").style.cursor = "not-allowed";
+        }
+      } catch (e) {
+        alert("Gagal memuat soal: " + e.message + ". Silakan refresh halaman atau periksa koneksi internet Anda.");
+      }
+    }
+    startTimer() {
+      let warningShown = false;
+      this.timerInterval = setInterval(() => {
+        if (this.isPaused) return;
+        if (this.currentSubtes && this.subtesRemaining[this.currentSubtes] > 0) {
+          this.subtesRemaining[this.currentSubtes]--;
+        }
+        this.totalSeconds--;
+        if (!warningShown && this.totalSeconds === 300) {
+          warningShown = true;
+          alert("PERINGATAN: Sesi Anda akan berakhir dalam 5 menit. Jawaban Anda akan otomatis disimpan.");
+          this.saveLocalAnswers();
+        }
+        if (this.totalSeconds <= 0) {
+          clearInterval(this.timerInterval);
+          this.finishTryout();
+          return;
+        }
+        if (this.currentSubtes && this.subtesRemaining[this.currentSubtes] <= 0) {
+          const nextIdx = this.activeSubtesIdx + 1;
+          if (nextIdx < this.subtesOrder.length) {
+            alert("Waktu subtes " + this.currentSubtes + " habis! Anda akan dipindahkan ke subtes berikutnya.");
+            this.advanceToNextSubtes();
+          } else {
+            clearInterval(this.timerInterval);
+            this.finishTryout();
+          }
+          return;
+        }
+        const m = Math.floor(this.totalSeconds / 60).toString().padStart(2, "0");
+        const s = (this.totalSeconds % 60).toString().padStart(2, "0");
+        document.getElementById("timer").textContent = m + ":" + s;
+      }, 1e3);
+    }
+    renderNumberGrid() {
+      const grid = document.getElementById("numberGrid");
+      grid.innerHTML = "";
+      let answeredCount = 0, markedCount = 0;
+      this.soal.forEach((s, i) => {
+        if (this.currentFilter === "ragu" && !this.marked[s.answer_id]) return;
+        if (this.currentFilter === "unanswered" && this.answers[s.answer_id]) return;
+        const btn = document.createElement("button");
+        btn.textContent = i + 1;
+        btn.onclick = () => this.renderSoal(i);
+        if (i === this.currentIdx) btn.classList.add("active");
+        if (this.answers[s.answer_id]) {
+          btn.classList.add("answered");
+          answeredCount++;
+        }
+        if (this.marked[s.answer_id]) {
+          btn.classList.add("marked");
+          markedCount++;
+        }
+        grid.appendChild(btn);
+      });
+      const status = document.getElementById("navStatus");
+      if (status) {
+        const total = this.soal.length;
+        const text = '<strong style="color:#27ae60">' + answeredCount + '</strong> dijawab, <strong style="color:#999">' + (total - answeredCount) + "</strong> belum" + (markedCount > 0 ? ' (<strong style="color:#f39c12">' + markedCount + "</strong> ragu)" : "") + (this.currentFilter !== "all" ? ' <span style="color:#e74c3c">[Filter: ' + this.currentFilter + "]</span>" : "");
+        status.innerHTML = text;
+      }
+      const activeBtn = grid.querySelector("button.active");
+      if (activeBtn) activeBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+    }
+    advanceToNextSubtes() {
+      const nextIdx = this.activeSubtesIdx + 1;
+      if (nextIdx >= this.subtesOrder.length) {
+        this.finishTryout();
+        return;
+      }
+      const nextSub = this.subtesOrder[nextIdx];
+      const currentSub = this.subtesOrder[this.activeSubtesIdx];
+      fetch(`${this.baseUrl}/api/next_subtes.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": this.csrfToken
+        },
+        body: JSON.stringify({ session_id: this.sessionId, current_subtes: currentSub, next_subtes: nextSub })
+      });
+      this.currentSubtes = nextSub;
+      this.activeSubtesIdx = nextIdx;
+      const firstIdx = this.soal.findIndex((q) => q.subtes === nextSub);
+      if (firstIdx >= 0) {
+        this.renderSoal(firstIdx);
+      }
+    }
+    renderSoal(idx) {
+      console.log("renderSoal called with idx:", idx);
+      this.currentIdx = idx;
+      const s = this.soal[idx];
+      console.log("Rendering question", idx, s);
+      if (s.subtes !== this.currentSubtes) {
+        console.log("Subtes change detected:", this.currentSubtes, "->", s.subtes);
+        const prevSubIdx = this.subtesOrder.indexOf(this.currentSubtes);
+        const newSubIdx = this.subtesOrder.indexOf(s.subtes);
+        if (newSubIdx > prevSubIdx) {
+          const currentSubSoal = this.soal.filter((q) => q.subtes === this.currentSubtes);
+          const unanswered = currentSubSoal.filter((q) => !this.answers[q.answer_id]).length;
+          const msg = "Anda akan pindah ke subtes " + s.subtes + ".\nSoal " + this.currentSubtes + " yang belum dijawab: " + unanswered + "\nWaktu " + this.currentSubtes + " yang tersisa tidak bisa digunakan untuk subtes lain.\n\nYakin ingin lanjut?";
+          if (!confirm(msg)) {
+            const lastIdx = this.soal.map((q) => q.subtes).lastIndexOf(this.currentSubtes);
+            if (lastIdx >= 0) this.currentIdx = lastIdx;
+            console.log("User cancelled subtes change, returning");
+            return;
+          }
+          fetch(`${this.baseUrl}/api/next_subtes.php`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRF-Token": this.csrfToken
+            },
+            body: JSON.stringify({ session_id: this.sessionId, current_subtes: this.currentSubtes, next_subtes: s.subtes })
+          });
+          this.currentSubtes = s.subtes;
+          this.activeSubtesIdx = newSubIdx;
+        }
+      }
+      console.log("Setting subtes-info");
+      document.getElementById("subtes-info").textContent = s.subtes + " \u2014 Soal " + (idx + 1) + " dari " + this.soal.length;
+      const passageBox = document.getElementById("passageBox");
+      const passageJudul = document.getElementById("passageJudul");
+      const passageBacaan = document.getElementById("passageBacaan");
+      if (s.passage_id && this.passages[s.passage_id]) {
+        const p = this.passages[s.passage_id];
+        const totalInPassage = this.soal.filter((q) => q.passage_id == s.passage_id).length;
+        const orderInPassage = this.soal.filter((q, i) => q.passage_id == s.passage_id && i <= idx).length;
+        passageBox.style.display = "block";
+        passageJudul.textContent = p.judul ? this.escapeHtml(p.judul) : "Bacaan";
+        passageBacaan.innerHTML = '<div class="passage-info">Soal ' + orderInPassage + " dari " + totalInPassage + " dalam bacaan ini</div>" + this.escapeHtml(p.bacaan);
+      } else {
+        passageBox.style.display = "none";
+        passageJudul.textContent = "";
+        passageBacaan.innerHTML = "";
+      }
+      const qText = this.escapeHtml(s.pertanyaan);
+      const scrollClass = s.pertanyaan.length > 300 ? "question-scrollable" : "";
+      let html = '<div class="question ' + scrollClass + '"><strong>' + (idx + 1) + ".</strong> " + qText + "</div>";
+      if (s.image_url) {
+        html += '<img src="' + this.escapeHtml(s.image_url) + `" class="question-image" alt="Gambar soal" loading="lazy" onerror="this.style.display='none'" onclick="openZoom(this.src)" style="cursor:zoom-in">`;
+      }
+      html += '<div class="options">';
+      ["A", "B", "C", "D", "E"].forEach((opt) => {
+        const selected = this.answers[s.answer_id] === opt ? "selected" : "";
+        html += '<label class="' + selected + '"><input type="radio" name="jawaban" value="' + opt + '" ' + (selected ? "checked" : "") + ' onchange="window.tryoutManager.pilihJawaban(' + s.answer_id + ",'" + opt + `',this)"> ` + opt + ". " + this.escapeHtml(s["pilihan_" + opt.toLowerCase()]) + "</label>";
+      });
+      html += "</div>";
+      html += '<div class="pembahasan" id="pembahasanBox" style="display:none">' + this.escapeHtml(s.pembahasan) + "</div>";
+      console.log("Setting innerHTML for soalContainer");
+      document.getElementById("soalContainer").innerHTML = html;
+      console.log("innerHTML set successfully");
+      this.renderNumberGrid();
+      const soalEl = document.getElementById("soalContainer");
+      const rect = soalEl.getBoundingClientRect();
+      if (rect.top < 0 || rect.top > window.innerHeight) {
+        soalEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+    pilihJawaban(answerId, opt, el) {
+      this.answers[answerId] = opt;
+      document.querySelectorAll(".options label").forEach((l) => l.classList.remove("selected"));
+      el.closest("label").classList.add("selected");
+      this.renderNumberGrid();
+      this.saveLocalAnswers();
+      fetch(`${this.baseUrl}/api/submit_jawaban.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": this.csrfToken
+        },
+        body: JSON.stringify({ answer_id: answerId, jawaban: opt, is_ragu: this.marked[answerId] ? 1 : 0 })
+      }).then((r) => {
+        if (r.status === 401 || r.status === 403) {
+          alert("Sesi Anda telah berakhir. Silakan login kembali.");
+          window.location.href = `${this.baseUrl}/pages/login.php`;
+        }
+      }).catch((e) => {
+        console.error("Error submitting answer:", e);
+      });
+      setTimeout(() => {
+        const s = this.soal[this.currentIdx];
+        if (this.marked[s.answer_id]) return;
+        if (this.currentIdx >= this.soal.length - 1) {
+          const answeredCount = Object.keys(this.answers).length;
+          const totalCount = this.soal.length;
+          const raguCount = Object.values(this.marked).filter(Boolean).length;
+          let msg = "Selamat! Anda telah menjawab soal terakhir.\n\n";
+          msg += "Soal dijawab: " + answeredCount + " / " + totalCount + "\n";
+          if (raguCount > 0) msg += "Ragu-ragu: " + raguCount + "\n\n";
+          msg += "Klik OK untuk melihat hasil tryout.";
+          alert(msg);
+          this.finishTryout();
+          return;
+        }
+        const nextIdx = this.currentIdx + 1;
+        const currentSub = this.soal[this.currentIdx].subtes;
+        const nextSub = this.soal[nextIdx].subtes;
+        if (currentSub !== nextSub) {
+          const currentSubSoal = this.soal.filter((q) => q.subtes === currentSub);
+          const unanswered = currentSubSoal.filter((q) => !this.answers[q.answer_id]).length;
+          const msg = "Anda akan pindah ke subtes " + nextSub + ".\nSoal " + currentSub + " yang belum dijawab: " + unanswered + "\nWaktu " + currentSub + " yang tersisa tidak bisa digunakan untuk subtes lain.\n\nYakin ingin lanjut?";
+          if (!confirm(msg)) return;
+          fetch(`${this.baseUrl}/api/next_subtes.php`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRF-Token": this.csrfToken
+            },
+            body: JSON.stringify({ session_id: this.sessionId, current_subtes: currentSub, next_subtes: nextSub })
+          });
+          this.currentSubtes = nextSub;
+          this.activeSubtesIdx = this.subtesOrder.indexOf(nextSub);
+        }
+        this.renderSoal(nextIdx);
+      }, 400);
+    }
+    prevSoal() {
+      if (this.strictMode) {
+        alert("Strict Mode aktif: Anda tidak bisa kembali ke soal sebelumnya.");
+        return;
+      }
+      if (this.currentIdx > 0) this.renderSoal(this.currentIdx - 1);
+    }
+    nextSoal() {
+      if (this.currentIdx >= this.soal.length - 1) return;
+      const nextIdx = this.currentIdx + 1;
+      const currentSub = this.soal[this.currentIdx].subtes;
+      const nextSub = this.soal[nextIdx].subtes;
+      if (currentSub !== nextSub) {
+        const currentSubSoal = this.soal.filter((q) => q.subtes === currentSub);
+        const unanswered = currentSubSoal.filter((q) => !this.answers[q.answer_id]).length;
+        const msg = "Anda akan pindah ke subtes " + nextSub + ".\nSoal " + currentSub + " yang belum dijawab: " + unanswered + "\nWaktu " + currentSub + " yang tersisa tidak bisa digunakan untuk subtes lain.\n\nYakin ingin lanjut?";
+        if (!confirm(msg)) return;
+        fetch(`${this.baseUrl}/api/next_subtes.php`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": this.csrfToken
+          },
+          body: JSON.stringify({ session_id: this.sessionId, current_subtes: currentSub, next_subtes: nextSub })
+        });
+        this.currentSubtes = nextSub;
+        this.activeSubtesIdx = this.subtesOrder.indexOf(nextSub);
+      }
+      this.renderSoal(nextIdx);
+    }
+    saveLocalAnswers() {
+      try {
+        const data = JSON.stringify({ answers: this.answers, marked: this.marked, savedAt: Date.now() });
+        localStorage.setItem(this.LS_KEY, data);
+      } catch (e) {
+        if (e.name === "QuotaExceededError") {
+          console.error("LocalStorage quota exceeded. Attempting to clear old data...");
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith("cat_answers_") && key !== this.LS_KEY) {
+              localStorage.removeItem(key);
+              console.log("Cleared old session:", key);
+              try {
+                const data = JSON.stringify({ answers: this.answers, marked: this.marked, savedAt: Date.now() });
+                localStorage.setItem(this.LS_KEY, data);
+                console.log("Successfully saved after clearing old data");
+                return;
+              } catch (retryError) {
+                console.error("Still cannot save after clearing old data");
+              }
+            }
+          }
+          alert("Peringatan: Penyimpanan browser penuh. Jawaban Anda tetap disimpan ke server, tapi tidak dapat disimpan secara lokal untuk recovery.");
+        } else {
+          console.error("Error saving to localStorage:", e);
+        }
+      }
+    }
+    restoreLocalAnswers() {
+      const saved = localStorage.getItem(this.LS_KEY);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data.answers) Object.assign(this.answers, data.answers);
+          if (data.marked) Object.assign(this.marked, data.marked);
+        } catch (e) {
+          console.error("Error restoring from localStorage:", e);
+        }
+      }
+    }
+    clearLocalAnswers() {
+      try {
+        localStorage.removeItem(this.LS_KEY);
+      } catch (e) {
+        console.error("Error clearing localStorage:", e);
+      }
+    }
+    toggleMark() {
+      const s = this.soal[this.currentIdx];
+      this.marked[s.answer_id] = !this.marked[s.answer_id];
+      this.saveLocalAnswers();
+      this.renderNumberGrid();
+      const btn = document.getElementById("btnMark");
+      if (this.marked[s.answer_id]) {
+        btn.textContent = "Ragu \u2713";
+        btn.title = "Auto-advance dinonaktifkan untuk soal ini";
+      } else {
+        btn.textContent = "Ragu (M)";
+        btn.title = "Tandai ragu-ragu";
+      }
+      fetch(`${this.baseUrl}/api/mark_revision.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": this.csrfToken
+        },
+        body: JSON.stringify({ question_id: s.question_id, needs_revision: this.marked[s.answer_id] ? 1 : 0 })
+      });
+    }
+    filterRagu() {
+      this.currentFilter = "ragu";
+      this.renderNumberGrid();
+    }
+    filterUnanswered() {
+      this.currentFilter = "unanswered";
+      this.renderNumberGrid();
+    }
+    showAll() {
+      this.currentFilter = "all";
+      this.renderNumberGrid();
+    }
+    async togglePause() {
+      const btn = document.getElementById("btnPause");
+      const indicator = document.getElementById("pauseIndicator");
+      if (!this.isPaused) {
+        try {
+          const res = await fetch(`${this.baseUrl}/api/pause_tryout.php`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRF-Token": this.csrfToken
+            },
+            body: JSON.stringify({ session_id: this.sessionId })
+          });
+          if (res.status === 401 || res.status === 403) {
+            alert("Sesi Anda telah berakhir. Silakan login kembali.");
+            window.location.href = `${this.baseUrl}/pages/login.php`;
+            return;
+          }
+          const data = await res.json();
+          if (data.success) {
+            this.isPaused = true;
+            btn.textContent = "\u25B6 Resume";
+            btn.style.background = "#27ae60";
+            indicator.style.display = "block";
+            alert("Tryout dipause. Timer dihentikan sementara. Klik Resume untuk melanjutkan.");
+          } else {
+            alert("Gagal pause: " + (data.error || "Unknown error"));
+          }
+        } catch (e) {
+          console.error("Error pausing tryout:", e);
+          alert("Gagal pause tryout. Silakan coba lagi.");
+        }
+      } else {
+        try {
+          const res = await fetch(`${this.baseUrl}/api/resume_tryout.php`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRF-Token": this.csrfToken
+            },
+            body: JSON.stringify({ session_id: this.sessionId })
+          });
+          if (res.status === 401 || res.status === 403) {
+            alert("Sesi Anda telah berakhir. Silakan login kembali.");
+            window.location.href = `${this.baseUrl}/pages/login.php`;
+            return;
+          }
+          const data = await res.json();
+          if (data.success) {
+            this.isPaused = false;
+            btn.textContent = "\u23F8 Pause";
+            btn.style.background = "#e67e22";
+            indicator.style.display = "none";
+            this.totalSeconds += data.pause_duration;
+            alert("Tryout dilanjutkan. Timer disesuaikan dengan durasi pause.");
+          } else {
+            alert("Gagal resume: " + (data.error || "Unknown error"));
+          }
+        } catch (e) {
+          console.error("Error resuming tryout:", e);
+          alert("Gagal resume tryout. Silakan coba lagi.");
+        }
+      }
+    }
+    async toggleBookmark() {
+      const s = this.soal[this.currentIdx];
+      if (!s || !s.question_id) {
+        this.showToast("Soal tidak valid", "error");
+        return;
+      }
+      const isBookmarked = this.bookmarked[s.question_id];
+      const action = isBookmarked ? "remove" : "add";
+      const formData = new FormData();
+      formData.append("question_id", s.question_id);
+      formData.append("action", action);
+      try {
+        const res = await fetch(`${this.baseUrl}/api/bookmark_question.php`, {
+          method: "POST",
+          headers: {
+            "X-CSRF-Token": this.csrfToken
+          },
+          body: formData
+        });
+        if (res.status === 401 || res.status === 403) {
+          this.showToast("Sesi telah berakhir. Silakan login kembali.", "error");
+          setTimeout(() => window.location.href = `${this.baseUrl}/pages/login.php`, 2e3);
+          return;
+        }
+        const data = await res.json();
+        if (data.success) {
+          this.bookmarked[s.question_id] = !isBookmarked;
+          const btn = document.getElementById("btnBookmark");
+          if (btn) {
+            btn.style.background = this.bookmarked[s.question_id] ? "#f39c12" : "#9b59b6";
+            btn.textContent = this.bookmarked[s.question_id] ? "\u2B50 Tersimpan" : "\u2B50 Favorit";
+          }
+          this.showToast(this.bookmarked[s.question_id] ? "Soal disimpan ke favorit" : "Soal dihapus dari favorit", "success");
+        } else {
+          this.showToast(data.error || "Gagal menyimpan favorit", "error");
+        }
+      } catch (e) {
+        this.showToast("Gagal menyimpan favorit", "error");
+      }
+    }
+    showToast(message, type = "info") {
+      const toast = document.createElement("div");
+      toast.textContent = message;
+      toast.style.cssText = `
             position: fixed;
             bottom: 20px;
             right: 20px;
             padding: 12px 24px;
-            background: ${e==="error"?"#e74c3c":e==="success"?"#27ae60":"#3498db"};
+            background: ${type === "error" ? "#e74c3c" : type === "success" ? "#27ae60" : "#3498db"};
             color: white;
             border-radius: 4px;
             z-index: 10000;
             animation: slideIn 0.3s ease;
-        `,document.body.appendChild(s),setTimeout(()=>s.remove(),3e3)}finishTryout(){let t=Object.keys(this.answers).length,e=this.soal.length,s=`Yakin ingin menyelesaikan try out?
-
-Soal dijawab: `+t+" / "+e+`
-Ragu-ragu: `+Object.values(this.marked).filter(Boolean).length;confirm(s)&&(clearInterval(this.timerInterval),this.clearLocalAnswers(),fetch(`${this.baseUrl}/api/finish_tryout.php`,{method:"POST",headers:{"Content-Type":"application/json","X-CSRF-Token":this.csrfToken},body:JSON.stringify({session_id:this.sessionId})}).then(n=>n.json()).then(n=>{n.success?window.location.href=`${this.baseUrl}/pages/hasil.php?session_id=${this.sessionId}`:alert(n.error)}))}escapeHtml(t){let e=document.createElement("div");return e.textContent=t,e.innerHTML}};window.TryoutManager=S;var I=localStorage.getItem("cat_theme")||"light";I==="dark"&&document.documentElement.setAttribute("data-theme","dark");window.toggleTheme=function(){let d=document.documentElement,e=(d.getAttribute("data-theme")||"light")==="dark"?"light":"dark";d.setAttribute("data-theme",e),localStorage.setItem("cat_theme",e)};var w=["small","medium","large"],b=1,p=localStorage.getItem("cat_font");if(p){let d=w.indexOf(p);d>=0&&(b=d,document.documentElement.setAttribute("data-font-size",p))}window.cycleFontSize=function(){b=(b+1)%w.length;let d=w[b];document.documentElement.setAttribute("data-font-size",d),localStorage.setItem("cat_font",d)};window.filterRagu=function(){window.tryoutManager&&window.tryoutManager.filterRagu()};window.filterUnanswered=function(){window.tryoutManager&&window.tryoutManager.filterUnanswered()};window.showAll=function(){window.tryoutManager&&window.tryoutManager.showAll()};window.togglePause=function(){window.tryoutManager&&window.tryoutManager.togglePause()};window.toggleMark=function(){window.tryoutManager&&window.tryoutManager.toggleMark()};window.toggleBookmark=function(){window.tryoutManager&&window.tryoutManager.toggleBookmark()};window.prevSoal=function(){window.tryoutManager&&window.tryoutManager.prevSoal()};window.nextSoal=function(){window.tryoutManager&&window.tryoutManager.nextSoal()};window.finishTryout=function(){window.tryoutManager&&window.tryoutManager.finishTryout()};window.openZoom=function(d){let t=document.getElementById("imgZoomModal"),e=document.getElementById("zoomImg");t&&e&&(e.src=d,t.style.display="flex")};window.closeZoom=function(){let d=document.getElementById("imgZoomModal");d&&(d.style.display="none")};})();
+        `;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3e3);
+    }
+    finishTryout() {
+      const answeredCount = Object.keys(this.answers).length;
+      const totalCount = this.soal.length;
+      const msg = "Yakin ingin menyelesaikan try out?\n\nSoal dijawab: " + answeredCount + " / " + totalCount + "\nRagu-ragu: " + Object.values(this.marked).filter(Boolean).length;
+      if (!confirm(msg)) return;
+      clearInterval(this.timerInterval);
+      this.clearLocalAnswers();
+      fetch(`${this.baseUrl}/api/finish_tryout.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": this.csrfToken
+        },
+        body: JSON.stringify({ session_id: this.sessionId })
+      }).then((r) => r.json()).then((data) => {
+        if (data.success) window.location.href = `${this.baseUrl}/pages/hasil.php?session_id=${this.sessionId}`;
+        else alert(data.error);
+      });
+    }
+    escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  };
+  window.TryoutManager = TryoutManager;
+  var savedTheme = localStorage.getItem("cat_theme") || "light";
+  if (savedTheme === "dark") document.documentElement.setAttribute("data-theme", "dark");
+  window.toggleTheme = function() {
+    const html = document.documentElement;
+    const current = html.getAttribute("data-theme") || "light";
+    const next = current === "dark" ? "light" : "dark";
+    html.setAttribute("data-theme", next);
+    localStorage.setItem("cat_theme", next);
+  };
+  var fontSizes = ["small", "medium", "large"];
+  var fontIdx = 1;
+  var savedFont = localStorage.getItem("cat_font");
+  if (savedFont) {
+    const idx = fontSizes.indexOf(savedFont);
+    if (idx >= 0) {
+      fontIdx = idx;
+      document.documentElement.setAttribute("data-font-size", savedFont);
+    }
+  }
+  window.cycleFontSize = function() {
+    fontIdx = (fontIdx + 1) % fontSizes.length;
+    const size = fontSizes[fontIdx];
+    document.documentElement.setAttribute("data-font-size", size);
+    localStorage.setItem("cat_font", size);
+  };
+  window.filterRagu = function() {
+    if (window.tryoutManager) window.tryoutManager.filterRagu();
+  };
+  window.filterUnanswered = function() {
+    if (window.tryoutManager) window.tryoutManager.filterUnanswered();
+  };
+  window.showAll = function() {
+    if (window.tryoutManager) window.tryoutManager.showAll();
+  };
+  window.togglePause = function() {
+    if (window.tryoutManager) window.tryoutManager.togglePause();
+  };
+  window.toggleMark = function() {
+    if (window.tryoutManager) window.tryoutManager.toggleMark();
+  };
+  window.toggleBookmark = function() {
+    if (window.tryoutManager) window.tryoutManager.toggleBookmark();
+  };
+  window.prevSoal = function() {
+    if (window.tryoutManager) window.tryoutManager.prevSoal();
+  };
+  window.nextSoal = function() {
+    if (window.tryoutManager) window.tryoutManager.nextSoal();
+  };
+  window.finishTryout = function() {
+    if (window.tryoutManager) window.tryoutManager.finishTryout();
+  };
+  window.openZoom = function(src) {
+    const modal = document.getElementById("imgZoomModal");
+    const img = document.getElementById("zoomImg");
+    if (modal && img) {
+      img.src = src;
+      modal.style.display = "flex";
+    }
+  };
+  window.closeZoom = function() {
+    const modal = document.getElementById("imgZoomModal");
+    if (modal) modal.style.display = "none";
+  };
+})();
