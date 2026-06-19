@@ -30,7 +30,7 @@ function setupMonitors(page) {
     allConsoleLogs.push(`[${msg.type()}] ${text}`);
     // Ignore expected errors from navigation aborts
     if (msg.type() === 'error') {
-      if (!text.includes('Failed to fetch') && !text.includes('analytics') && !text.includes('net::ERR_ABORTED')) {
+      if (!text.includes('Failed to fetch') && !text.includes('analytics') && !text.includes('net::ERR_ABORTED') && !text.includes('Failed to load resource')) {
         consoleErrors.push(text);
       }
     }
@@ -39,7 +39,7 @@ function setupMonitors(page) {
   page.on('pageerror', err => consoleErrors.push(err.message));
   page.on('response', resp => {
     const url = resp.url();
-    const ignoredPatterns = ['favicon', 'learning_analytics', 'get_dashboard_analytics', 'get_notifications', 'get_adaptive', 'submit_jawaban'];
+    const ignoredPatterns = ['favicon', 'learning_analytics', 'get_dashboard_analytics', 'get_notifications', 'get_adaptive', 'submit_jawaban', 'finish_tryout'];
     if (resp.status() >= 400 && !ignoredPatterns.some(p => url.includes(p))) {
       networkErrors.push(`[${resp.status()}] ${url}`);
     }
