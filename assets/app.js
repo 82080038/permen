@@ -949,9 +949,11 @@ function trackEvent(eventType, data = {}, sendBeacon = false) {
 
     if (sendBeacon && navigator.sendBeacon) {
         const formData = new URLSearchParams(payload);
-        navigator.sendBeacon('/api/learning_analytics.php', formData);
+        const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '');
+        navigator.sendBeacon(baseUrl + '/api/learning_analytics.php', formData);
     } else {
-        fetch('/api/learning_analytics.php', {
+        const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '');
+        fetch(baseUrl + '/api/learning_analytics.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams(payload)

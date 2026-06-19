@@ -12,14 +12,15 @@ const STATIC_CACHE = 'skd-static-v2';
 const DYNAMIC_CACHE = 'skd-dynamic-v2';
 
 // Static assets to cache on install - use relative paths to work in both environments
+// Note: These paths are relative to the service worker location
 const STATIC_ASSETS = [
-    './assets/style.css',
-    './assets/login.css',
-    './assets/app.js',
-    './assets/js/api.js',
-    './assets/js/bootstrap.bundle.min.js',
-    './assets/css/bootstrap.min.css',
-    './assets/css/bootstrap-icons.min.css',
+    '../assets/style.css',
+    '../assets/login.css',
+    '../assets/app.js',
+    '../assets/js/api.js',
+    '../assets/js/bootstrap.bundle.min.js',
+    '../assets/css/bootstrap.min.css',
+    '../assets/css/bootstrap-icons.min.css',
 ];
 
 // Routes that should use network-first strategy
