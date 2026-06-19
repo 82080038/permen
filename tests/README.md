@@ -36,15 +36,21 @@ npx playwright test --debug
 npx playwright test --ui
 ```
 
-## Test Cases
-| Test | Deskripsi |
+## Test Files
+| File | Deskripsi |
 |------|-----------|
-| halaman utama | Cek title, CTA, navigasi |
-| materi TWK | Cek accordion materi |
-| latihan per subtes | Cek 3 pilihan subtes |
-| flow latihan TIU | End-to-end: mulai -> jawab -> selesai -> hasil |
-| smart generator | Cek API generate soal internal |
-| API security | Cek endpoint menolak tanpa autentikasi |
+| `peserta-full-simulation.spec.js` | Full user flow: register, login, navigate pages, tryout (UI clicks + API), daily quiz, feedback, settings, logout |
+| `mobile-responsive-check.spec.js` | Mobile viewport checks: touch targets, font sizes, hamburger menu, horizontal overflow |
+
+## Environment Variables
+Set `TEST_BASE_URL` to switch between environments:
+```bash
+# Local development
+export TEST_BASE_URL=http://localhost/permen
+
+# Production
+export TEST_BASE_URL=https://bimbel.bereng.info
+```
 
 ## Hasil Test
 Screenshot dan trace tersimpan di `test-results/` jika ada kegagalan.
