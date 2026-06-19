@@ -44,7 +44,7 @@ try {
 } catch (PDOException $e) {
     $stmt = $pdo->prepare("
         SELECT 
-            a.id as answer_id, a.jawaban_user, a.skor,
+            a.id as answer_id, a.jawaban_user as jawaban, a.skor,
             q.id as question_id, q.subtes, q.topik, q.pertanyaan,
             q.pilihan_a, q.pilihan_b, q.pilihan_c, q.pilihan_d, q.pilihan_e,
             q.jawaban_benar, q.pembahasan, q.image_url,

@@ -278,78 +278,151 @@ test.describe.serial('Peserta Full Simulation', () => {
     console.log(`  ✓ Options visible: ${optionsCount}`);
     expect(optionsCount).toBeGreaterThanOrEqual(4);
 
-    // ── Answer ALL questions via API (batch) ──
-    console.log('\n  === Menjawab semua soal ===');
+    // ── Answer questions by CLICKING UI options ──
+    console.log('\n  === Menjawab soal dengan klik UI ===');
 
-    // Submit answers sequentially in small batches (await each)
-    const batchSize = 5;
-    for (let batch = 0; batch < soalCount; batch += batchSize) {
-      const end = Math.min(batch + batchSize, soalCount);
-      await page.evaluate(async ({ start, end }) => {
-        const tm = window.tryoutManager;
-        if (!tm) return;
-        const options = ['A', 'B', 'C', 'D', 'E'];
-        for (let i = start; i < end; i++) {
-          const s = tm.soal[i];
-          if (!s) continue;
-          const pick = options[i % 5];
-          tm.answers[s.answer_id] = pick;
-          try {
-            await fetch(`${tm.baseUrl}/api/submit_jawaban.php`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': tm.csrfToken
-              },
-              body: JSON.stringify({ answer_id: s.answer_id, jawaban: pick, is_ragu: 0 })
-            });
-          } catch(e) {}
+    // Get all soal data for verification (jawaban_benar + bobot)
+    const soalData = await page.evaluate(() => {
+      const tm = window.tryoutManager;
+      if (!tm) return [];
+      return tm.soal.map(s => ({
+        answer_id: s.answer_id,
+        id: s.id,
+        subtes: s.subtes,
+        jawaban_benar: s.jawaban_benar,
+        image_url: s.image_url || null
+      }));
+    });
+
+    // Strategy: answer first 10 questions by clicking UI (with correct answers for some),
+    // then batch the rest via API for speed
+    const UI_CLICK_COUNT = Math.min(10, soalCount);
+    let correctAnswers = 0;
+    let wrongAnswers = 0;
+    let expectedScore = { TWK: 0, TIU: 0, TKP: 0 };
+
+    // Handle dialogs for subtes transitions
+    page.on('dialog', async dialog => {
+      console.log(`  [Dialog] ${dialog.type()}: ${dialog.message().substring(0, 80)}`);
+      await dialog.accept();
+    });
+
+    for (let i = 0; i < UI_CLICK_COUNT; i++) {
+      // Navigate to question i
+      await page.evaluate((idx) => {
+        window.tryoutManager.renderSoal(idx);
+      }, i);
+      await page.waitForTimeout(400); // Wait for render
+
+      // Verify question is displayed
+      const questionVisible = await page.locator('.question, .question-scrollable').first().isVisible().catch(() => false);
+      if (!questionVisible) {
+        console.log(`    ⚠️ Question ${i+1} not visible, skipping UI click`);
+        continue;
+      }
+
+      // Choose answer: alternate between correct and random
+      const s = soalData[i];
+      let pickOpt;
+      if (i % 3 === 0 && s.jawaban_benar) {
+        // Pick the correct answer
+        pickOpt = s.jawaban_benar;
+        if (s.subtes !== 'TKP') {
+          correctAnswers++;
+          expectedScore[s.subtes] += 5;
         }
-      }, { start: batch, end });
-      if ((end) % 20 === 0 || end === soalCount) {
-        console.log(`    Answered ${end}/${soalCount}`);
+      } else {
+        // Pick a random (potentially wrong) answer
+        const opts = ['A', 'B', 'C', 'D', 'E'];
+        pickOpt = opts[(i * 3 + 1) % 5];
+        if (s.subtes !== 'TKP' && pickOpt === s.jawaban_benar) {
+          correctAnswers++;
+          expectedScore[s.subtes] += 5;
+        } else if (s.subtes !== 'TKP') {
+          wrongAnswers++;
+        }
+      }
+
+      // Click the option label in the UI
+      const optionLabel = page.locator(`.options label:has(input[value="${pickOpt}"])`);
+      const labelExists = await optionLabel.count();
+      if (labelExists > 0) {
+        await optionLabel.click();
+        await page.waitForTimeout(500); // Realistic delay after clicking
+      } else {
+        // Fallback: click by nth option
+        const allLabels = page.locator('.options label');
+        const idx = ['A','B','C','D','E'].indexOf(pickOpt);
+        if (await allLabels.count() > idx) {
+          await allLabels.nth(idx).click();
+          await page.waitForTimeout(500);
+        }
+      }
+
+      // Verify answer was registered in tryoutManager
+      const wasRegistered = await page.evaluate((aid) => {
+        return !!window.tryoutManager?.answers[aid];
+      }, s.answer_id);
+      if (i < 3) {
+        console.log(`    Soal ${i+1}/${soalCount}: clicked "${pickOpt}" (benar=${s.jawaban_benar}, subtes=${s.subtes}) → ${wasRegistered ? '✅ registered' : '⚠️ not registered'}`);
+      }
+    }
+    console.log(`  ✓ UI-clicked ${UI_CLICK_COUNT} questions (${correctAnswers} correct, ${wrongAnswers} wrong for TIU/TWK)`);
+
+    // Answer remaining questions via API (faster for bulk)
+    if (soalCount > UI_CLICK_COUNT) {
+      console.log(`  → Answering remaining ${soalCount - UI_CLICK_COUNT} via API...`);
+      const batchSize = 10;
+      for (let batch = UI_CLICK_COUNT; batch < soalCount; batch += batchSize) {
+        const end = Math.min(batch + batchSize, soalCount);
+        await page.evaluate(async ({ start, end }) => {
+          const tm = window.tryoutManager;
+          if (!tm) return;
+          for (let i = start; i < end; i++) {
+            const s = tm.soal[i];
+            if (!s) continue;
+            // Pick the correct answer to maximize score verification
+            const pick = s.jawaban_benar || 'A';
+            tm.answers[s.answer_id] = pick;
+            try {
+              await fetch(`${tm.baseUrl}/api/submit_jawaban.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': tm.csrfToken },
+                body: JSON.stringify({ answer_id: s.answer_id, jawaban: pick, is_ragu: 0 })
+              });
+            } catch(e) {}
+          }
+        }, { start: batch, end });
+        if ((end) % 30 === 0 || end === soalCount) {
+          console.log(`    Answered ${end}/${soalCount}`);
+        }
+        await page.waitForTimeout(200); // Small delay between batches
       }
     }
 
     const answeredCount = await page.evaluate(() => Object.keys(window.tryoutManager?.answers || {}).length);
     console.log(`  ✓ Total answered: ${answeredCount}/${soalCount}`);
-
-    // Wait for all submit requests to complete
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(2000); // Wait for all submit requests to complete
 
     // ── Check for image questions ──
     const imageQuestions = await page.evaluate(() => {
       const tm = window.tryoutManager;
       if (!tm) return [];
-      const result = [];
-      for (let i = 0; i < tm.soal.length; i++) {
-        if (tm.soal[i].image_url) {
-          result.push({ idx: i, id: tm.soal[i].id, image_url: tm.soal[i].image_url, subtes: tm.soal[i].subtes });
-        }
-      }
-      return result;
+      return tm.soal.filter(s => s.image_url).slice(0, 3).map(s => ({
+        id: s.id, image_url: s.image_url, subtes: s.subtes
+      }));
     });
     console.log(`\n  ✓ Soal with images: ${imageQuestions.length}`);
-    for (const iq of imageQuestions.slice(0, 3)) {
-      console.log(`    - id=${iq.id} subtes=${iq.subtes} url=${iq.image_url}`);
-      // Verify image URL is accessible
+    for (const iq of imageQuestions) {
       const imgUrl = iq.image_url.startsWith('http') ? iq.image_url : BASE + '/' + iq.image_url;
       const imgResp = await page.request.get(imgUrl);
-      const imgOk = imgResp.status() === 200;
-      console.log(`      Image HTTP ${imgResp.status()}: ${imgOk ? 'OK' : 'BROKEN'}`);
-      expect(imgOk).toBeTruthy();
+      console.log(`    - id=${iq.id} subtes=${iq.subtes}: HTTP ${imgResp.status()}`);
+      expect(imgResp.status()).toBe(200);
     }
 
     // ── Finish tryout ──
     console.log('\n  === Menyelesaikan tryout ===');
 
-    // Handle dialog (confirm + possible alert)
-    page.on('dialog', async dialog => {
-      console.log(`  [Dialog] ${dialog.type()}: ${dialog.message().substring(0, 100)}`);
-      await dialog.accept();
-    });
-
-    // Finish tryout via API, then navigate to hasil page
     const finishResult = await page.evaluate(async () => {
       const tm = window.tryoutManager;
       if (!tm) return { success: false, error: 'No tryoutManager' };
@@ -357,26 +430,34 @@ test.describe.serial('Peserta Full Simulation', () => {
       try { tm.clearLocalAnswers(); } catch(e) {}
       const res = await fetch(`${tm.baseUrl}/api/finish_tryout.php`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': tm.csrfToken
-        },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': tm.csrfToken },
         body: JSON.stringify({ session_id: tm.sessionId })
       });
       const data = await res.json();
-      return { success: data.success, sessionId: tm.sessionId, baseUrl: tm.baseUrl, data };
+      return { success: data.success, sessionId: tm.sessionId, data };
     });
 
     console.log(`  ✓ Finish API response: ${JSON.stringify(finishResult.data)}`);
 
     if (finishResult.success) {
+      const nilai = finishResult.data?.data?.nilai;
+      console.log(`  ✓ Scores: TKP=${nilai?.TKP} TIU=${nilai?.TIU} TWK=${nilai?.TWK} Total=${finishResult.data?.data?.total}`);
+
+      // Verify scores are not zero (since we answered all correctly via API for bulk)
+      expect(nilai?.TKP).toBeGreaterThan(0);
+      expect(nilai?.TIU).toBeGreaterThan(0);
+      expect(nilai?.TWK).toBeGreaterThan(0);
+
+      // Verify TIU/TWK scores are multiples of 5 (binary scoring)
+      expect(nilai?.TIU % 5).toBe(0);
+      expect(nilai?.TWK % 5).toBe(0);
+
       // Navigate to hasil page
       await page.goto(BASE + `/pages/hasil.php?session_id=${finishResult.sessionId}`);
       await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(2000);
       console.log(`  ✓ Redirected to: ${page.url().replace(BASE, '')}`);
 
-      // ── Verify hasil page ──
-      await page.waitForTimeout(3000);
       const hasilTitle = await page.title();
       console.log(`  ✓ Hasil page: ${hasilTitle}`);
 
@@ -385,13 +466,34 @@ test.describe.serial('Peserta Full Simulation', () => {
       const hasScores = bodyText.includes('TWK') && bodyText.includes('TIU') && bodyText.includes('TKP');
       console.log(`  ✓ Scores for all 3 subtes displayed: ${hasScores}`);
       expect(hasScores).toBeTruthy();
+
+      // ── Verify review data (jawaban_benar vs jawaban) ──
+      const reviewResp = await page.request.get(`${BASE}/api/get_review.php?session_id=${finishResult.sessionId}`);
+      if (reviewResp.ok()) {
+        const reviewData = await reviewResp.json();
+        if (reviewData.success && reviewData.data?.stats) {
+          const stats = reviewData.data.stats;
+          console.log(`  ✓ Review stats: TWK(benar=${stats.TWK?.benar},salah=${stats.TWK?.salah},kosong=${stats.TWK?.kosong}) TIU(benar=${stats.TIU?.benar},salah=${stats.TIU?.salah},kosong=${stats.TIU?.kosong}) TKP(benar=${stats.TKP?.benar},salah=${stats.TKP?.salah},kosong=${stats.TKP?.kosong})`);
+          
+          // Verify no false "kosong" (all questions were answered)
+          const totalKosong = (stats.TWK?.kosong || 0) + (stats.TIU?.kosong || 0) + (stats.TKP?.kosong || 0);
+          console.log(`  ✓ Total kosong (should be 0): ${totalKosong}`);
+          expect(totalKosong).toBe(0);
+
+          // Verify score matches: TIU benar * 5 = nilai TIU, TWK benar * 5 = nilai TWK
+          const expectedTIU = (stats.TIU?.benar || 0) * 5;
+          const expectedTWK = (stats.TWK?.benar || 0) * 5;
+          console.log(`  ✓ Score verification: TIU expected=${expectedTIU} actual=${nilai?.TIU} → ${expectedTIU === nilai?.TIU ? '✅ MATCH' : '❌ MISMATCH'}`);
+          console.log(`  ✓ Score verification: TWK expected=${expectedTWK} actual=${nilai?.TWK} → ${expectedTWK === nilai?.TWK ? '✅ MATCH' : '❌ MISMATCH'}`);
+          expect(expectedTIU).toBe(nilai?.TIU);
+          expect(expectedTWK).toBe(nilai?.TWK);
+        }
+      }
     } else {
       // Anti-cheat blocks rapid completion in production — this is expected behavior
       const isAntiCheat = JSON.stringify(finishResult.data).includes('terlalu singkat') || JSON.stringify(finishResult.data).includes('melebihi batas');
       if (isAntiCheat) {
         console.log('  ✓ Anti-cheat correctly blocked rapid tryout completion (expected in production)');
-        // Force-finish via direct page navigation to verify hasil page still works
-        // Note: session stays as 'berjalan' since anti-cheat blocked finish
       } else {
         console.log(`  ✗ Unexpected error: ${JSON.stringify(finishResult.data)}`);
         expect(finishResult.success).toBeTruthy();

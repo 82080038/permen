@@ -38,32 +38,66 @@ if ($session['status'] === 'selesai') {
     ApiResponse::success([], 'Quiz sudah selesai sebelumnya');
 }
 
-// Hitung hasil
+// Hitung hasil - fetch individual answers for proper TKP weighted scoring
 $stmt = $pdo->prepare("
     SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN dqa.jawaban_user IS NOT NULL THEN 1 ELSE 0 END) as answered,
-        SUM(CASE WHEN dqa.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) as benar,
-        SUM(CASE WHEN dqa.jawaban_user IS NOT NULL AND dqa.jawaban_user != q.jawaban_benar THEN 1 ELSE 0 END) as salah,
-        SUM(CASE WHEN q.subtes = 'TKP' AND dqa.jawaban_user = q.jawaban_benar THEN q.bobot_tkp ELSE 0 END) as skor_tkp,
-        SUM(CASE WHEN q.subtes = 'TIU' AND dqa.jawaban_user = q.jawaban_benar THEN 5 ELSE 0 END) as skor_tiu,
-        SUM(CASE WHEN q.subtes = 'TWK' AND dqa.jawaban_user = q.jawaban_benar THEN 5 ELSE 0 END) as skor_twk
+        q.subtes, q.jawaban_benar, q.bobot_tkp, q.bobot_a, q.bobot_b, q.bobot_c, q.bobot_d, q.bobot_e,
+        dqa.jawaban_user
     FROM daily_quiz_questions dq
     JOIN questions q ON dq.question_id = q.id
     LEFT JOIN daily_quiz_answers dqa ON dqa.session_id = dq.session_id AND dqa.question_id = dq.question_id
     WHERE dq.session_id = ?
 ");
 $stmt->execute([$sessionId]);
-$hasil = $stmt->fetch();
+$allAnswers = $stmt->fetchAll();
 
-$totalSoal = (int)$hasil['total'];
-$answered = (int)$hasil['answered'];
-$benar = (int)$hasil['benar'];
-$salah = (int)$hasil['salah'];
+$totalSoal = count($allAnswers);
+$answered = 0;
+$benar = 0;
+$salah = 0;
+$nilaiTkp = 0;
+$nilaiTiu = 0;
+$nilaiTwk = 0;
+
+foreach ($allAnswers as $row) {
+    $jawaban = $row['jawaban_user'];
+    if (empty($jawaban)) continue;
+    $answered++;
+    
+    if ($row['subtes'] === 'TKP') {
+        // TKP: weighted scoring (setiap jawaban dapat skor 1-5)
+        $bobotKey = 'bobot_' . strtolower($jawaban);
+        if (!empty($row[$bobotKey])) {
+            $nilaiTkp += (int)$row[$bobotKey];
+        } else {
+            // Fallback: distance-based scoring
+            $map = ['A'=>1,'B'=>2,'C'=>3,'D'=>4,'E'=>5];
+            $skorJawaban = $map[$jawaban] ?? 1;
+            $skorBenar = $map[$row['jawaban_benar']] ?? 3;
+            $diff = abs($skorJawaban - $skorBenar);
+            $bobot = (int)($row['bobot_tkp'] ?? 5);
+            if ($diff == 0) $nilaiTkp += $bobot;
+            elseif ($diff == 1) $nilaiTkp += max(1, $bobot - 1);
+            elseif ($diff == 2) $nilaiTkp += max(1, $bobot - 2);
+            elseif ($diff == 3) $nilaiTkp += max(1, $bobot - 3);
+            else $nilaiTkp += 1;
+        }
+        // TKP: benar jika jawaban = jawaban_benar (untuk statistik)
+        if ($jawaban === $row['jawaban_benar']) $benar++;
+        else $salah++;
+    } else {
+        // TIU & TWK: binary scoring (benar = 5, salah = 0)
+        if ($jawaban === $row['jawaban_benar']) {
+            $benar++;
+            if ($row['subtes'] === 'TIU') $nilaiTiu += 5;
+            else $nilaiTwk += 5;
+        } else {
+            $salah++;
+        }
+    }
+}
+
 $kosong = $totalSoal - $answered;
-$nilaiTkp = (int)($hasil['skor_tkp'] ?? 0);
-$nilaiTiu = (int)($hasil['skor_tiu'] ?? 0);
-$nilaiTwk = (int)($hasil['skor_twk'] ?? 0);
 $nilaiTotal = $nilaiTkp + $nilaiTiu + $nilaiTwk;
 
 // Update session
