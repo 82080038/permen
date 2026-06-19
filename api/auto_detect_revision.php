@@ -19,10 +19,11 @@ if ($action === 'detect_revision_candidates') {
     // 1. Soal with answer rate < 20% (might be ambiguous)
     $stmt = $pdo->query("
         SELECT q.id, q.pertanyaan, q.subtes, q.tipe,
-            COUNT(DISTINCT a.user_id) as total_attempts,
-            SUM(CASE WHEN a.jawaban = q.jawaban_benar THEN 1 ELSE 0 END) as correct_answers
+            COUNT(DISTINCT ts.user_id) as total_attempts,
+            SUM(CASE WHEN a.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) as correct_answers
         FROM questions q
-        LEFT JOIN answers a ON q.id = a.soal_id
+        LEFT JOIN answers a ON q.id = a.question_id
+        LEFT JOIN tryout_sessions ts ON a.session_id = ts.id
         WHERE q.is_active = 1
         GROUP BY q.id
         HAVING total_attempts > 10 AND (correct_answers / total_attempts) < 0.2
@@ -45,10 +46,11 @@ if ($action === 'detect_revision_candidates') {
     // 2. Soal with many "ragu-ragu" flags
     $stmt = $pdo->query("
         SELECT q.id, q.pertanyaan, q.subtes, q.tipe,
-            COUNT(DISTINCT a.user_id) as total_attempts,
-            SUM(CASE WHEN a.jawaban = 'M' THEN 1 ELSE 0 END) as ragu_count
+            COUNT(DISTINCT ts.user_id) as total_attempts,
+            SUM(CASE WHEN a.is_ragu = 1 THEN 1 ELSE 0 END) as ragu_count
         FROM questions q
-        LEFT JOIN answers a ON q.id = a.soal_id
+        LEFT JOIN answers a ON q.id = a.question_id
+        LEFT JOIN tryout_sessions ts ON a.session_id = ts.id
         WHERE q.is_active = 1
         GROUP BY q.id
         HAVING total_attempts > 10 AND (ragu_count / total_attempts) > 0.3
@@ -142,13 +144,14 @@ if ($action === 'detect_revision_candidates') {
     // Get candidates
     $stmt = $pdo->query("
         SELECT q.id, q.pertanyaan, q.subtes, q.tipe,
-            COUNT(DISTINCT a.user_id) as total_attempts,
-            SUM(CASE WHEN a.jawaban = q.jawaban_benar THEN 1 ELSE 0 END) as correct_answers,
-            SUM(CASE WHEN a.jawaban = 'M' THEN 1 ELSE 0 END) as ragu_count,
+            COUNT(DISTINCT ts.user_id) as total_attempts,
+            SUM(CASE WHEN a.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) as correct_answers,
+            SUM(CASE WHEN a.is_ragu = 1 THEN 1 ELSE 0 END) as ragu_count,
             MAX(sv.edited_at) as last_revision,
             q.created_at as created_at
         FROM questions q
-        LEFT JOIN answers a ON q.id = a.soal_id
+        LEFT JOIN answers a ON q.id = a.question_id
+        LEFT JOIN tryout_sessions ts ON a.session_id = ts.id
         LEFT JOIN soal_versions sv ON q.id = sv.soal_id
         WHERE q.is_active = 1
         GROUP BY q.id

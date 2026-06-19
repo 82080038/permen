@@ -28,9 +28,9 @@ if ($period === 'weekly') {
 
 // Award Top 1 badge
 $stmt = $pdo->prepare("
-    SELECT user_id, AVG(skor_total) as avg_score
+    SELECT user_id, AVG(total_nilai) as avg_score
     FROM tryout_sessions
-    WHERE status = 'completed' AND created_at BETWEEN ? AND ?
+    WHERE status = 'selesai' AND created_at BETWEEN ? AND ?
     GROUP BY user_id
     ORDER BY avg_score DESC
     LIMIT 1
@@ -56,9 +56,9 @@ if ($topUser) {
 $stmt = $pdo->prepare("
     SELECT 
         user_id,
-        (MAX(skor_total) - MIN(skor_total)) as improvement
+        (MAX(total_nilai) - MIN(total_nilai)) as improvement
     FROM tryout_sessions
-    WHERE status = 'completed' AND created_at BETWEEN ? AND ?
+    WHERE status = 'selesai' AND created_at BETWEEN ? AND ?
     GROUP BY user_id
     HAVING COUNT(*) >= 2
     ORDER BY improvement DESC

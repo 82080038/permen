@@ -18,17 +18,8 @@ $period = $_GET['period'] ?? 'all'; // all, week, month
 $subtes = $_GET['subtes'] ?? '';   // TWK, TIU, TKP (optional filter)
 $instansiFilter = $_GET['instansi'] ?? ''; // instansi filter
 
-// Check which status values are valid for this database
-$validStatuses = ['completed', 'selesai']; // Production uses 'completed', local uses 'selesai'
-try {
-    $testStmt = $pdo->query("SHOW COLUMNS FROM tryout_sessions WHERE Field = 'status'");
-    $columnInfo = $testStmt->fetch();
-    if ($columnInfo && strpos($columnInfo['Type'], 'berjalan') !== false) {
-        $validStatuses = ['selesai', 'berjalan']; // Local database
-    }
-} catch (PDOException $e) {
-    // Assume production default
-}
+// Only show completed (selesai) tryout sessions in leaderboard
+$validStatuses = ['selesai'];
 
 $where = "ts.status IN ('" . implode("','", $validStatuses) . "') AND u.role = 'user'";
 $params = [];
@@ -54,13 +45,13 @@ try {
         SELECT 
             u.id as user_id,
             u.nama, u.instansi_id as target_instansi,
-            ts.skor_total as total_nilai,
-            ts.skor_twk as nilai_twk, ts.skor_tiu as nilai_tiu, ts.skor_tkp as nilai_tkp,
+            ts.total_nilai,
+            ts.nilai_twk, ts.nilai_tiu, ts.nilai_tkp,
             ts.waktu_mulai
         FROM tryout_sessions ts
         JOIN users u ON ts.user_id = u.id
         WHERE $where
-        ORDER BY ts.skor_total DESC
+        ORDER BY ts.total_nilai DESC
         LIMIT 20
     ";
     $totalStmt = $pdo->prepare($sqlTotal);
@@ -174,17 +165,8 @@ foreach (['TWK','TIU','TKP'] as $s) {
         $scoreCol = "0"; // Fallback if neither exists
     }
     
-    // Check which status values are valid
-    $validStatuses = ['completed', 'selesai'];
-    try {
-        $testStmt = $pdo->query("SHOW COLUMNS FROM tryout_sessions WHERE Field = 'status'");
-        $columnInfo = $testStmt->fetch();
-        if ($columnInfo && strpos($columnInfo['Type'], 'berjalan') !== false) {
-            $validStatuses = ['selesai', 'berjalan'];
-        }
-    } catch (PDOException $e) {
-        // Assume production default
-    }
+    // Only show completed (selesai) tryout sessions
+    $validStatuses = ['selesai'];
     
     $whereSubtes = "ts.status IN ('" . implode("','", $validStatuses) . "') AND ts.$scoreCol > 0 AND u.role = 'user'";
     $paramsSubtes = [];

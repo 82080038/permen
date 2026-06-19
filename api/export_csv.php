@@ -23,17 +23,17 @@ if ($type === 'tryouts') {
     fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
     fputcsv($output, ['ID', 'Nama Tryout', 'Peserta', 'Nilai TWK', 'Nilai TIU', 'Nilai TKP', 'Total Nilai', 'Status', 'Waktu Mulai', 'Waktu Selesai']);
 
-    $stmt = $pdo->query("SELECT ts.id, ts.nama, u.nama as peserta, ts.skor_twk, ts.skor_tiu, ts.skor_tkp, ts.skor_total, ts.status, ts.waktu_mulai, ts.waktu_selesai 
+    $stmt = $pdo->query("SELECT ts.id, ts.nama, u.nama as peserta, ts.nilai_twk, ts.nilai_tiu, ts.nilai_tkp, ts.total_nilai, ts.status, ts.waktu_mulai, ts.waktu_selesai 
         FROM tryout_sessions ts LEFT JOIN users u ON ts.user_id = u.id ORDER BY ts.id DESC");
     while ($row = $stmt->fetch()) {
         fputcsv($output, [
             $row['id'],
             $row['nama'],
             $row['peserta'] ?? 'Anonim',
-            $row['skor_twk'],
-            $row['skor_tiu'],
-            $row['skor_tkp'],
-            $row['skor_total'],
+            $row['nilai_twk'],
+            $row['nilai_tiu'],
+            $row['nilai_tkp'],
+            $row['total_nilai'],
             $row['status'],
             $row['waktu_mulai'],
             $row['waktu_selesai'] ?? '-'

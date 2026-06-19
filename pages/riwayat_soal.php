@@ -24,17 +24,17 @@ $perPage = 20;
 $offset = ($page - 1) * $perPage;
 
 // Build WHERE
-$where = "a.user_id = ?";
+$where = "ts.user_id = ?";
 $params = [$userId];
 if ($filterSubtes) { $where .= " AND q.subtes = ?"; $params[] = $filterSubtes; }
 if ($filterTopik)  { $where .= " AND q.topik = ?";  $params[] = $filterTopik; }
-if ($filterStatus === 'benar')  { $where .= " AND a.jawaban = q.jawaban_benar AND a.jawaban IS NOT NULL AND a.jawaban != ''"; }
-elseif ($filterStatus === 'salah') { $where .= " AND a.jawaban IS NOT NULL AND a.jawaban != '' AND a.jawaban != q.jawaban_benar"; }
-elseif ($filterStatus === 'kosong') { $where .= " AND (a.jawaban IS NULL OR a.jawaban = '')"; }
+if ($filterStatus === 'benar')  { $where .= " AND a.jawaban_user = q.jawaban_benar AND a.jawaban_user IS NOT NULL AND a.jawaban_user != ''"; }
+elseif ($filterStatus === 'salah') { $where .= " AND a.jawaban_user IS NOT NULL AND a.jawaban_user != '' AND a.jawaban_user != q.jawaban_benar"; }
+elseif ($filterStatus === 'kosong') { $where .= " AND (a.jawaban_user IS NULL OR a.jawaban_user = '')"; }
 
 // Count total
 try {
-    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM answers a JOIN questions q ON a.question_id = q.id WHERE $where");
+    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM answers a JOIN questions q ON a.question_id = q.id JOIN tryout_sessions ts ON a.session_id = ts.id WHERE $where");
     $countStmt->execute($params);
     $totalRows = $countStmt->fetchColumn();
 } catch (Throwable $e) {
@@ -45,7 +45,7 @@ $totalPages = max(1, ceil($totalRows / $perPage));
 // Fetch data
 $query = "
     SELECT 
-        a.id as answer_id, a.jawaban, a.skor,
+        a.id as answer_id, a.jawaban_user, a.skor,
         q.id as question_id, q.subtes, q.topik, q.pertanyaan,
         q.pilihan_a, q.pilihan_b, q.pilihan_c, q.pilihan_d, q.pilihan_e,
         q.jawaban_benar, q.pembahasan, q.tips_trick, q.related_links,
@@ -74,11 +74,12 @@ try {
     $summary = $pdo->prepare("
         SELECT 
             COUNT(*) as total,
-            SUM(CASE WHEN a.jawaban = q.jawaban_benar THEN 1 ELSE 0 END) as benar,
-            SUM(CASE WHEN a.jawaban IS NOT NULL AND a.jawaban != '' AND a.jawaban != q.jawaban_benar THEN 1 ELSE 0 END) as salah,
-            SUM(CASE WHEN a.jawaban IS NULL OR a.jawaban = '' THEN 1 ELSE 0 END) as kosong
+            SUM(CASE WHEN a.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) as benar,
+            SUM(CASE WHEN a.jawaban_user IS NOT NULL AND a.jawaban_user != '' AND a.jawaban_user != q.jawaban_benar THEN 1 ELSE 0 END) as salah,
+            SUM(CASE WHEN a.jawaban_user IS NULL OR a.jawaban_user = '' THEN 1 ELSE 0 END) as kosong
         FROM answers a JOIN questions q ON a.question_id = q.id
-        WHERE a.user_id = ?
+        JOIN tryout_sessions ts ON a.session_id = ts.id
+        WHERE ts.user_id = ?
     ");
     $summary->execute([$userId]);
     $sum = $summary->fetch();
@@ -178,8 +179,8 @@ try {
 <div class="empty">Belum ada riwayat soal. Yuk mulai latihan!</div>
 <?php else: ?>
 <?php foreach ($riwayat as $r):
-    $isBenar = $r['jawaban'] === $r['jawaban_benar'];
-    $isKosong = empty($r['jawaban']);
+    $isBenar = $r['jawaban_user'] === $r['jawaban_benar'];
+    $isKosong = empty($r['jawaban_user']);
     $statusClass = $isKosong ? 'status-kosong' : ($isBenar ? 'status-benar' : 'status-salah');
     $statusText = $isKosong ? 'KOSONG' : ($isBenar ? 'BENAR' : 'SALAH');
     $links = [];
@@ -197,7 +198,7 @@ try {
     <?php foreach (['A','B','C','D','E'] as $opt):
         $optText = $r['pilihan_'.strtolower($opt)];
         $isKey = $r['jawaban_benar'] === $opt;
-        $isUser = $r['jawaban'] === $opt;
+        $isUser = $r['jawaban_user'] === $opt;
         $optClass = $isKey ? 'opt-benar' : ($isUser ? 'opt-salah' : 'opt-normal');
     ?>
     <div class="opt <?= $optClass ?>"><?= $opt ?>. <?= e($optText) ?>

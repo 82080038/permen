@@ -45,16 +45,16 @@ $subData = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 if (empty($subData)) {
     // Fallback to flat columns
     $subData = [
-        'TKP' => ['nilai'=>$session['skor_tkp'],'passing_grade'=>$session['passing_tkp'],'jumlah_soal'=>$session['jumlah_tkp']],
-        'TIU' => ['nilai'=>$session['skor_tiu'],'passing_grade'=>$session['passing_tiu'],'jumlah_soal'=>$session['jumlah_tiu']],
-        'TWK' => ['nilai'=>$session['skor_twk'],'passing_grade'=>$session['passing_twk'],'jumlah_soal'=>$session['jumlah_twk']],
+        'TKP' => ['nilai'=>$session['nilai_tkp'],'passing_grade'=>$session['passing_tkp'],'jumlah_soal'=>$session['jumlah_tkp']],
+        'TIU' => ['nilai'=>$session['nilai_tiu'],'passing_grade'=>$session['passing_tiu'],'jumlah_soal'=>$session['jumlah_tiu']],
+        'TWK' => ['nilai'=>$session['nilai_twk'],'passing_grade'=>$session['passing_twk'],'jumlah_soal'=>$session['jumlah_twk']],
     ];
 }
 
 $nilaiTkp = $subData['TKP']['nilai'] ?? 0;
 $nilaiTiu = $subData['TIU']['nilai'] ?? 0;
 $nilaiTwk = $subData['TWK']['nilai'] ?? 0;
-$totalNilai = $session['skor_total'] ?? ($nilaiTkp + $nilaiTiu + $nilaiTwk);
+$totalNilai = $session['total_nilai'] ?? ($nilaiTkp + $nilaiTiu + $nilaiTwk);
 
 $passingTkp = $subData['TKP']['passing_grade'] ?? 126;
 $passingTiu = $subData['TIU']['passing_grade'] ?? 80;

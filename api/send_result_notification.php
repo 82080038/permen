@@ -56,16 +56,16 @@ try {
     
     if (empty($subData)) {
         $subData = [
-            'TKP' => ['nilai'=>$session['skor_tkp'],'passing_grade'=>$session['passing_tkp']],
-            'TIU' => ['nilai'=>$session['skor_tiu'],'passing_grade'=>$session['passing_tiu']],
-            'TWK' => ['nilai'=>$session['skor_twk'],'passing_grade'=>$session['passing_twk']],
+            'TKP' => ['nilai'=>$session['nilai_tkp'],'passing_grade'=>$session['passing_tkp']],
+            'TIU' => ['nilai'=>$session['nilai_tiu'],'passing_grade'=>$session['passing_tiu']],
+            'TWK' => ['nilai'=>$session['nilai_twk'],'passing_grade'=>$session['passing_twk']],
         ];
     }
     
     $nilaiTkp = $subData['TKP']['nilai'] ?? 0;
     $nilaiTiu = $subData['TIU']['nilai'] ?? 0;
     $nilaiTwk = $subData['TWK']['nilai'] ?? 0;
-    $totalNilai = $session['skor_total'] ?? ($nilaiTkp + $nilaiTiu + $nilaiTwk);
+    $totalNilai = $session['total_nilai'] ?? ($nilaiTkp + $nilaiTiu + $nilaiTwk);
     
     $passingTotal = $session['passing_total'] ?? 271;
     $statusTotal = $totalNilai >= $passingTotal ? 'LULUS' : 'TIDAK LULUS';

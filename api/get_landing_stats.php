@@ -14,7 +14,7 @@ try {
     $userCount = $pdo->query("SELECT COUNT(*) as count FROM users WHERE role='user'")->fetch()['count'];
     
     // Get completed tryout count
-    $tryoutCount = $pdo->query("SELECT COUNT(*) as count FROM tryout_sessions WHERE status = 'completed'")->fetch()['count'];
+    $tryoutCount = $pdo->query("SELECT COUNT(*) as count FROM tryout_sessions WHERE status = 'selesai'")->fetch()['count'];
     
     // Get question count
     $questionCount = $pdo->query("SELECT COUNT(*) as count FROM questions")->fetch()['count'];

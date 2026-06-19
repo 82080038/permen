@@ -111,14 +111,14 @@ try {
             q.subtes,
             q.topik,
             COUNT(*) as total,
-            SUM(a.is_benar) as benar
+            SUM(CASE WHEN a.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) as benar
         FROM answers a
         JOIN questions q ON a.question_id = q.id
         JOIN tryout_sessions ts ON a.session_id = ts.id
-        WHERE ts.user_id = ? AND a.jawaban IS NOT NULL AND a.jawaban != ''
+        WHERE ts.user_id = ? AND a.jawaban_user IS NOT NULL AND a.jawaban_user != ''
         GROUP BY q.subtes, q.topik
         HAVING COUNT(*) >= 3
-        ORDER BY subtes, SUM(a.is_benar) ASC, COUNT(*) DESC
+        ORDER BY subtes, SUM(CASE WHEN a.jawaban_user = q.jawaban_benar THEN 1 ELSE 0 END) ASC, COUNT(*) DESC
         LIMIT 10
     ");
     $akurasiTopik->execute([$userId]);
@@ -933,7 +933,7 @@ Belum memilih instansi pilihan. <a href="profile.php" style="color:#2980b9">Pili
 
 <?php
 // Fetch riwayat daily quiz
-$dailyQuizHistory = $pdo->prepare("SELECT * FROM daily_quiz_sessions WHERE user_id = ? AND status = 'completed' ORDER BY quiz_date DESC LIMIT 7");
+$dailyQuizHistory = $pdo->prepare("SELECT * FROM daily_quiz_sessions WHERE user_id = ? AND status = 'selesai' ORDER BY quiz_date DESC LIMIT 7");
 $dailyQuizHistory->execute([$userId]);
 $dailyHistory = $dailyQuizHistory->fetchAll();
 ?>

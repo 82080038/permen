@@ -73,7 +73,7 @@ $comparisonData = null;
 if (!$isLatihan && !empty($_SESSION['user_id'])) {
     $stmt = $pdo->prepare("
         SELECT * FROM tryout_sessions 
-        WHERE user_id = ? AND id < ? AND status = 'completed'
+        WHERE user_id = ? AND id < ? AND status = 'selesai'
         ORDER BY id DESC LIMIT 1
     ");
     $stmt->execute([$_SESSION['user_id'], $sessionId]);
@@ -105,7 +105,7 @@ if (!$isLatihan && !empty($_SESSION['user_id'])) {
                AVG((SELECT nilai FROM session_subtes ss WHERE ss.session_id = ts.id AND ss.subtes = 'TIU')) as avg_tiu,
                AVG((SELECT nilai FROM session_subtes ss WHERE ss.session_id = ts.id AND ss.subtes = 'TWK')) as avg_twk
         FROM tryout_sessions ts
-        WHERE ts.status = 'completed' AND ts.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        WHERE ts.status = 'selesai' AND ts.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
     ");
     $stmt->execute();
     $instansiAvg = $stmt->fetch();
