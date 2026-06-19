@@ -2,144 +2,88 @@
 description: Deploy and setup SKD CAT-BKN application
 ---
 
-# Deployment Workflow - SKD CAT-BKN
+# Deployment Workflow — SKD CAT-BKN
 
-This workflow covers deployment and setup of the SKD CAT-BKN application.
+## Production Environment
 
-## Initial Setup
+- **URL**: `https://bimbel.bereng.info`
+- **Hosting**: Hostinger
+- **PHP**: 8.3.30
+- **Database**: MariaDB (u950781813_skd_cat_bkn)
+- **DB User**: u950781813_root
+- **DB Pass**: Sihaloho1982
 
-### 1. Clone Repository
-```bash
-cd /opt/lampp/htdocs
-git clone https://github.com/82080038/permen.git
-cd permen
+## Deploy from Local to Production
+
+### 1. Export Local Database
+```powershell
+C:\xampp\mysql\bin\mysqldump.exe -u root -proot skd_cat_bkn > sql\skd_cat_bkn_current.sql
 ```
 
-### 2. Configure Environment
-```bash
-cp .env.example .env
-# Edit .env with your database credentials
+### 2. Commit & Push to GitHub
+```powershell
+git add -A
+git commit -m "deploy: update for production"
+git push origin main
 ```
 
-### 3. Start XAMPP Services
-```bash
-sudo /opt/lampp/lampp start
+### 3. Update Files on Hostinger
+- Login Hostinger hPanel → File Manager
+- Navigate to `public_html/`
+- Upload changed files or use Git deployment
+
+### 4. Import Database on Hostinger
+- Login Hostinger hPanel → phpMyAdmin
+- Select database `u950781813_skd_cat_bkn`
+- Import `sql/skd_cat_bkn_current.sql`
+
+### 5. Verify .env on Production
+Production `.env` must contain:
+```
+DB_HOST=localhost
+DB_NAME=u950781813_skd_cat_bkn
+DB_USER=u950781813_root
+DB_PASS=Sihaloho1982
+DB_CHARSET=utf8mb4
+APP_ENV=production
+BASE_URL=https://bimbel.bereng.info
 ```
 
-### 4. Import Database
-```bash
-# Create database
-/opt/lampp/bin/mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS skd_cat_bkn;"
+### 6. Verify Deployment
+```powershell
+# Health check
+Invoke-WebRequest -Uri "https://bimbel.bereng.info/api/health.php" -UseBasicParsing | Select-Object -ExpandProperty Content
 
-# Import all SQL files using IMPORT_ALL.sql
-cd /opt/lampp/htdocs/permen/sql
-/opt/lampp/bin/mysql -u root -proot < IMPORT_ALL.sql
-
-# Or import schema and data separately
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/skd_cat_bkn_latest.sql
-
-# Import additional data (optional)
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_master_materi.sql
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_tips.sql
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_soal_1_twk.sql
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_soal_1_tiu.sql
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_soal_1_tkp.sql
+# Landing stats
+Invoke-WebRequest -Uri "https://bimbel.bereng.info/api/get_landing_stats.php" -UseBasicParsing | Select-Object -ExpandProperty Content
 ```
 
-### 5. Install Dependencies
-```bash
-# Install PHP dependencies
-composer install
+## Test Users (All Environments)
 
-# Install Node.js dependencies
-npm install
-```
+| Role  | No HP        | Password     |
+|-------|--------------|--------------|
+| Admin | 081265511982 | Sihaloho1982 |
+| User  | 081987654321 | Sihaloho1982 |
 
-### 6. Verify Installation
-```bash
-# Check XAMPP status
-sudo /opt/lampp/lampp status
+## Database Info
 
-# Check database
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn -e "SHOW TABLES;"
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn -e "SELECT COUNT(*) FROM questions;"
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn -e "SELECT COUNT(*) FROM users;"
-```
+- **57 tables**, 2678 questions, 3 subtes (TWK/TIU/TKP)
+- Key tables: `users`, `questions`, `tryout_sessions`, `session_subtes`, `answers`, `subtes_config`, `instansi`
+- Column differences: local uses `aktif`, production may use `is_active` (virtual column added)
 
-## Access Application
+## Security Checklist
 
-Open browser and navigate to:
-```
-http://localhost/permen/
-```
+- [x] `.env` protected by `.htaccess`
+- [x] SQL directory protected
+- [x] CSRF on all forms
+- [x] Bcrypt password hashing
+- [x] Rate limiting on login
+- [x] Prepared statements (no SQL injection)
+- [x] HTTPS enforced on production
 
-## Default Test Users
+## Rollback
 
-- **Regular User:**
-  - Email: `budi@skd.test`
-  - Password: `password`
-  - Quick login: `http://localhost/permen/pages/login.php?quick=budi`
-
-- **Admin User:**
-  - Email: `admin@skd.test`
-  - Password: `admin123`
-  - Quick login: `http://localhost/permen/pages/login.php?quick=admin`
-
-## Database Structure
-
-### Key Tables
-- `users` - User accounts
-- `questions` - Question bank (2,771 questions)
-- `answers` - User answers
-- `tryout_sessions` - Tryout sessions
-- `session_subtes` - Normalized subtes data
-- `subtes_config` - Subtes configuration
-- `master_materi` - Material for AI generator
-- `tips_tricks` - Tips and tricks (1,601 records)
-- `instansi` - Institution data
-
-## File Permissions
-
-Ensure proper permissions:
-```bash
-chmod 755 /opt/lampp/htdocs/permen
-chmod 644 /opt/lampp/htdocs/permen/.env
-```
-
-## Security Notes
-
-- `.env` file is protected by `.htaccess`
-- SQL files in `sql/` directory are protected
-- Config files are protected
-- CSRF protection enabled on all forms
-- Rate limiting on login (5 attempts per 15 minutes)
-- Prepared statements for all SQL queries
-
-## Troubleshooting
-
-### Database Connection Failed
-Check `.env` configuration and XAMPP MySQL status.
-
-### 500 Errors
-Check PHP error logs:
-```bash
-tail -f /opt/lampp/logs/php_error_log
-```
-
-### Permission Denied
-Ensure XAMPP has proper permissions:
-```bash
-sudo chown -R nobody:nogroup /opt/lampp/htdocs/permen
-```
-
-## Backup
-
-### Database Backup
-```bash
-/opt/lampp/bin/mysqldump -u root -proot skd_cat_bkn > backup_$(date +%Y%m%d).sql
-```
-
-### Files Backup
-```bash
-tar -czf permen_backup_$(date +%Y%m%d).tar.gz /opt/lampp/htdocs/permen
-```
+If deployment fails:
+1. Restore previous database from Hostinger backup
+2. Revert git commit: `git revert HEAD && git push`
+3. Re-upload old files via File Manager

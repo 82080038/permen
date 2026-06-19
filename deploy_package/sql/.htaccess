@@ -1,3 +1,0 @@
-# Deny all access to SQL files
-Order allow,deny
-Deny from all

@@ -2,130 +2,83 @@
 description: Run comprehensive Playwright E2E tests with console and network monitoring
 ---
 
-# Testing Workflow - SKD CAT-BKN
-
-This workflow runs comprehensive end-to-end tests using Playwright with console and network error monitoring.
+# Testing Workflow — SKD CAT-BKN
 
 ## Prerequisites
 
-1. XAMPP services must be running:
-   ```bash
-   sudo /opt/lampp/lampp start
-   ```
+1. XAMPP running (Apache + MySQL)
+2. `.env` configured for local development
+3. Dependencies installed: `npm install`
 
-2. Database must be imported:
-   ```bash
-   cd /opt/lampp/htdocs/permen/sql
-   /opt/lampp/bin/mysql -u root -proot < IMPORT_ALL.sql
-   # Or import main schema separately
-   /opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/skd_cat_bkn_latest.sql
-   ```
+## Quick Run
 
-3. Dependencies must be installed:
-   ```bash
-   composer install
-   npm install
-   npx playwright install chromium
-   ```
-
-## Running Tests
-
-### Headed Mode (with browser visible)
-```bash
-# Linux requires xvfb for headed mode
-xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" npm run test:headed
+// turbo
+### Headless Mode (default, fast)
+```powershell
+npx playwright test tests/comprehensive-test.spec.js --reporter=list
 ```
 
-Note: Playwright config is set to `headless: false` by default for monitoring
-
-### Headless Mode (default)
-```bash
-npm test
+### Headed Mode (visible browser)
+```powershell
+npx playwright test tests/comprehensive-test.spec.js --headed --reporter=list
 ```
 
 ### Debug Mode
-```bash
+```powershell
 npx playwright test --debug
 ```
 
-### UI Mode
-```bash
-npm run test:ui
+### UI Mode (interactive)
+```powershell
+npx playwright test --ui
 ```
 
 ## Test Files
 
-- `tests/skd.spec.js` - Basic functionality tests
-- `tests/comprehensive.spec.js` - Comprehensive E2E tests with error monitoring
-- `tests/exploratory.spec.js` - Exploratory testing
+| File | Coverage |
+|------|----------|
+| `tests/comprehensive-test.spec.js` | Full E2E: public pages, auth, dashboard, tryout, API, registration |
 
-## Test Coverage
+## Test Coverage (24 tests)
 
-### Public Pages
-- Homepage loading
-- Login page
-- Leaderboard
-- Materi pages (TWK, TIU, TKP)
-- Latihan page
+### Public Pages (7 tests)
+- Landing page, login, register, help, leaderboard
+- API health check, landing stats
 
-### Authenticated Flows
-- User login and dashboard
-- Tryout functionality
-- Materi with Uji Pemahaman
-- Logout
+### Authentication (3 tests)
+- User login → redirect to user_dashboard
+- Invalid login → error message
+- Admin login → redirect to admin_dashboard
 
-### API Endpoints
-- Smart generator (admin-only)
-- User generator
-- Get soal (auth required)
-- Submit jawaban (auth required)
+### User Dashboard (7 tests)
+- Dashboard loads, navigation, profile, latihan, tryout, materi, logout
 
-### Admin Features
-- Admin dashboard
-- Generator massal
-- Soal management
+### Admin Dashboard (2 tests)
+- Loads without errors, user management visible
 
-## Error Monitoring
+### Tryout Flow (2 tests)
+- Start tryout session
+- Start latihan per subtes (TWK)
 
-Tests automatically capture:
-- Console errors
-- Page errors
-- Network errors (4xx, 5xx)
+### API (1 test)
+- Get soal API returns valid response
 
-All errors are logged during test execution and reported in test results.
+### Registration (1 test)
+- Register new user successfully
+
+### Console Monitoring (1 test)
+- No JS errors on key pages
+
+## Test Users
+
+| Role  | No HP        | Password     |
+|-------|--------------|--------------|
+| Admin | 081265511982 | Sihaloho1982 |
+| User  | 081987654321 | Sihaloho1982 |
 
 ## Troubleshooting
 
-### 500 Error on user_dashboard.php
-Check that the `answers` table query includes proper JOIN with `tryout_sessions`:
-```sql
-JOIN tryout_sessions ts ON a.session_id = ts.id
-WHERE ts.user_id = ?
-```
-
-### Authentication Failures
-Ensure test user exists in database:
-```sql
-SELECT * FROM users WHERE email = 'budi@skd.test';
-```
-
-### Database Connection Issues
-Verify `.env` configuration:
-```
-DB_HOST=localhost
-DB_NAME=skd_cat_bkn
-DB_USER=root
-DB_PASS=root
-```
-
-## Viewing Results
-
-HTML report is automatically generated at:
-```
-test-results/index.html
-```
-
-View with:
-```bash
-npx playwright show-report
-```
+- **Tests timeout**: Ensure XAMPP Apache + MySQL running
+- **Login fails**: Verify user password hash in DB
+- **DB errors**: Check `.env` matches local database
+- **Port conflict**: Check `http://localhost/permen` accessible in browser

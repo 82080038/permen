@@ -2,265 +2,127 @@
 description: Development workflow for SKD CAT-BKN application
 ---
 
-# Development Workflow
+# Development Workflow — SKD CAT-BKN (permen)
 
-## Prerequisites
+## Environment
 
-1. **XAMPP/LAMP Stack**
-   - Apache web server
-   - MySQL 5.7+ / MariaDB 10.3+
-   - PHP 7.4+
+- **OS**: Windows 10/11
+- **Stack**: XAMPP (Apache + MariaDB + PHP 8.x)
+- **Path**: `C:\xampp\htdocs\permen`
+- **Node.js**: 18+ with npm
+- **PHP**: `C:\xampp\php\php.exe`
+- **MySQL**: `C:\xampp\mysql\bin\mysql.exe`
+- **URL**: `http://localhost/permen`
 
-2. **Node.js & npm**
-   - Node.js 16+ recommended
-   - npm for package management
+## Quick Start
 
-3. **Git**
-   - Git for version control
+// turbo
+### 1. Start XAMPP
+Start Apache and MySQL from XAMPP Control Panel.
 
-## Initial Setup
-
-### 1. Clone Repository
-```bash
-git clone <repository-url>
-cd permen
+### 2. Setup Environment
+```powershell
+# .env harus berisi:
+# DB_HOST=localhost
+# DB_NAME=skd_cat_bkn
+# DB_USER=root
+# DB_PASS=root
+# DB_CHARSET=utf8mb4
+# APP_ENV=development
+# BASE_URL=/permen
 ```
 
-### 2. Database Setup
-
-#### Option A: Import from SQL Export
-```bash
-# Start MySQL
-sudo /opt/lampp/lampp startmysql
-
-# Import database
-/opt/lampp/bin/mysql -u root -proot < database_export.sql
+// turbo
+### 3. Verify Database
+```powershell
+C:\xampp\mysql\bin\mysql.exe -u root -proot -e "USE skd_cat_bkn; SELECT COUNT(*) FROM questions;"
 ```
 
-#### Option B: Import from SQL Files
-```bash
-# Import all SQL files using IMPORT_ALL.sql
-cd /opt/lampp/htdocs/permen/sql
-/opt/lampp/bin/mysql -u root -proot < IMPORT_ALL.sql
-
-# Or import main schema separately
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/skd_cat_bkn_latest.sql
-
-# Import additional data
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_master_materi.sql
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_tips.sql
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_soal_1_twk.sql
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_soal_1_tiu.sql
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < sql/batch_soal_1_tkp.sql
-```
-
-### 3. Environment Configuration
-```bash
-# Copy example env file
-cp .env.example .env
-
-# Edit .env with your credentials
-nano .env
-```
-
-Required environment variables:
-```
-DB_HOST=localhost
-DB_NAME=skd_cat_bkn
-DB_USER=root
-DB_PASS=root
-DB_CHARSET=utf8mb4
-APP_ENV=development
-BASE_URL=http://localhost/permen
-```
-
+// turbo
 ### 4. Install Dependencies
-```bash
-# Install Node.js dependencies
+```powershell
 npm install
-
-# Install PHP dependencies (if using composer)
-composer install
 ```
 
-### 5. Start Web Server
-```bash
-# Start Apache and MySQL
-sudo /opt/lampp/lampp start
-
-# Or start individually
-sudo /opt/lampp/lampp startapache
-sudo /opt/lampp/lampp startmysql
+// turbo
+### 5. Run Tests
+```powershell
+npx playwright test tests/comprehensive-test.spec.js --reporter=list
 ```
 
-### 6. Access Application
-- Open browser: `http://localhost/permen`
-- Default admin: Use quick login `?quick=admin`
-- Default user: Use quick login `?quick=budi`
+## Test Users
 
-## Development Workflow
+| Role  | No HP        | Password     |
+|-------|--------------|--------------|
+| Admin | 081265511982 | Sihaloho1982 |
+| User  | 081987654321 | Sihaloho1982 |
 
-### Running Tests
+## Running Tests
 
-#### Playwright E2E Tests
-```bash
-# Run tests in headed mode (with browser UI)
-npx playwright test --headed
+```powershell
+# Headless (CI mode)
+npx playwright test tests/comprehensive-test.spec.js
 
-# Run tests in headless mode
-npx playwright test
+# Headed (visible browser)
+npx playwright test tests/comprehensive-test.spec.js --headed
 
-# Run specific test file
-npx playwright test comprehensive.spec.js
-
-# Run with debug mode
+# Debug mode
 npx playwright test --debug
 
-# View test report
-npx playwright show-report
+# Specific test
+npx playwright test -g "Login"
 ```
 
-#### PHP Unit Tests
-```bash
-# Run PHPUnit tests
-composer test
+## Database Management
 
-# Run specific test
-./vendor/bin/phpunit tests/HelpersTest.php
+```powershell
+# Export database
+C:\xampp\mysql\bin\mysqldump.exe -u root -proot skd_cat_bkn > sql\skd_cat_bkn_current.sql
+
+# Import database
+C:\xampp\mysql\bin\mysql.exe -u root -proot skd_cat_bkn < sql\skd_cat_bkn_current.sql
 ```
-
-### Code Quality
-
-#### PHP CS Fixer
-```bash
-# Check code style
-composer cs-check
-
-# Fix code style automatically
-composer cs-fix
-```
-
-#### PHPStan (Static Analysis)
-```bash
-# Run static analysis
-composer phpstan
-```
-
-### Database Management
-
-#### Export Database
-```bash
-# Export current database state
-/opt/lampp/bin/mysqldump -u root -proot skd_cat_bkn > database_export.sql
-```
-
-#### Import Database
-```bash
-# Import database from file
-/opt/lampp/bin/mysql -u root -proot skd_cat_bkn < database_export.sql
-```
-
-### Common Development Tasks
-
-#### Adding New Questions
-1. Access admin dashboard: `http://localhost/permen/pages/admin_dashboard.php`
-2. Go to "Soal" tab
-3. Click "Tambah Soal" or use "Generator Massal"
-4. Fill in question details
-5. Save
-
-#### Modifying Configuration
-- Edit `.env` for environment variables
-- Edit `config.php` for database and session settings
-- Edit `.htaccess` for Apache configuration
-
-#### Adding New API Endpoints
-1. Create new file in `api/` directory
-2. Include `config.php` and `helpers.php`
-3. Implement authentication and rate limiting
-4. Return JSON responses with proper HTTP status codes
 
 ## Project Structure
 
 ```
 permen/
-├── api/                    # API endpoints
-│   ├── get_soal.php
-│   ├── submit_jawaban.php
-│   └── ...
-├── assets/                 # Static assets (CSS, JS, images)
-├── content/                # Content management
-├── docs/                   # Documentation
-│   ├── ARCHITECTURE.md
-│   └── TEAM_ANALYSIS_REPORT.md
-├── pages/                  # Page files
-│   ├── login.php
-│   ├── user_dashboard.php
-│   ├── admin_dashboard.php
-│   └── tryout.php
-├── scripts/                # Utility scripts
-├── sql/                    # SQL migration files
-├── tests/                  # Test files
-│   ├── comprehensive.spec.js
-│   └── ...
-├── .env                    # Environment variables (not in git)
-├── .env.example            # Example environment file
-├── .gitignore              # Git ignore rules
-├── .htaccess               # Apache configuration
-├── config.php              # Database and session config
-├── helpers.php             # Helper functions
-├── index.php               # Landing page
-├── package.json            # Node.js dependencies
-├── playwright.config.js    # Playwright configuration
-└── README.md               # Project documentation
+├── api/           # REST API endpoints
+├── assets/        # CSS, JS, images
+├── pages/         # PHP pages (login, dashboard, tryout, etc.)
+├── includes/      # Shared components (navigation.php)
+├── src/           # PSR-4 classes (App\*)
+├── sql/           # Database SQL files
+├── tests/         # Playwright E2E tests
+├── .devin/        # Windsurf/Devin workflows
+├── config.php     # DB + session config
+├── helpers.php    # Helper functions
+├── env_loader.php # .env parser
+├── index.php      # Landing page
+└── .env           # Environment vars (gitignored)
 ```
 
-## Key Files to Understand
+## Key Configuration
 
-### Core Configuration
-- `config.php` - Database connection, session management
-- `helpers.php` - Reusable helper functions (CSRF, rate limiting, etc.)
-- `.htaccess` - Apache security headers and routing
+- **Database**: `config.php` + `env_loader.php` + `.env`
+- **Session**: `config.php` (1 hour lifetime, file-based)
+- **Security**: CSRF tokens, rate limiting, bcrypt passwords
+- **Production**: `bimbel.bereng.info` (Hostinger)
 
-### Main Application Logic
-- `pages/tryout.php` - Tryout interface with timer and anti-cheating
-- `api/get_soal.php` - Question retrieval API
-- `api/submit_jawaban.php` - Answer submission API
-- `pages/user_dashboard.php` - User dashboard with analytics
-- `pages/admin_dashboard.php` - Admin panel for management
+## Common Tasks
 
-### Testing
-- `tests/comprehensive.spec.js` - Comprehensive E2E tests
-- `playwright.config.js` - Playwright test configuration
+### Add questions
+Admin dashboard → Soal tab → Tambah/Generator Massal
 
-## Recent Critical Fixes (June 2026)
-
-1. **Session Expiry Handling** - Added 5-minute warning with auto-save
-2. **Timer Tolerances** - Tightened from 60s/5min to 10s/1min
-3. **N+1 Query Problem** - Optimized question generation in get_soal.php
-4. **Database Transactions** - Added transactions to prevent race conditions
-5. **localStorage Quota** - Added quota exceeded handling with auto-cleanup
-
-See `docs/TEAM_ANALYSIS_REPORT.md` for full analysis and recommendations.
+### Deploy to production
+```powershell
+git add -A && git commit -m "message" && git push origin main
+# Then update files on Hostinger via File Manager or Git
+```
 
 ## Troubleshooting
 
-### Database Connection Issues
-- Check MySQL is running: `sudo /opt/lampp/lampp status`
-- Verify credentials in `.env`
-- Check database exists: `/opt/lampp/bin/mysql -u root -proot -e "SHOW DATABASES;"`
-
-### Session Issues
-- Check session directory permissions
-- Verify `session.gc_maxlifetime` in `config.php`
-- Clear browser cookies
-
-### Test Failures
-- Ensure web server is running
-- Check BASE_URL in `playwright.config.js`
-- Verify database has test data
-- Run tests in headed mode to see browser actions
-
-## Deployment
-
-See `/deployment.md` for deployment instructions.
+- **DB connection fails**: Check `.env` credentials, ensure MySQL running
+- **500 errors**: Check `C:\xampp\apache\logs\error.log`
+- **Session issues**: Clear cookies, check `session.gc_maxlifetime`
+- **Test fails**: Ensure XAMPP running, check `http://localhost/permen`

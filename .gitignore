@@ -12,7 +12,8 @@ playwright-report/
 playwright/.cache/
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .idea/
 *.swp
 *.swo
@@ -33,6 +34,10 @@ cache/
 
 # Database exports (keep only latest)
 database_export.sql
+
+# Build/Deploy artifacts
+deploy_package/
+backups/
 
 # Archive folders (history, not needed in repo)
 sql/archive/
