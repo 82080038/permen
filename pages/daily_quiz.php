@@ -290,7 +290,7 @@ async function loadQuiz() {
         const response = await res.json();
         
         if (!response.success) {
-            alert(response.error || 'Gagal memuat soal');
+            alert(response.message || 'Gagal memuat soal');
             return;
         }
         
@@ -454,9 +454,10 @@ async function finishQuiz() {
         const data = await res.json();
         
         if (data.success) {
-            showResults(data.hasil);
+            const hasil = data.data;
+            showResults(hasil);
         } else {
-            alert(data.error || 'Gagal menyelesaikan quiz');
+            alert(data.message || 'Gagal menyelesaikan quiz');
         }
     } catch (e) {
         alert('Gagal menyelesaikan quiz');
@@ -473,9 +474,9 @@ function showResults(hasil) {
         <div class="stat-item"><div class="stat-label">Benar</div><div class="stat-value" style="color:#27ae60">${hasil.benar}</div></div>
         <div class="stat-item"><div class="stat-label">Salah</div><div class="stat-value" style="color:#e74c3c">${hasil.salah}</div></div>
         <div class="stat-item"><div class="stat-label">Kosong</div><div class="stat-value" style="color:#95a5a6">${hasil.kosong}</div></div>
-        <div class="stat-item"><div class="stat-label">TWK</div><div class="stat-value">${hasil.nilai_twk}</div></div>
-        <div class="stat-item"><div class="stat-label">TIU</div><div class="stat-value">${hasil.nilai_tiu}</div></div>
-        <div class="stat-item"><div class="stat-label">TKP</div><div class="stat-value">${hasil.nilai_tkp}</div></div>
+        <div class="stat-item"><div class="stat-label">TWK</div><div class="stat-value">${hasil.skor_twk}</div></div>
+        <div class="stat-item"><div class="stat-label">TIU</div><div class="stat-value">${hasil.skor_tiu}</div></div>
+        <div class="stat-item"><div class="stat-label">TKP</div><div class="stat-value">${hasil.skor_tkp}</div></div>
     `;
 }
 

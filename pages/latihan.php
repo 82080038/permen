@@ -43,9 +43,17 @@ if ($subtes && in_array($subtes, ['TWK','TIU','TKP'])) {
     $jumlah = (int)($c['jumlah_soal'] ?? ($subtes === 'TWK' ? 30 : ($subtes === 'TIU' ? 35 : 45)));
     $passing = (int)($c['passing_grade'] ?? ($subtes === 'TWK' ? 65 : ($subtes === 'TIU' ? 80 : 126)));
 
-    // Insert session minimal (tanpa kolom flat berulang)
-    $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai) VALUES (?, ?, NOW())");
-    $stmt->execute([$userId, $nama]);
+    // Insert session dengan status yang valid untuk database ini
+    $validStatus = 'ongoing';
+    try {
+        $colInfo = $pdo->query("SHOW COLUMNS FROM tryout_sessions WHERE Field = 'status'")->fetch();
+        if ($colInfo && strpos($colInfo['Type'], 'berjalan') !== false) {
+            $validStatus = 'berjalan';
+        }
+    } catch (PDOException $e) {}
+
+    $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai, status) VALUES (?, ?, NOW(), ?)");
+    $stmt->execute([$userId, $nama, $validStatus]);
     $sessionId = $pdo->lastInsertId();
 
     // Insert ke tabel normalisasi session_subtes
@@ -288,7 +296,7 @@ async function loadAdaptiveRecommendations() {
         const result = data.data;
         let html = '<p style="color:#555;font-size:.85rem;margin-bottom:1rem">' + result.message + '</p>';
         
-        if (result.has_data && !empty(result.weak_topics)) {
+        if (result.has_data && result.weak_topics && result.weak_topics.length > 0) {
             html += '<div style="text-align:left;margin-bottom:1rem">';
             html += '<h4 style="color:#e74c3c;font-size:.9rem;margin-bottom:.5rem">⚠️ Topik yang Perlu Diperbaiki:</h4>';
             result.weak_topics.forEach(t => {

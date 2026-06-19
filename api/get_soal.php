@@ -177,7 +177,7 @@ try {
     $count = $stmt->fetchColumn();
 
     if ($count == 0) {
-        // Check rolling limit per subtes (max 5 tryouts per day per subtes) - disabled for development
+        // Check rolling limit per subtes (max 20 tryouts per day)
         if (($_ENV['APP_ENV'] ?? 'development') !== 'development') {
             $stmtLimit = $pdo->prepare("SELECT COUNT(DISTINCT ts.id) as tryout_count 
                                         FROM tryout_sessions ts 
@@ -187,9 +187,10 @@ try {
             $stmtLimit->execute([$userId]);
             $dailyTryoutCount = $stmtLimit->fetchColumn();
             
-            if ($dailyTryoutCount >= 5) {
+            if ($dailyTryoutCount >= 20) {
                 http_response_code(429);
-                echo json_encode(['error' => 'Anda telah mencapai batas maksimal 5 tryout per hari. Silakan coba lagi besok. Jumlah tryout hari ini: ' . $dailyTryoutCount . '.']);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['success' => false, 'message' => 'Anda telah mencapai batas maksimal 20 tryout per hari. Silakan coba lagi besok.']);
                 exit;
             }
         }

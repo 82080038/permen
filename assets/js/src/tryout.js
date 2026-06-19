@@ -141,13 +141,26 @@ class TryoutManager {
     async loadSoal() {
         console.log('[TryoutManager] loadSoal called with sessionId:', this.sessionId, 'baseUrl:', this.baseUrl);
         try {
-            const res = await fetch(`${this.baseUrl}/api/get_soal.php?session_id=${this.sessionId}`, {
+            let res = await fetch(`${this.baseUrl}/api/get_soal.php?session_id=${this.sessionId}`, {
                 credentials: 'include',
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             });
+
+            // Retry on 429 (rate limited) after 2 seconds
+            if (res.status === 429) {
+                console.log('[TryoutManager] Got 429, retrying after 2s...');
+                await new Promise(r => setTimeout(r, 2000));
+                res = await fetch(`${this.baseUrl}/api/get_soal.php?session_id=${this.sessionId}`, {
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+            }
 
             if (res.status === 401 || res.status === 403) {
                 alert('Sesi Anda telah berakhir. Silakan login kembali.');
@@ -221,6 +234,8 @@ class TryoutManager {
                 document.getElementById('btnPrev').style.cursor = 'not-allowed';
             }
         } catch (e) {
+            this.lastError = e.message;
+            console.error('[TryoutManager] loadSoal error:', e.message);
             alert('Gagal memuat soal: ' + e.message + '. Silakan refresh halaman atau periksa koneksi internet Anda.');
         }
     }
