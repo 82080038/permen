@@ -45,6 +45,9 @@ Options -Indexes
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{DOCUMENT_ROOT}/pages/$1.php -f
     RewriteRule ^([^/]+)\.php$ pages/$1.php [L]
+
+    # Serve 204 No Content for favicon requests to prevent 404
+    RewriteRule ^favicon\.ico$ - [R=204,L]
 </IfModule>
 
 # Security Headers

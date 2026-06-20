@@ -28,6 +28,11 @@ if (!function_exists('isActive')) {
 }
 ?>
 <?php
+// Favicon - prevent 404 by using data URI
+if (!defined('FAVICON_LOADED')) {
+    define('FAVICON_LOADED', true);
+    echo '<link rel="icon" href="data:,">';
+}
 // Inject Bootstrap hanya sekali
 if (!defined('BOOTSTRAP_LOADED')) {
     define('BOOTSTRAP_LOADED', true);

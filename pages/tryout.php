@@ -272,6 +272,7 @@ $strictMode = 0; // Default non-strict
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Aplikasi Try Out SKD CAT-BKN untuk persiapan masuk Sekolah Kedinasan.">
 <meta name="theme-color" content="#1a5276">
+<link rel="icon" href="data:,">
 <title>Try Out SKD — CAT BKN</title>
 <style>
 :root{--bg-body:#f0f2f5;--bg-sidebar:#fff;--bg-content:#fff;--bg-passage:#f0f7ff;--bg-pembahasan:#fffbea;--bg-question:#fafafa;--bg-option-hover:#eaf2f8;--bg-option-selected:#d4edda;--bg-number:#f8f9fa;--text-main:#222;--text-muted:#555;--text-passage:#333;--text-heading:#1a5276;--text-info:#555;--img-bg:#fff;--img-border:#ddd;--border-light:#ddd;--border-passage:#b8d4f0;--header-bg:#1a5276;--nav-bg:#2980b9;--timer-bg:#e74c3c}
@@ -423,6 +424,7 @@ require '../includes/breadcrumbs.php';
 </div>
 
 <base href="<?php echo $baseUrl ?? '/permen'; ?>">
+<script>window.APP_BASE_URL = '<?php echo rtrim($baseUrl ?? '/permen', '/'); ?>';</script>
 <script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/app.js"></script>
 <script src="<?php echo $baseUrl ?? '/permen'; ?>/assets/js/dist/tryout.js"></script>
 <script>

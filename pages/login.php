@@ -102,6 +102,7 @@ if (!empty($_SESSION['user_id'])) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
+<link rel="icon" href="data:,">
 <base href="<?php echo rtrim($baseUrl, '/'); ?>">
 <title>Login — SKD CAT-BKN</title>
 <link rel="stylesheet" href="<?php echo $baseUrl; ?>/assets/css/bootstrap.min.css">

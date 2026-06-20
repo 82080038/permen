@@ -3,6 +3,7 @@
 
 <script>
 window.isLoggedIn = <?= $userId ? 'true' : 'false' ?>;
+window.APP_BASE_URL = '<?php echo rtrim($_navBase, "/"); ?>';
 (function(){
   var btn = document.getElementById('navHamburger');
   var menu = document.getElementById('navMenu');

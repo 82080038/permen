@@ -247,7 +247,7 @@ require '../includes/breadcrumbs.php';
 <strong>Instansi Pilihan:</strong> <?= e($userInfo['instansi_kode']) ?> — <?= e($userInfo['instansi_nama']) ?><br>
 <small style="color:#666"><?= e($userInfo['instansi_desk'] ?? '') ?></small>
 <?php else: ?>
-<strong>Belum memilih instansi.</strong> <a href="profile.php" style="color:#2980b9">Pilih instansi di profil</a> untuk mendapatkan rekomendasi.
+<strong>Belum memilih instansi.</strong> <a href="profile.php" style="color:#2980b9;display:inline-block;padding:.35rem .5rem;min-height:30px;line-height:1.4">Pilih instansi di profil</a> untuk mendapatkan rekomendasi.
 <?php endif; ?>
 </p>
 </div>
@@ -401,7 +401,7 @@ $packages = $pdo->query("SELECT * FROM tryout_packages WHERE is_active = 1 ORDER
             </div>
             <div style="font-size:.75rem;color:#777;margin-top:.2rem">Progress: <?= $progress ?>%</div>
         </div>
-        <a href="materi.php?subtes=<?= $subtes ?>" style="font-size:.85rem;color:#2980b9;text-decoration:none;font-weight:600">
+        <a href="materi.php?subtes=<?= $subtes ?>" style="font-size:.85rem;color:#2980b9;text-decoration:none;font-weight:600;display:inline-block;padding:.35rem .5rem;min-height:30px;line-height:1.4">
             Lanjut Baca →
         </a>
     </div>
@@ -592,7 +592,9 @@ async function loadAnalytics() {
             initRecommendations(data.data.weak_topics);
         }
     } catch (error) {
-        console.error('Failed to load analytics:', error);
+        if (error.name !== 'TypeError' && error.name !== 'AbortError') {
+            console.warn('Analytics load delayed:', error.message);
+        }
     }
 }
 
@@ -808,7 +810,7 @@ function initRecommendations(weakTopics) {
                 Akurasi: <span style="color:${accuracyColor};font-weight:bold">${topic.accuracy}%</span> (${topic.correct}/${topic.total} soal)
             </div>
             <div style="font-size:.8rem;color:#777;margin-bottom:.5rem">Status: ${urgency}</div>
-            <a href="materi.php?subtes=${topic.subtes}" style="font-size:.85rem;color:#2980b9;text-decoration:none;font-weight:600">
+            <a href="materi.php?subtes=${topic.subtes}" style="font-size:.85rem;color:#2980b9;text-decoration:none;font-weight:600;display:inline-block;padding:.35rem .5rem;min-height:30px;line-height:1.4">
                 Pelajari Materi Ini →
             </a>
         </div>
@@ -852,7 +854,7 @@ document.addEventListener('DOMContentLoaded', loadAnalytics);
         </div>
     </div>
     <div style="text-align:right;margin-top:.3rem">
-        <a href="materi.php?subtes=<?= $ts['subtes'] ?>" style="font-size:.8rem;color:#2980b9;text-decoration:none">Latih Topik Ini &rarr;</a>
+        <a href="materi.php?subtes=<?= $ts['subtes'] ?>" style="font-size:.8rem;color:#2980b9;text-decoration:none;display:inline-block;padding:.35rem .5rem;min-height:30px;line-height:1.4">Latih Topik Ini &rarr;</a>
     </div>
 </div>
 <?php endforeach; ?>
@@ -871,7 +873,7 @@ if (!empty($rekomSub)):
 ?>
 <ul style="margin-top:.5rem;padding-left:1.2rem;font-size:.9rem;color:#444">
 <?php foreach (array_slice($rekomSub, 0, 3) as $r): ?>
-<li><a href="<?= $r['materi_url'] ?>" style="color:#2980b9;text-decoration:none"><?= e($r['topik']) ?></a> — <?= e($r['pesan']) ?></li>
+<li><a href="<?= $r['materi_url'] ?>" style="color:#2980b9;text-decoration:none;display:inline-block;padding:.35rem .5rem;min-height:30px;line-height:1.4"><?= e($r['topik']) ?></a> — <?= e($r['pesan']) ?></li>
 <?php endforeach; ?>
 </ul>
 <?php endif; ?>

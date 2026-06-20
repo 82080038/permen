@@ -4,6 +4,21 @@
  */
 
 /**
+ * Get the application base URL for API calls.
+ * Works in both subdirectory (localhost/permen) and root domain (bimbel.bereng.info) deployments.
+ */
+function getAppBaseUrl() {
+    if (typeof BASE_URL !== 'undefined' && BASE_URL) return BASE_URL.replace(/\/$/, '');
+    if (typeof window.APP_BASE_URL !== 'undefined' && window.APP_BASE_URL) return window.APP_BASE_URL.replace(/\/$/, '');
+    var path = window.location.pathname;
+    var pagesIdx = path.indexOf('/pages/');
+    if (pagesIdx > 0) return path.substring(0, pagesIdx);
+    var apiIdx = path.indexOf('/api/');
+    if (apiIdx > 0) return path.substring(0, apiIdx);
+    return '';
+}
+
+/**
  * Global error handler for JavaScript errors
  */
 window.addEventListener('error', function (event) {
@@ -947,17 +962,16 @@ function trackEvent(eventType, data = {}, sendBeacon = false) {
         ...data
     };
 
+    var analyticsUrl = getAppBaseUrl() + '/api/learning_analytics.php';
     if (sendBeacon && navigator.sendBeacon) {
         const formData = new URLSearchParams(payload);
-        const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '');
-        navigator.sendBeacon(baseUrl + '/api/learning_analytics.php', formData);
+        navigator.sendBeacon(analyticsUrl, formData);
     } else {
-        const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '');
-        fetch(baseUrl + '/api/learning_analytics.php', {
+        fetch(analyticsUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams(payload)
-        }).catch(() => {});
+        }).catch(() => { });
     }
 }
 
@@ -1015,7 +1029,7 @@ function trackTryoutComplete(tryoutId = null, score = null) {
 
 async function getLearningInsights() {
     try {
-        const response = await fetch('/api/learning_analytics.php?action=get_learning_insights');
+        const response = await fetch(getAppBaseUrl() + '/api/learning_analytics.php?action=get_learning_insights');
         const data = await response.json();
 
         if (data.success) {
@@ -1030,7 +1044,7 @@ async function getLearningInsights() {
 
 async function markInsightRead(insightId) {
     try {
-        await fetch(`/api/learning_analytics.php?action=mark_insight_read&insight_id=${insightId}`);
+        await fetch(getAppBaseUrl() + `/api/learning_analytics.php?action=mark_insight_read&insight_id=${insightId}`);
     } catch (e) {
         console.error('Failed to mark insight as read:', e);
     }
@@ -1038,7 +1052,7 @@ async function markInsightRead(insightId) {
 
 async function getLearningStats() {
     try {
-        const response = await fetch('/api/learning_analytics.php?action=get_learning_stats');
+        const response = await fetch(getAppBaseUrl() + '/api/learning_analytics.php?action=get_learning_stats');
         const data = await response.json();
 
         if (data.success) {
