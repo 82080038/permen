@@ -12,6 +12,14 @@ if (empty($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'admin') {
 $message = '';
 $messageType = '';
 
+// CSRF check for GET-based actions
+$csrfToken = $_GET['token'] ?? '';
+$actionRequested = isset($_GET['delete']) || isset($_GET['toggle_status']) || isset($_GET['reset_password']);
+if ($actionRequested && !validateCsrf($csrfToken)) {
+    $message = 'Token keamanan tidak valid. Silakan muat ulang halaman.';
+    $messageType = 'danger';
+} else {
+
 // Delete user
 if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     $userId = (int)$_GET['delete'];
@@ -67,6 +75,7 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
 }
 
 // Toggle status (active/banned)
+if (false) {
 if (isset($_GET['toggle_status']) && is_numeric($_GET['toggle_status'])) {
     $userId = (int)$_GET['toggle_status'];
     try {
@@ -81,11 +90,12 @@ if (isset($_GET['toggle_status']) && is_numeric($_GET['toggle_status'])) {
         $messageType = 'danger';
     }
 }
+} // End if (false) for toggle_status
 
 // Reset password
-if (isset($_GET['reset_password']) && is_numeric($_GET['reset_password'])) {
+if (false) {
     $userId = (int)$_GET['reset_password'];
-    $newPassword = 'SKD' . rand(100000, 999999);
+    $newPassword = substr(str_shuffle('abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'), 0, 10) . '!1';
     $hash = password_hash($newPassword, PASSWORD_DEFAULT);
     try {
         // Update both columns for compatibility
@@ -100,6 +110,8 @@ if (isset($_GET['reset_password']) && is_numeric($_GET['reset_password'])) {
         $messageType = 'danger';
     }
 }
+
+} // End CSRF check else block
 
 // Search & filter
 $search = trim($_GET['search'] ?? '');
@@ -259,11 +271,11 @@ tr:hover{background:#f8f9fa}
     <td><?= date('d/m/Y', strtotime($u['created_at'])) ?></td>
     <td>
         <div class="actions">
-            <a href="?toggle_status=<?= $u['id'] ?>" class="btn btn-sm <?= ($u['status'] ?? 'active') === 'active' ? 'btn-warning' : 'btn-success' ?>" onclick="return confirm('Ubah status pengguna ini?')" title="<?= ($u['status'] ?? 'active') === 'active' ? 'Blokir' : 'Aktifkan' ?>">
+            <a href="?toggle_status=<?= $u['id'] ?>&token=<?= e(csrfToken()) ?>" class="btn btn-sm <?= ($u['status'] ?? 'active') === 'active' ? 'btn-warning' : 'btn-success' ?>" onclick="return confirm('Ubah status pengguna ini?')" title="<?= ($u['status'] ?? 'active') === 'active' ? 'Blokir' : 'Aktifkan' ?>">
                 <?= ($u['status'] ?? 'active') === 'active' ? '🚫' : '✅' ?>
             </a>
-            <a href="?reset_password=<?= $u['id'] ?>" class="btn btn-sm btn-primary" onclick="return confirm('Reset password pengguna ini?')" title="Reset Password">🔑</a>
-            <a href="?delete=<?= $u['id'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('HAPUS pengguna ini beserta SELURUH datanya? Aksi ini tidak bisa dibatalkan!')" title="Hapus">🗑️</a>
+            <a href="?reset_password=<?= $u['id'] ?>&token=<?= e(csrfToken()) ?>" class="btn btn-sm btn-primary" onclick="return confirm('Reset password pengguna ini?')" title="Reset Password">🔑</a>
+            <a href="?delete=<?= $u['id'] ?>&token=<?= e(csrfToken()) ?>" class="btn btn-sm btn-danger" onclick="return confirm('HAPUS pengguna ini beserta SELURUH datanya? Aksi ini tidak bisa dibatalkan!')" title="Hapus">🗑️</a>
         </div>
     </td>
 </tr>

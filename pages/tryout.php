@@ -109,7 +109,11 @@ if (!$sessionId) {
     $existing = $stmt->fetchColumn();
 
     if ($existing) {
+        // Check if this is a fresh page load (not from a form submission)
+        // Show a confirmation dialog to the user about resuming
         $sessionId = $existing;
+        // Pass a flag to JS to show resume notice
+        $resumingSession = true;
     } else {
         // Check for strict_mode parameter from POST (when starting new tryout)
         $strictMode = 0;
@@ -135,18 +139,7 @@ if (!$sessionId) {
             }
         }
 
-        // Check which status value is valid for this database
-        $validStatus = 'ongoing'; // Default to production value
-        try {
-            $testStmt = $pdo->query("SHOW COLUMNS FROM tryout_sessions WHERE Field = 'status'");
-            $columnInfo = $testStmt->fetch();
-            if ($columnInfo && strpos($columnInfo['Type'], 'berjalan') !== false) {
-                $validStatus = 'berjalan'; // Local database uses 'berjalan'
-            }
-        } catch (PDOException $e) {
-            // Assume production default
-        }
-
+        // Reuse $validStatus already determined above
         $stmt = $pdo->prepare("INSERT INTO tryout_sessions (user_id, nama, waktu_mulai, status) VALUES (?, ?, NOW(), ?)");
         $stmt->execute([$userId, $packageName, $validStatus]);
         $sessionId = $pdo->lastInsertId();
@@ -433,6 +426,14 @@ require '../includes/breadcrumbs.php';
 <script>
 // Initialize TryoutManager with PHP variables
 document.addEventListener('DOMContentLoaded', function() {
+<?php if (!empty($resumingSession)): ?>
+    // Show resume notice for concurrent/existing session
+    var resumeBanner = document.createElement('div');
+    resumeBanner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#f39c12;color:#fff;padding:.8rem;text-align:center;z-index:10000;font-size:.9rem';
+    resumeBanner.textContent = '⚠️ Anda memiliki sesi tryout yang sedang berjalan. Sesi ini akan dilanjutkan.';
+    document.body.appendChild(resumeBanner);
+    setTimeout(function() { resumeBanner.style.transition = 'opacity 0.5s'; resumeBanner.style.opacity = '0'; setTimeout(function() { resumeBanner.remove(); }, 500); }, 5000);
+<?php endif; ?>
     window.tryoutManager = new TryoutManager({
         sessionId: <?= json_encode($sessionId) ?>,
         csrfToken: <?= json_encode(getCsrfTokenForApi()) ?>,

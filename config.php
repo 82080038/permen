@@ -166,8 +166,8 @@ if (session_status() === PHP_SESSION_NONE) {
 // Log session configuration for debugging
 error_log("[LOCAL_CONFIG] Session started - ID: " . session_id() . ", Environment: " . ($isLocal ? 'Local' : 'Production'));
 
-// Session validation - disabled for local environment
-if ($isProduction && false) { // Disabled for both environments for now
+// Session validation - enabled for production environment
+if ($isProduction) {
     $currentIp = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     $currentUa = $_SERVER['HTTP_USER_AGENT'] ?? '';
 

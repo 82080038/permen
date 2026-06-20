@@ -242,6 +242,16 @@ class TryoutManager {
 
     startTimer() {
         let warningShown = false;
+
+        // Session heartbeat to prevent timeout during long tryouts
+        this.heartbeatInterval = setInterval(() => {
+            fetch(`${this.baseUrl}/api/health.php`, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: { 'X-Heartbeat': '1' }
+            }).catch(() => { });
+        }, 300000); // 5 minutes
+
         this.timerInterval = setInterval(() => {
             if (this.isPaused) return;
 
@@ -776,6 +786,7 @@ class TryoutManager {
         if (!confirm(msg)) return;
 
         clearInterval(this.timerInterval);
+        if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
         this.clearLocalAnswers();
 
         fetch(`${this.baseUrl}/api/finish_tryout.php`, {

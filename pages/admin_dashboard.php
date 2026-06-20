@@ -2082,6 +2082,25 @@ function downloadTemplate() {
     const template = 'subtes,tipe,topik,pertanyaan,pilihan_a,pilihan_b,pilihan_c,pilihan_d,pilihan_e,jawaban_benar,pembahasan\nTWK,numerik,Deret Angka,"Berapa hasil dari 2 + 2?","3","4","5","6","7","B","2+2=4"';
     const blob = new Blob([template], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
+
+function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let j = 0; j < line.length; j++) {
+        const ch = line[j];
+        if (ch === '"') {
+            if (inQuotes && line[j + 1] === '"') { current += '"'; j++; }
+            else inQuotes = !inQuotes;
+        } else if (ch === ',' && !inQuotes) {
+            result.push(current); current = '';
+        } else {
+            current += ch;
+        }
+    }
+    result.push(current);
+    return result;
+}
     const a = document.createElement('a');
     a.href = url;
     a.download = 'template_soal.csv';
@@ -2111,10 +2130,11 @@ async function bulkImportSoal(e) {
         for (let i = 1; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
             
-            const values = lines[i].split(',');
+            // Proper CSV parsing that handles quoted fields with commas
+            const values = parseCSVLine(lines[i]);
             if (values.length < 10) {
                 errorCount++;
-                errors.push(`Baris ${i}: Kolom tidak lengkap`);
+                errors.push(`Baris ${i}: Kolom tidak lengkap (${values.length}/10)`);
                 continue;
             }
             
@@ -2123,14 +2143,14 @@ async function bulkImportSoal(e) {
             formData.append('subtes', values[0]?.trim() || 'TWK');
             formData.append('tipe', values[1]?.trim() || '');
             formData.append('topik', values[2]?.trim() || '');
-            formData.append('pertanyaan', values[3]?.replace(/"/g, '').trim() || '');
-            formData.append('pilihan_a', values[4]?.replace(/"/g, '').trim() || '');
-            formData.append('pilihan_b', values[5]?.replace(/"/g, '').trim() || '');
-            formData.append('pilihan_c', values[6]?.replace(/"/g, '').trim() || '');
-            formData.append('pilihan_d', values[7]?.replace(/"/g, '').trim() || '');
-            formData.append('pilihan_e', values[8]?.replace(/"/g, '').trim() || '');
+            formData.append('pertanyaan', values[3]?.trim() || '');
+            formData.append('pilihan_a', values[4]?.trim() || '');
+            formData.append('pilihan_b', values[5]?.trim() || '');
+            formData.append('pilihan_c', values[6]?.trim() || '');
+            formData.append('pilihan_d', values[7]?.trim() || '');
+            formData.append('pilihan_e', values[8]?.trim() || '');
             formData.append('jawaban_benar', values[9]?.trim().toUpperCase() || 'A');
-            formData.append('pembahasan', values[10]?.replace(/"/g, '').trim() || '');
+            formData.append('pembahasan', values[10]?.trim() || '');
             
             try {
                 const res = await fetch(BASE_URL + '/api/admin_soal_crud.php', {

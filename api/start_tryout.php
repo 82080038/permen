@@ -73,12 +73,12 @@ try {
         exit;
     }
 
-    // CSRF validation - temporarily disabled for debugging
-    // if (!validateCsrfApi()) {
-    //     http_response_code(403);
-    //     echo json_encode(['error' => 'CSRF token tidak valid']);
-    //     exit;
-    // }
+    // CSRF validation
+    if (!validateCsrfApi()) {
+        http_response_code(403);
+        echo json_encode(['error' => 'CSRF token tidak valid. Silakan muat ulang halaman.']);
+        exit;
+    }
 
     // Get POST data
     $data = json_decode(file_get_contents('php://input'), true) ?? [];

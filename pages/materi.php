@@ -472,16 +472,21 @@ function escapeHtml(text){
     return div.innerHTML;
 }
 
-// Track materi reading progress
+// Track materi reading progress (debounced to prevent API spam)
+var _materiTrackTimers = {};
 function trackMateriRead(materiId, subtes, percent) {
-    var baseUrl = window.APP_BASE_URL || '';
-    var url = baseUrl + '/api/track_materi_progress.php';
-    var payload = 'materi_id=' + encodeURIComponent(materiId) + '&subtes=' + encodeURIComponent(subtes) + '&progress_percent=' + percent;
-    if (navigator.sendBeacon) {
-        navigator.sendBeacon(url, payload);
-    } else {
-        fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: payload }).catch(function(){});
-    }
+    // Debounce: clear any pending tracking for this materi, wait 2s before sending
+    if (_materiTrackTimers[materiId]) clearTimeout(_materiTrackTimers[materiId]);
+    _materiTrackTimers[materiId] = setTimeout(function() {
+        var baseUrl = window.APP_BASE_URL || '';
+        var url = baseUrl + '/api/track_materi_progress.php';
+        var payload = 'materi_id=' + encodeURIComponent(materiId) + '&subtes=' + encodeURIComponent(subtes) + '&progress_percent=' + percent;
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(url, payload);
+        } else {
+            fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: payload }).catch(function(){});
+        }
+    }, 2000);
 }
 
 // Auto-track when materi card is opened

@@ -69,6 +69,9 @@ function getCsrfTokenForApi(): string
 function checkRateLimit(string $ip, PDO $pdo): bool
 {
     try {
+        // Clean up expired entries periodically
+        $pdo->exec("DELETE FROM rate_limits WHERE created_at < (NOW() - INTERVAL 15 MINUTE)");
+        
         $stmt = $pdo->prepare("SELECT count, created_at FROM rate_limits WHERE ip = ? ORDER BY created_at DESC LIMIT 1");
         $stmt->execute([$ip]);
         $data = $stmt->fetch();
@@ -93,12 +96,16 @@ function checkRateLimit(string $ip, PDO $pdo): bool
 function incrementRateLimit(string $ip, PDO $pdo): void
 {
     try {
+        // Clean up expired entries
+        $pdo->exec("DELETE FROM rate_limits WHERE created_at < (NOW() - INTERVAL 15 MINUTE)");
+        
         $stmt = $pdo->prepare("SELECT count, created_at FROM rate_limits WHERE ip = ? ORDER BY created_at DESC LIMIT 1");
         $stmt->execute([$ip]);
         $data = $stmt->fetch();
         
         if (!$data || time() - strtotime($data['created_at']) > 900) {
-            // Reset if expired or doesn't exist
+            // Reset if expired or doesn't exist — delete old entry and insert fresh
+            $pdo->prepare("DELETE FROM rate_limits WHERE ip = ?")->execute([$ip]);
             $stmt = $pdo->prepare("INSERT INTO rate_limits (ip, count, created_at) VALUES (?, 1, NOW())");
             $stmt->execute([$ip]);
         } else {

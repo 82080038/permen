@@ -7,27 +7,36 @@ class HelpersTest extends TestCase
 {
     public function testValidatePasswordStrength()
     {
-        // Test valid password (6+ characters)
-        $result = validatePasswordStrength('123456');
+        // Test valid passwords (8+ chars, uppercase, lowercase, number)
+        $result = validatePasswordStrength('Abcdef12');
         $this->assertTrue($result['valid']);
         $this->assertEquals('', $result['error']);
 
-        $result = validatePasswordStrength('abcdef');
+        $result = validatePasswordStrength('Sihaloho1982');
         $this->assertTrue($result['valid']);
         $this->assertEquals('', $result['error']);
 
-        $result = validatePasswordStrength('abc123');
+        $result = validatePasswordStrength('Test1234');
         $this->assertTrue($result['valid']);
         $this->assertEquals('', $result['error']);
 
-        // Test invalid passwords (less than 6 characters)
+        // Test invalid: too short (less than 8 chars)
         $result = validatePasswordStrength('12345');
         $this->assertFalse($result['valid']);
 
         $result = validatePasswordStrength('abcde');
         $this->assertFalse($result['valid']);
 
-        $result = validatePasswordStrength('123');
+        // Test invalid: no uppercase
+        $result = validatePasswordStrength('abcdef12');
+        $this->assertFalse($result['valid']);
+
+        // Test invalid: no lowercase
+        $result = validatePasswordStrength('ABCDEF12');
+        $this->assertFalse($result['valid']);
+
+        // Test invalid: no number
+        $result = validatePasswordStrength('Abcdefgh');
         $this->assertFalse($result['valid']);
     }
     

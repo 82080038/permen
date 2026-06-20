@@ -14,6 +14,11 @@ if (empty($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
     ApiResponse::forbidden('Unauthorized');
 }
 
+// CSRF validation
+if (!validateCsrfApi()) {
+    ApiResponse::forbidden('Token keamanan tidak valid. Silakan muat ulang halaman.');
+}
+
 $action = $_POST['action'] ?? '';
 
 if ($action === 'suspend_user') {
@@ -24,9 +29,13 @@ if ($action === 'suspend_user') {
         ApiResponse::validationError(['user_id' => 'Invalid user ID'], 'Invalid user ID');
     }
     
-    $stmt = $pdo->prepare("UPDATE users SET status = 'suspended', suspended_at = NOW(), suspended_reason = ? WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE users SET status = 'suspended', suspended_at = NOW(), suspended_reason = ? WHERE id = ? AND role != 'admin'");
     $stmt->execute([$reason, $userId]);
     
+    if ($stmt->rowCount() === 0) {
+        ApiResponse::error('Tidak bisa suspend akun admin atau user tidak ditemukan.', 403);
+    }
+
     // Log action
     $stmt = $pdo->prepare("INSERT INTO user_activity_log (user_id, action, details, ip_address) VALUES (?, 'suspended', ?, ?)");
     $stmt->execute([$userId, "Suspended by admin. Reason: $reason", $_SERVER['REMOTE_ADDR'] ?? '']);
@@ -42,9 +51,14 @@ if ($action === 'suspend_user') {
         exit;
     }
     
-    $stmt = $pdo->prepare("UPDATE users SET status = 'banned', suspended_at = NOW(), suspended_reason = ? WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE users SET status = 'banned', suspended_at = NOW(), suspended_reason = ? WHERE id = ? AND role != 'admin'");
     $stmt->execute([$reason, $userId]);
     
+    if ($stmt->rowCount() === 0) {
+        echo json_encode(['error' => 'Tidak bisa ban akun admin atau user tidak ditemukan.']);
+        exit;
+    }
+
     // Log action
     $stmt = $pdo->prepare("INSERT INTO user_activity_log (user_id, action, details, ip_address) VALUES (?, 'banned', ?, ?)");
     $stmt->execute([$userId, "Banned by admin. Reason: $reason", $_SERVER['REMOTE_ADDR'] ?? '']);
@@ -75,8 +89,12 @@ if ($action === 'suspend_user') {
     }
     
     // Soft delete by setting status to banned
-    $stmt = $pdo->prepare("UPDATE users SET status = 'banned', suspended_at = NOW(), suspended_reason = 'Deleted by admin' WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE users SET status = 'banned', suspended_at = NOW(), suspended_reason = 'Deleted by admin' WHERE id = ? AND role != 'admin'");
     $stmt->execute([$userId]);
+    
+    if ($stmt->rowCount() === 0) {
+        ApiResponse::error('Tidak bisa menghapus akun admin atau user tidak ditemukan.', 403);
+    }
     
     // Log action
     $stmt = $pdo->prepare("INSERT INTO user_activity_log (user_id, action, details, ip_address) VALUES (?, 'deleted', 'Deleted by admin', ?)");

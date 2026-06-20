@@ -45,11 +45,16 @@ try {
     
     // Generate new random password
     $newPassword = generateRandomPassword();
-    $hash = password($newPassword, PASSWORD_BCRYPT);
+    $hash = password_hash($newPassword, PASSWORD_BCRYPT);
     
-    // Update password
-    $stmt = $pdo->prepare("UPDATE users SET password = ?, failed_attempts = 0, lockout_until = NULL WHERE id = ?");
-    $stmt->execute([$hash, $userId]);
+    // Update password (both columns for compatibility)
+    try {
+        $stmt = $pdo->prepare("UPDATE users SET password_hash = ?, failed_attempts = 0, lockout_until = NULL WHERE id = ?");
+        $stmt->execute([$hash, $userId]);
+    } catch (PDOException $e) {
+        $stmt = $pdo->prepare("UPDATE users SET password = ?, failed_attempts = 0, lockout_until = NULL WHERE id = ?");
+        $stmt->execute([$hash, $userId]);
+    }
     
     // Mark reset request as completed if exists
     $stmt = $pdo->prepare("UPDATE password_reset_requests SET status = 'completed' WHERE user_id = ? AND status = 'pending'");
@@ -61,7 +66,7 @@ try {
         $userId,
         'success',
         'Password Telah Di-reset',
-        "Password Anda telah di-reset oleh admin. Password baru Anda: $newPassword. Silakan login dengan password baru.",
+        'Password Anda telah di-reset oleh admin. Silakan hubungi admin untuk mendapatkan password baru Anda.',
         'login.php'
     );
     
