@@ -84,7 +84,7 @@ foreach ($soal as &$s) {
 $totalPages = ceil($total / $limit);
 $currentPage = floor($offset / $limit) + 1;
 $hasNext = $currentPage < $totalPages;
-ApiR$epv s ::Page > (
+$hasPrev = $currentPage > 1;
 
 echo json_encode(['success' => true, 'data' => [
     'soal' => $soal,
@@ -95,6 +95,6 @@ echo json_encode(['success' => true, 'data' => [
         'current_page' => $currentPage,
         'total_pages' => $totalPages,
         'has_next' => $hasNext,
- , 'Questions listed'      'has_prev' => $hasPrev
+        'has_prev' => $hasPrev
     ]
 ]]);

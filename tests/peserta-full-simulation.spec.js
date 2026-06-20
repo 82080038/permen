@@ -349,7 +349,7 @@ test.describe.serial('Peserta Full Simulation', () => {
       // Verify question is displayed
       const questionVisible = await page.locator('.question, .question-scrollable').first().isVisible().catch(() => false);
       if (!questionVisible) {
-        console.log(`    ⚠️ Question ${i+1} not visible, skipping UI click`);
+        console.log(`    ⚠️ Question ${i + 1} not visible, skipping UI click`);
         continue;
       }
 
@@ -384,7 +384,7 @@ test.describe.serial('Peserta Full Simulation', () => {
       } else {
         // Fallback: click by nth option
         const allLabels = page.locator('.options label');
-        const idx = ['A','B','C','D','E'].indexOf(pickOpt);
+        const idx = ['A', 'B', 'C', 'D', 'E'].indexOf(pickOpt);
         if (await allLabels.count() > idx) {
           await allLabels.nth(idx).click();
           await page.waitForTimeout(500);
@@ -396,7 +396,7 @@ test.describe.serial('Peserta Full Simulation', () => {
         return !!window.tryoutManager?.answers[aid];
       }, s.answer_id);
       if (i < 3) {
-        console.log(`    Soal ${i+1}/${soalCount}: clicked "${pickOpt}" (benar=${s.jawaban_benar}, subtes=${s.subtes}) → ${wasRegistered ? '✅ registered' : '⚠️ not registered'}`);
+        console.log(`    Soal ${i + 1}/${soalCount}: clicked "${pickOpt}" (benar=${s.jawaban_benar}, subtes=${s.subtes}) → ${wasRegistered ? '✅ registered' : '⚠️ not registered'}`);
       }
     }
     console.log(`  ✓ UI-clicked ${UI_CLICK_COUNT} questions (${correctAnswers} correct, ${wrongAnswers} wrong for TIU/TWK)`);
@@ -422,19 +422,19 @@ test.describe.serial('Peserta Full Simulation', () => {
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': tm.csrfToken },
                 body: JSON.stringify({ answer_id: s.answer_id, jawaban: pick, is_ragu: 0 })
               });
-            } catch(e) {}
+            } catch (e) { }
           }
         }, { start: batch, end });
         if ((end) % 30 === 0 || end === soalCount) {
           console.log(`    Answered ${end}/${soalCount}`);
         }
-        await page.waitForTimeout(200); // Small delay between batches
+        await page.waitForTimeout(300); // Small delay between batches
       }
     }
 
     const answeredCount = await page.evaluate(() => Object.keys(window.tryoutManager?.answers || {}).length);
     console.log(`  ✓ Total answered: ${answeredCount}/${soalCount}`);
-    await page.waitForTimeout(2000); // Wait for all submit requests to complete
+    await page.waitForTimeout(3000); // Wait for all submit requests to complete
 
     // ── Check for image questions ──
     const imageQuestions = await page.evaluate(() => {
@@ -459,7 +459,7 @@ test.describe.serial('Peserta Full Simulation', () => {
       const tm = window.tryoutManager;
       if (!tm) return { success: false, error: 'No tryoutManager' };
       clearInterval(tm.timerInterval);
-      try { tm.clearLocalAnswers(); } catch(e) {}
+      try { tm.clearLocalAnswers(); } catch (e) { }
       const res = await fetch(`${tm.baseUrl}/api/finish_tryout.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': tm.csrfToken },
@@ -506,7 +506,7 @@ test.describe.serial('Peserta Full Simulation', () => {
         if (reviewData.success && reviewData.data?.stats) {
           const stats = reviewData.data.stats;
           console.log(`  ✓ Review stats: TWK(benar=${stats.TWK?.benar},salah=${stats.TWK?.salah},kosong=${stats.TWK?.kosong}) TIU(benar=${stats.TIU?.benar},salah=${stats.TIU?.salah},kosong=${stats.TIU?.kosong}) TKP(benar=${stats.TKP?.benar},salah=${stats.TKP?.salah},kosong=${stats.TKP?.kosong})`);
-          
+
           // Verify no false "kosong" (all questions were answered)
           const totalKosong = (stats.TWK?.kosong || 0) + (stats.TIU?.kosong || 0) + (stats.TKP?.kosong || 0);
           console.log(`  ✓ Total kosong (should be 0): ${totalKosong}`);

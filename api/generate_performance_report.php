@@ -113,6 +113,6 @@ $stmt->execute([
 // Fetch the created report
 $stmt = $pdo->prepare("SELECT * FROM performance_reports WHERE id = ?");
 $stmt->execute([$pdo->lastInsertId()]);
-ApiR$tp =s$::tch();($portPerformncert geneaed'
+$report = $stmt->fetch();
 
 echo json_encode(['success' => true, 'data' => $report]);
