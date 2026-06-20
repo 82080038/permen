@@ -94,4 +94,16 @@ foreach ($nilai as $sub => $val) {
 $stmt = $pdo->prepare("UPDATE tryout_sessions SET nilai_tkp=?, nilai_tiu=?, nilai_twk=?, total_nilai=?, status='selesai', waktu_selesai=NOW() WHERE id=?");
 $stmt->execute([$nilai['TKP'], $nilai['TIU'], $nilai['TWK'], $total, $sessionId]);
 
+// Send WhatsApp notification if configured
+$waFile = __DIR__ . '/../helpers_whatsapp.php';
+if (file_exists($waFile) && !empty($_ENV['FONNTE_API_KEY'])) {
+    require_once $waFile;
+    $userStmt = $pdo->prepare("SELECT no_hp, nama FROM users WHERE id = ?");
+    $userStmt->execute([$userId]);
+    $user = $userStmt->fetch();
+    if ($user && $user['no_hp']) {
+        sendTryoutResultWhatsApp($user['no_hp'], $user['nama'], $nilai);
+    }
+}
+
 ApiResponse::success(['nilai' => $nilai, 'total' => $total], 'Tryout selesai berhasil');

@@ -327,10 +327,62 @@ Sumber: BKN (Badan Kepegawaian Negara) - Seleksi Sekolah Kedinasan 2024
 
 <!-- REKOMENDASI LATIHAN -->
 <div class="card no-print" style="text-align:left;display:none" id="rekomendasiCard">
-<h2>Rekomendasi Latihan</h2>
-<p style="font-size:.9rem;color:#555;margin-bottom:.8rem">Berdasarkan hasil tryout, topik berikut perlu ditingkatkan:</p>
-<div id="rekomendasiList" style="display:flex;flex-wrap:wrap;gap:.5rem"></div>
+<h2>📊 Analisis Kelemahan & Rekomendasi</h2>
+<p style="font-size:.9rem;color:#555;margin-bottom:.8rem">Berdasarkan hasil tryout, berikut topik yang perlu ditingkatkan:</p>
+<div id="rekomendasiList"></div>
 </div>
+
+<script>
+async function loadWeaknessAnalysis() {
+    try {
+        const res = await fetch('<?= $baseUrl ?>/api/weakness_analysis.php?session_id=<?= $sessionId ?>');
+        const data = await res.json();
+        if (!data.success) return;
+        
+        const card = document.getElementById('rekomendasiCard');
+        const list = document.getElementById('rekomendasiList');
+        const weakTopics = data.data.topics.filter(t => t.is_weak);
+        
+        if (weakTopics.length === 0) {
+            list.innerHTML = '<p style="color:#27ae60">✅ Semua topik di atas 70% akurasi. Kerja bagus!</p>';
+        } else {
+            let html = '';
+            weakTopics.forEach(t => {
+                const color = t.akurasi < 50 ? '#e74c3c' : '#f39c12';
+                html += '<div style="margin-bottom:1rem;padding:.8rem;border-left:4px solid ' + color + ';background:#f8f9fa;border-radius:4px">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center">';
+                html += '<strong>' + t.subtes + ' — ' + escapeHtml(t.topik) + '</strong>';
+                html += '<span style="color:' + color + ';font-weight:bold">' + t.akurasi + '%</span>';
+                html += '</div>';
+                html += '<div style="font-size:.8rem;color:#666;margin-top:.3rem">Benar: ' + t.benar + '/' + t.total + ' | Salah: ' + t.salah + ' | Kosong: ' + t.kosong + '</div>';
+                
+                if (t.materi.length > 0) {
+                    html += '<div style="margin-top:.5rem;font-size:.85rem">📚 Materi: ';
+                    t.materi.forEach(m => {
+                        html += '<a href="' + m.url + '" style="color:#2980b9;text-decoration:none">' + escapeHtml(m.judul) + '</a> ';
+                    });
+                    html += '</div>';
+                }
+                
+                if (t.tips.length > 0) {
+                    html += '<div style="margin-top:.3rem;font-size:.85rem">💡 Tips: ';
+                    t.tips.forEach(tp => {
+                        html += '<span style="background:#fff3cd;padding:.1rem .4rem;border-radius:3px">' + escapeHtml(tp.trik) + '</span> ';
+                    });
+                    html += '</div>';
+                }
+                html += '</div>';
+            });
+            list.innerHTML = html;
+        }
+        card.style.display = 'block';
+    } catch(e) {
+        console.error('Weakness analysis error:', e);
+    }
+}
+function escapeHtml(text) { const d = document.createElement('div'); d.textContent = text; return d.innerHTML; }
+document.addEventListener('DOMContentLoaded', loadWeaknessAnalysis);
+</script>
 
 <!-- EXPORT BUTTONS (Full Tryout Mode) -->
 <?php if (!$isLatihan): ?>
@@ -338,6 +390,7 @@ Sumber: BKN (Badan Kepegawaian Negara) - Seleksi Sekolah Kedinasan 2024
 <h2>Export Hasil</h2>
 <div style="display:flex;justify-content:center;gap:.5rem;flex-wrap:wrap">
 <a href="/api/export_result.php?session_id=<?= $sessionId ?>&format=csv" class="btn" style="background:#2980b9;font-size:.9rem;padding:.6rem 1.2rem">📄 Export CSV</a>
+<a href="export_hasil.php?session_id=<?= $sessionId ?>" class="btn" style="background:#e67e22;font-size:.9rem;padding:.6rem 1.2rem">📊 Rapor PDF</a>
 <a href="javascript:window.print()" class="btn" style="background:#8e44ad;font-size:.9rem;padding:.6rem 1.2rem">🖨️ Cetak/PDF</a>
 <button onclick="sendEmailResult()" class="btn" style="background:#27ae60;font-size:.9rem;padding:.6rem 1.2rem">� Kirim Notifikasi</button>
 </div>

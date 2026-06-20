@@ -260,6 +260,7 @@ require '../includes/breadcrumbs.php';
 <a href="materi.php?subtes=TWK" class="btn warning">Materi TWK</a>
 <a href="materi.php?subtes=TIU" class="btn warning">Materi TIU</a>
 <a href="materi.php?subtes=TKP" class="btn warning">Materi TKP</a>
+<a href="study_plan.php" class="btn" style="background:#1a5276">📚 Study Plan</a>
 </div>
 
 <div class="stats">
