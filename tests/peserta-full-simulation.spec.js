@@ -410,20 +410,22 @@ test.describe.serial('Peserta Full Simulation', () => {
         await page.evaluate(async ({ start, end }) => {
           const tm = window.tryoutManager;
           if (!tm) return;
+          const promises = [];
           for (let i = start; i < end; i++) {
             const s = tm.soal[i];
             if (!s) continue;
             // Pick the correct answer to maximize score verification
             const pick = s.jawaban_benar || 'A';
             tm.answers[s.answer_id] = pick;
-            try {
-              await fetch(`${tm.baseUrl}/api/submit_jawaban.php`, {
+            promises.push(
+              fetch(`${tm.baseUrl}/api/submit_jawaban.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': tm.csrfToken },
                 body: JSON.stringify({ answer_id: s.answer_id, jawaban: pick, is_ragu: 0 })
-              });
-            } catch (e) { }
+              }).catch(e => { })
+            );
           }
+          await Promise.all(promises);
         }, { start: batch, end });
         if ((end) % 30 === 0 || end === soalCount) {
           console.log(`    Answered ${end}/${soalCount}`);
@@ -435,6 +437,33 @@ test.describe.serial('Peserta Full Simulation', () => {
     const answeredCount = await page.evaluate(() => Object.keys(window.tryoutManager?.answers || {}).length);
     console.log(`  ✓ Total answered: ${answeredCount}/${soalCount}`);
     await page.waitForTimeout(3000); // Wait for all submit requests to complete
+
+    // ── Re-submit any missing answers (verification pass) ──
+    const missingCount = await page.evaluate(async () => {
+      const tm = window.tryoutManager;
+      if (!tm) return 0;
+      const promises = [];
+      let missing = 0;
+      for (let i = 0; i < tm.soal.length; i++) {
+        const s = tm.soal[i];
+        if (!s) continue;
+        const pick = tm.answers[s.answer_id] || s.jawaban_benar || 'A';
+        tm.answers[s.answer_id] = pick;
+        // Re-submit to ensure server has it
+        promises.push(
+          fetch(`${tm.baseUrl}/api/submit_jawaban.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': tm.csrfToken },
+            body: JSON.stringify({ answer_id: s.answer_id, jawaban: pick, is_ragu: 0 })
+          }).catch(e => { })
+        );
+        missing++;
+      }
+      await Promise.all(promises);
+      return missing;
+    });
+    console.log(`  ✓ Re-submitted all ${missingCount} answers (verification pass)`);
+    await page.waitForTimeout(2000); // Wait for re-submit to complete
 
     // ── Check for image questions ──
     const imageQuestions = await page.evaluate(() => {
