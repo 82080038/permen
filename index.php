@@ -8,6 +8,12 @@ $baseUrl = $_ENV['BASE_URL'] ?? '/permen';
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
+<meta name="description" content="Aplikasi Try Out SKD CAT-BKN untuk persiapan masuk Sekolah Kedinasan. Latihan soal TWK, TIU, TKP dengan timer simulasi ujian.">
+<meta property="og:title" content="SKD CAT-BKN Try Out & Bimbel">
+<meta property="og:description" content="Latihan soal SKD dengan simulasi ujian, analytics kelemahan, dan rekomendasi materi.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://bimbel.bereng.info">
+<link rel="manifest" href="<?php echo $baseUrl ?? '/permen'; ?>/manifest.json">
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="<?php echo $baseUrl ?? '/permen'; ?>/assets/style.css">
 <title>SKD CAT-BKN Try Out & Bimbel</title>

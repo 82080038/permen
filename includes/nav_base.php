@@ -32,6 +32,7 @@ if (!function_exists('isActive')) {
 if (!defined('FAVICON_LOADED')) {
     define('FAVICON_LOADED', true);
     echo '<link rel="icon" href="data:,">';
+    echo '<link rel="manifest" href="' . $_navBase . 'manifest.json">';
 }
 // Inject Bootstrap hanya sekali
 if (!defined('BOOTSTRAP_LOADED')) {

@@ -861,3 +861,21 @@ function applyUserSettings(): void {
     }
 }
 
+/**
+ * Structured logging - writes JSON-formatted log entries to error_log
+ * @param string $event Event name (e.g. 'login_success', 'login_failed')
+ * @param array $context Additional context data
+ */
+function structuredLog(string $event, array $context = []): void
+{
+    $logEntry = json_encode([
+        'timestamp' => date('c'),
+        'event' => $event,
+        'context' => $context,
+        'ip' => $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
+        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
+        'request_id' => $_SERVER['HTTP_X_REQUEST_ID'] ?? uniqid('req_', true),
+    ]);
+    error_log('[APP] ' . $logEntry);
+}
+

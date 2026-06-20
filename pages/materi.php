@@ -471,6 +471,37 @@ function escapeHtml(text){
     div.textContent = text;
     return div.innerHTML;
 }
+
+// Track materi reading progress
+function trackMateriRead(materiId, subtes, percent) {
+    var baseUrl = window.APP_BASE_URL || '';
+    var url = baseUrl + '/api/track_materi_progress.php';
+    var payload = 'materi_id=' + encodeURIComponent(materiId) + '&subtes=' + encodeURIComponent(subtes) + '&progress_percent=' + percent;
+    if (navigator.sendBeacon) {
+        navigator.sendBeacon(url, payload);
+    } else {
+        fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: payload }).catch(function(){});
+    }
+}
+
+// Auto-track when materi card is opened
+document.querySelectorAll('.card-header').forEach(function(header, idx) {
+    var cardBody = header.nextElementSibling;
+    if (!cardBody) return;
+    header.addEventListener('click', function() {
+        var isOpen = cardBody.classList.contains('active');
+        if (!isOpen) {
+            var materiId = 'materi_' + subtes + '_' + idx;
+            trackMateriRead(materiId, subtes, 50);
+            // Mark as 100% after 10 seconds of reading
+            setTimeout(function() {
+                if (cardBody.classList.contains('active')) {
+                    trackMateriRead(materiId, subtes, 100);
+                }
+            }, 10000);
+        }
+    });
+});
 </script>
 </body>
 </html>

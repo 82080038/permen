@@ -335,6 +335,9 @@ $strictMode = 0; // Default non-strict
 .btn{width:100%;margin-bottom:.3rem;font-size:1rem}
 .passage-bacaan{max-height:200px}
 .question-scrollable{max-height:180px}
+/* Sticky timer on mobile */
+.header{position:sticky;top:0;z-index:100;box-shadow:0 2px 4px rgba(0,0,0,.15)}
+.timer{font-size:1.1rem;padding:.35rem .8rem}
 }
 </style>
 </head>

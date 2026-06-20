@@ -16,8 +16,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $noHp = sanitizeInput($_POST['no_hp'] ?? '');
     $password = $_POST['password'] ?? '';
     
-    // CSRF validation
-    if (!validateCsrf($_POST['csrf_token'] ?? '')) {
+    // Rate limiting check (max 5 attempts per 15 minutes)
+    $clientIp = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    if (!checkRateLimit($clientIp, $pdo)) {
+        structuredLog('login_rate_limited', ['ip' => $clientIp, 'no_hp' => $noHp]);
+        http_response_code(429);
+        $error = 'Terlalu banyak percobaan login. Silakan coba lagi dalam 15 menit.';
+    } elseif (!validateCsrf($_POST['csrf_token'] ?? '')) {
         $error = 'Sesi tidak valid. Silakan muat ulang halaman.';
     } elseif ($noHp && $password) {
         try {
@@ -63,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 session_start();
                 
                 // Debug: Log session data
-                error_log("[LOGIN_DEBUG] Session data after login: " . json_encode($_SESSION));
+                structuredLog('login_success', ['user_id' => $user['id'], 'role' => $user['role'], 'ip' => $clientIp]);
                 
                 // Redirect based on role
                 $baseUrl = $_ENV['BASE_URL'] ?? '/permen';
@@ -74,6 +79,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 exit;
             } else {
+                incrementRateLimit($clientIp, $pdo);
+                structuredLog('login_failed', ['ip' => $clientIp, 'no_hp' => $noHp]);
                 $error = 'Nomor HP atau password salah.';
             }
         } catch (Exception $e) {
@@ -102,6 +109,7 @@ if (!empty($_SESSION['user_id'])) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <meta name="theme-color" content="#1a5276">
+<meta name="description" content="Login ke aplikasi Try Out SKD CAT-BKN untuk persiapan masuk Sekolah Kedinasan.">
 <link rel="icon" href="data:,">
 <base href="<?php echo rtrim($baseUrl, '/'); ?>">
 <title>Login — SKD CAT-BKN</title>
@@ -132,23 +140,6 @@ if (!empty($_SESSION['user_id'])) {
 </div>
 <button type="submit" class="btn" aria-label="Masuk ke akun">Masuk</button>
 </form>
-
-<?php if (($_ENV['APP_ENV'] ?? 'development') === 'development'): ?>
-<div style="margin-top:1.5rem;padding:1rem;background:#fff3cd;border:1px solid #ffeeba;border-radius:6px;text-align:center">
-<p style="color:#856404;font-size:.85rem;margin-bottom:.5rem"><strong>⚠️ Development Mode - Quick Login</strong></p>
-<div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap">
-<button onclick="quickLogin('081987654321', 'Sihaloho1982')" style="background:#2980b9;color:#fff;border:none;padding:.4rem .8rem;border-radius:4px;cursor:pointer;font-size:.8rem">User (081987654321)</button>
-</div>
-<p style="color:#856404;font-size:.75rem;margin-top:.5rem">Password: <code>Sihaloho1982</code></p>
-</div>
-<script>
-function quickLogin(noHp, password) {
-    document.getElementById('no_hp').value = noHp;
-    document.getElementById('password').value = password;
-    document.querySelector('form').submit();
-}
-</script>
-<?php endif; ?>
 
 <div class="footer">
 <a href="index.php">Kembali ke Beranda</a> &middot; <a href="register.php">Daftar Akun Baru</a>

@@ -323,6 +323,13 @@ tr:hover{background:#f8f9fa}
 <div class="stat"><div class="num"><?= $soalPerSubtes['TKP'] ?? 0 ?></div><div class="label">Soal TKP</div></div>
 </div>
 
+<div style="margin:.5rem 0 1rem;display:flex;gap:.5rem;flex-wrap:wrap">
+<span style="font-size:.85rem;color:#555;align-self:center">Export Data:</span>
+<a href="../api/admin_export.php?type=users" class="btn" style="background:#2980b9;color:#fff;text-decoration:none;padding:.4rem .8rem;border-radius:4px;font-size:.8rem">Users CSV</a>
+<a href="../api/admin_export.php?type=tryout_results" class="btn" style="background:#27ae60;color:#fff;text-decoration:none;padding:.4rem .8rem;border-radius:4px;font-size:.8rem">Tryout Results CSV</a>
+<a href="../api/admin_export.php?type=questions" class="btn" style="background:#8e44ad;color:#fff;text-decoration:none;padding:.4rem .8rem;border-radius:4px;font-size:.8rem">Questions CSV</a>
+</div>
+
 <div class="nav-tabs">
 <a href="#analytics" onclick="showTab('analytics')" id="tab-analytics">Analytics</a>
 <a href="#feedback" onclick="showTab('feedback')" id="tab-feedback">Feedback</a>
